@@ -63,3 +63,4 @@ ml/checkpoints/
 .DS_Store
 Thumbs.db
 desktop.ini
+ml/data/parity_cs.txt

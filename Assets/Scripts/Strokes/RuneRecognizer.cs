@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using TMPro;
+using Unity.InferenceEngine;
 using UnityEngine;
 
 namespace RuneArena.Strokes
@@ -9,8 +10,16 @@ namespace RuneArena.Strokes
     [RequireComponent(typeof(StrokeRecorder))]
     public class RuneRecognizer : MonoBehaviour
     {
+        [Header("Protractor")]
         [SerializeField] float m_MaxRotationDegrees = 30f;
         [SerializeField, Range(0f, 1f)] float m_MinScore = 0.85f;
+
+        [Header("CNN")]
+        [SerializeField] ModelAsset m_Model;
+        [SerializeField, Range(0f, 1f)] float m_MinConfidence = 0.8f;
+        [Tooltip("Which recognizer decides the rune. Both run so they can be compared.")]
+        [SerializeField] bool m_UseCnn = true;
+
         [SerializeField] TMP_Text m_ResultText;
 
         // Label is null when the stroke didn't match any rune well enough.
@@ -21,6 +30,7 @@ namespace RuneArena.Strokes
 
         StrokeRecorder m_Recorder;
         ProtractorRecognizer m_Protractor;
+        CnnRecognizer m_Cnn;
 
         void Awake()
         {
@@ -28,6 +38,14 @@ namespace RuneArena.Strokes
             m_Protractor = new ProtractorRecognizer(m_MaxRotationDegrees);
             foreach (var variant in RuneShapes.CreateVariants())
                 m_Protractor.AddTemplate(variant.Key, variant.Value);
+
+            if (m_Model != null)
+                m_Cnn = new CnnRecognizer(m_Model);
+        }
+
+        void OnDestroy()
+        {
+            m_Cnn?.Dispose();
         }
 
         void OnEnable()
@@ -43,21 +61,52 @@ namespace RuneArena.Strokes
         void OnStrokeCompleted(StrokeRecorder recorder)
         {
             long start = Stopwatch.GetTimestamp();
-
             StrokePreprocessor.Project(recorder.Points, recorder.HeadRotation, m_Projected);
             StrokePreprocessor.Resample(m_Projected, m_Resampled);
             StrokePreprocessor.Normalize(m_Resampled);
-            string best = m_Protractor.Recognize(m_Resampled, out float score);
+            double prepMs = Elapsed(start);
 
-            double ms = (Stopwatch.GetTimestamp() - start) * 1000.0 / Stopwatch.Frequency;
-            string label = score >= m_MinScore ? best : null;
+            start = Stopwatch.GetTimestamp();
+            string pBest = m_Protractor.Recognize(m_Resampled, out float pScore);
+            string pLabel = pScore >= m_MinScore ? pBest : null;
+            double pMs = prepMs + Elapsed(start);
 
+            string cBest = null;
+            string cLabel = null;
+            float cScore = 0f;
+            double cMs = 0;
+            if (m_Cnn != null)
+            {
+                start = Stopwatch.GetTimestamp();
+                cBest = m_Cnn.Recognize(m_Resampled, out cScore);
+                cLabel = cScore >= m_MinConfidence && cBest != "noise" ? cBest : null;
+                cMs = prepMs + Elapsed(start);
+            }
+
+            bool useCnn = m_UseCnn && m_Cnn != null;
             if (m_ResultText != null)
-                m_ResultText.text = label != null
-                    ? $"{label}  {score:0.00}  ({ms:0.00} ms)"
-                    : $"? ({best} {score:0.00})  ({ms:0.00} ms)";
+            {
+                string text = Line(!useCnn, "P", pLabel, pBest, pScore, pMs);
+                if (m_Cnn != null)
+                    text += "\n" + Line(useCnn, "C", cLabel, cBest, cScore, cMs);
+                m_ResultText.text = text;
+            }
 
-            RuneRecognized?.Invoke(label, score);
+            if (useCnn)
+                RuneRecognized?.Invoke(cLabel, cScore);
+            else
+                RuneRecognized?.Invoke(pLabel, pScore);
+        }
+
+        static string Line(bool active, string name, string label, string best, float score, double ms)
+        {
+            string result = label ?? $"? ({best})";
+            return $"{(active ? ">" : " ")}{name}: {result}  {score:0.00}  ({ms:0.00} ms)";
+        }
+
+        static double Elapsed(long start)
+        {
+            return (Stopwatch.GetTimestamp() - start) * 1000.0 / Stopwatch.Frequency;
         }
     }
 }
