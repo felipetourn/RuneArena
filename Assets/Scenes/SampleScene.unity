@@ -5965,6 +5965,10 @@ MonoBehaviour:
       m_Flags: 0
       m_Priority: 0
     m_Reference: {fileID: 0}
+  m_AimDistance: 50
+  m_AimMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
   m_PushSpeed: 1.5
   m_PushFrames: 3
   m_ChargeTimeout: 4
