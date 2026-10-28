@@ -26,6 +26,8 @@ namespace RuneArena.Strokes
             new InputAction("Draw", InputActionType.Button, "<XRController>{RightHand}/{TriggerButton}"));
         [SerializeField] InputActionProperty m_NextLabelAction = new InputActionProperty(
             new InputAction("Next Label", InputActionType.Button, "<XRController>{RightHand}/{SecondaryButton}"));
+        [SerializeField] InputActionProperty m_ToggleSaveAction = new InputActionProperty(
+            new InputAction("Toggle Save", InputActionType.Button, "<XRController>{LeftHand}/{SecondaryButton}"));
         [Tooltip("Editor only: draw with the left mouse button on a plane in front of the camera.")]
         [SerializeField] bool m_EditorMouseDrawing = true;
         [SerializeField] float m_MouseDrawDistance = 0.5f;
@@ -37,15 +39,24 @@ namespace RuneArena.Strokes
         [SerializeField] bool m_SaveStrokes = true;
         [SerializeField] string[] m_Labels = { "square", "circle", "lightning", "triangle", "noise" };
         [SerializeField] TMP_Text m_StatusText;
+        [Tooltip("Small label fixed to the top right of the view showing whether strokes are being saved. Created if left empty.")]
+        [SerializeField] TMP_Text m_SaveIndicator;
 
         [Header("Line")]
         [SerializeField] Material m_LineMaterial;
         [SerializeField] float m_LineWidth = 0.008f;
+        [SerializeField] Color m_DrawColor = Color.white;
 
+        public event Action<StrokeRecorder> StrokeStarted;
         public event Action<StrokeRecorder> StrokeCompleted;
 
         public IReadOnlyList<Vector4> Points => m_Points;
         public Quaternion HeadRotation => m_HeadRotation;
+        public Transform Origin => m_OriginTransform;
+        public Transform Tip => m_Tip;
+        public LineRenderer Line => m_Line;
+        public Material LineMaterial => m_LineMaterial;
+        public bool IsDrawing => m_Drawing;
 
         readonly List<Vector4> m_Points = new List<Vector4>(k_MaxPoints);
         readonly StringBuilder m_Json = new StringBuilder(16 * 1024);
@@ -56,6 +67,8 @@ namespace RuneArena.Strokes
         Quaternion m_MouseCamRotation;
         bool m_UsingMouse;
         LineRenderer m_Line;
+        MaterialPropertyBlock m_LineBlock;
+        bool m_ShownSaveState;
         Quaternion m_HeadRotation;
         float m_StartTime;
         float m_MinSqrDistance;
@@ -90,6 +103,9 @@ namespace RuneArena.Strokes
 
             CreateLine();
             UpdateStatus();
+            if (m_SaveIndicator == null)
+                CreateSaveIndicator();
+            UpdateSaveIndicator();
         }
 
         void OnEnable()
@@ -98,6 +114,8 @@ namespace RuneArena.Strokes
                 m_DrawAction.action.Enable();
             if (m_NextLabelAction.reference == null)
                 m_NextLabelAction.action.Enable();
+            if (m_ToggleSaveAction.reference == null)
+                m_ToggleSaveAction.action.Enable();
         }
 
         void OnDisable()
@@ -106,11 +124,18 @@ namespace RuneArena.Strokes
                 m_DrawAction.action.Disable();
             if (m_NextLabelAction.reference == null)
                 m_NextLabelAction.action.Disable();
+            if (m_ToggleSaveAction.reference == null)
+                m_ToggleSaveAction.action.Disable();
         }
 
         void Update()
         {
             InputAction draw = m_DrawAction.action;
+
+            if (m_ToggleSaveAction.action.WasPressedThisFrame())
+                m_SaveStrokes = !m_SaveStrokes;
+            if (m_SaveStrokes != m_ShownSaveState)
+                UpdateSaveIndicator();
 
             if (!m_Drawing)
             {
@@ -146,9 +171,12 @@ namespace RuneArena.Strokes
 
             m_Points.Clear();
             m_Line.positionCount = 0;
+            m_Line.widthMultiplier = m_LineWidth;
+            SetLineColor(m_DrawColor);
             m_StartTime = Time.time;
             m_HeadRotation = Quaternion.Inverse(m_OriginTransform.rotation) * m_Head.rotation;
             m_Drawing = true;
+            StrokeStarted?.Invoke(this);
         }
 
         void AddPoint()
@@ -270,6 +298,7 @@ namespace RuneArena.Strokes
             go.transform.SetParent(m_OriginTransform, false);
 
             m_Line = go.AddComponent<LineRenderer>();
+            m_LineBlock = new MaterialPropertyBlock();
             m_Line.useWorldSpace = false;
             m_Line.widthMultiplier = m_LineWidth;
             m_Line.sharedMaterial = m_LineMaterial;
@@ -281,6 +310,41 @@ namespace RuneArena.Strokes
 
             if (m_LineMaterial == null)
                 Debug.LogWarning("StrokeRecorder: no line material assigned", this);
+        }
+
+        public void SetLineColor(Color color)
+        {
+            m_Line.GetPropertyBlock(m_LineBlock);
+            m_LineBlock.SetColor("_BaseColor", color);
+            m_Line.SetPropertyBlock(m_LineBlock);
+        }
+
+        public void ClearLine()
+        {
+            m_Line.positionCount = 0;
+        }
+
+        void CreateSaveIndicator()
+        {
+            var go = new GameObject("SaveIndicator");
+            go.transform.SetParent(m_Camera.transform, false);
+            go.transform.localPosition = new Vector3(0.12f, 0.08f, 0.4f);
+
+            var text = go.AddComponent<TextMeshPro>();
+            text.fontSize = 0.12f;
+            text.alignment = TextAlignmentOptions.TopRight;
+            text.rectTransform.sizeDelta = new Vector2(0.1f, 0.02f);
+            m_SaveIndicator = text;
+        }
+
+        void UpdateSaveIndicator()
+        {
+            m_ShownSaveState = m_SaveStrokes;
+            if (m_SaveIndicator == null)
+                return;
+
+            m_SaveIndicator.text = m_SaveStrokes ? "REC" : "REC OFF";
+            m_SaveIndicator.color = m_SaveStrokes ? new Color(1f, 0.3f, 0.3f) : new Color(0.6f, 0.6f, 0.6f);
         }
 
         void UpdateStatus()

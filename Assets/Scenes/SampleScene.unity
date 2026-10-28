@@ -5878,10 +5878,31 @@ MonoBehaviour:
       m_Flags: 0
       m_Priority: 0
     m_Reference: {fileID: 0}
+  m_ToggleSaveAction:
+    m_UseReference: 0
+    m_Action:
+      m_Name: Toggle Save
+      m_Type: 1
+      m_ExpectedControlType: 
+      m_Id: 7d7ad6ec-ee55-43c3-9845-3aba48114aee
+      m_Processors: 
+      m_Interactions: 
+      m_SingletonActionBindings:
+      - m_Name: 
+        m_Id: 17a685da-7324-48a2-ad50-ab52ab2ebaad
+        m_Path: <XRController>{LeftHand}/{SecondaryButton}
+        m_Interactions: 
+        m_Processors: 
+        m_Groups: 
+        m_Action: Toggle Save
+        m_Flags: 0
+      m_Flags: 0
+      m_Priority: 0
+    m_Reference: {fileID: 0}
   m_EditorMouseDrawing: 1
   m_MouseDrawDistance: 0.5
   m_MinPointDistance: 0.002
-  m_SaveStrokes: 1
+  m_SaveStrokes: 0
   m_Labels:
   - square
   - circle
@@ -5889,8 +5910,10 @@ MonoBehaviour:
   - triangle
   - noise
   m_StatusText: {fileID: 493661532}
+  m_SaveIndicator: {fileID: 0}
   m_LineMaterial: {fileID: 2100000, guid: b6ed23c14a3e95348a7139af038c598b, type: 2}
   m_LineWidth: 0.008
+  m_DrawColor: {r: 1, g: 1, b: 1, a: 1}
 --- !u!114 &729441615
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5909,6 +5932,55 @@ MonoBehaviour:
   m_MinConfidence: 0.8
   m_UseCnn: 1
   m_ResultText: {fileID: 2075761041}
+--- !u!114 &729441616
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 729441608}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3604825dafd03ef4e9993cb052515043, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RuneArena.Strokes.RuneCaster
+  m_LaunchAction:
+    m_UseReference: 0
+    m_Action:
+      m_Name: Launch
+      m_Type: 1
+      m_ExpectedControlType: 
+      m_Id: 5f3635da-5b25-48df-a01b-2567f84d23ba
+      m_Processors: 
+      m_Interactions: 
+      m_SingletonActionBindings:
+      - m_Name: 
+        m_Id: b6ceb883-27fe-4799-b837-67f691ce2d03
+        m_Path: <XRController>{RightHand}/{GripButton}
+        m_Interactions: 
+        m_Processors: 
+        m_Groups: 
+        m_Action: Launch
+        m_Flags: 0
+      m_Flags: 0
+      m_Priority: 0
+    m_Reference: {fileID: 0}
+  m_PushSpeed: 1.5
+  m_PushFrames: 3
+  m_ChargeTimeout: 4
+  m_FadeTime: 0.3
+  m_RejectColor: {r: 1, g: 0.2, b: 0.2, a: 1}
+  m_Colors:
+  - label: square
+    color: {r: 0.6, g: 0.4, b: 0.2, a: 1}
+  - label: circle
+    color: {r: 1, g: 0.45, b: 0.1, a: 1}
+  - label: lightning
+    color: {r: 1, g: 0.95, b: 0.3, a: 1}
+  - label: triangle
+    color: {r: 0.2, g: 0.6, b: 1, a: 1}
+  m_ProjectileSpeed: 8
+  m_ProjectileLifetime: 3
 --- !u!1 &732956838
 GameObject:
   m_ObjectHideFlags: 0
@@ -10877,6 +10949,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 7917674758240283208, guid: 77e7c27b2c5525e4aa8cc9f99d654486, type: 3}
       insertIndex: -1
       addedObject: {fileID: 729441615}
+    - targetCorrespondingSourceObject: {fileID: 7917674758240283208, guid: 77e7c27b2c5525e4aa8cc9f99d654486, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 729441616}
   m_SourcePrefab: {fileID: 100100000, guid: 77e7c27b2c5525e4aa8cc9f99d654486, type: 3}
 --- !u!1 &1390846723
 GameObject:
