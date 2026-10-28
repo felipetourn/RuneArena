@@ -49,6 +49,8 @@ namespace RuneArena.Strokes
         // Label, start position and direction, in world space.
         public event Action<string, Vector3, Vector3> RuneLaunched;
 
+        public bool HasChargedRune => m_Charged != null && !m_Recorder.IsDrawing;
+
         StrokeRecorder m_Recorder;
         RuneRecognizer m_Recognizer;
         string m_Charged;
@@ -98,7 +100,7 @@ namespace RuneArena.Strokes
             m_PushCount = Vector3.Dot(velocity, forward) > m_PushSpeed ? m_PushCount + 1 : 0;
 
             if (m_PushCount >= m_PushFrames || m_LaunchAction.action.WasPressedThisFrame())
-                Launch();
+                Launch(new Ray(m_Recorder.Tip.position, m_Recorder.Tip.forward));
         }
 
         void OnRuneRecognized(string label, float score)
@@ -126,8 +128,12 @@ namespace RuneArena.Strokes
             m_Charged = null;
         }
 
-        void Launch()
+        // Launches the charged rune towards whatever the ray hits. Desktop controls aim with the mouse.
+        public void Launch(Ray aim)
         {
+            if (!HasChargedRune)
+                return;
+
             string label = m_Charged;
             m_Charged = null;
 
@@ -161,7 +167,7 @@ namespace RuneArena.Strokes
             source.GetPropertyBlock(block);
             line.SetPropertyBlock(block);
 
-            Vector3 direction = (AimPoint() - center).normalized;
+            Vector3 direction = (AimPoint(aim) - center).normalized;
             go.AddComponent<RuneProjectile>().Launch(direction * m_ProjectileSpeed, m_ProjectileLifetime);
             m_Recorder.ClearLine();
 
@@ -188,12 +194,11 @@ namespace RuneArena.Strokes
             m_Fade = null;
         }
 
-        Vector3 AimPoint()
+        Vector3 AimPoint(Ray aim)
         {
-            Transform tip = m_Recorder.Tip;
-            if (Physics.Raycast(tip.position, tip.forward, out RaycastHit hit, m_AimDistance, m_AimMask, QueryTriggerInteraction.Ignore))
+            if (Physics.Raycast(aim, out RaycastHit hit, m_AimDistance, m_AimMask, QueryTriggerInteraction.Ignore))
                 return hit.point;
-            return tip.position + tip.forward * m_AimDistance;
+            return aim.GetPoint(m_AimDistance);
         }
 
         static InputActionProperty CreateLaunchAction()
