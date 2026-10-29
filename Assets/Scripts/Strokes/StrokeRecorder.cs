@@ -38,7 +38,6 @@ namespace RuneArena.Strokes
 
         [Header("Recording")]
         [SerializeField] bool m_SaveStrokes = true;
-        [SerializeField] string[] m_Labels = { "square", "circle", "lightning", "triangle", "noise" };
         [SerializeField] TMP_Text m_StatusText;
         [Tooltip("Small label fixed to the top right of the view showing whether strokes are being saved. Created if left empty.")]
         [SerializeField] TMP_Text m_SaveIndicator;
@@ -95,10 +94,10 @@ namespace RuneArena.Strokes
             m_Device = Application.isEditor ? "simulator" : "quest2";
             m_RootPath = Path.Combine(Application.persistentDataPath, "strokes");
 
-            m_Counts = new int[m_Labels.Length];
-            for (int i = 0; i < m_Labels.Length; i++)
+            m_Counts = new int[RuneLabels.All.Length];
+            for (int i = 0; i < RuneLabels.All.Length; i++)
             {
-                string dir = Path.Combine(m_RootPath, m_Labels[i]);
+                string dir = Path.Combine(m_RootPath, RuneLabels.All[i]);
                 Directory.CreateDirectory(dir);
                 m_Counts[i] = Directory.GetFiles(dir, "*.json").Length;
             }
@@ -162,7 +161,7 @@ namespace RuneArena.Strokes
             }
             else if (m_NextLabelAction.action.WasPressedThisFrame())
             {
-                m_LabelIndex = (m_LabelIndex + 1) % m_Labels.Length;
+                m_LabelIndex = (m_LabelIndex + 1) % RuneLabels.All.Length;
                 UpdateStatus();
             }
         }
@@ -250,7 +249,7 @@ namespace RuneArena.Strokes
 
         void Save()
         {
-            string label = m_Labels[m_LabelIndex];
+            string label = RuneLabels.All[m_LabelIndex];
             string file = DateTime.Now.ToString("yyyyMMdd_HHmmss_fff", CultureInfo.InvariantCulture) + ".json";
             string path = Path.Combine(m_RootPath, label, file);
             string json = BuildJson(label);
@@ -376,10 +375,10 @@ namespace RuneArena.Strokes
                 return;
 
             var sb = new StringBuilder(128);
-            for (int i = 0; i < m_Labels.Length; i++)
+            for (int i = 0; i < RuneLabels.All.Length; i++)
             {
                 sb.Append(i == m_LabelIndex ? "> " : "  ")
-                  .Append(m_Labels[i]).Append(": ").Append(m_Counts[i]).Append('\n');
+                  .Append(RuneLabels.All[i]).Append(": ").Append(m_Counts[i]).Append('\n');
             }
             m_StatusText.text = sb.ToString();
         }

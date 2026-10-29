@@ -7,7 +7,7 @@ namespace RuneArena.Strokes
     // Runs the CNN trained by ml/train.py. Labels in the same order as ml/runes/__init__.py.
     public class CnnRecognizer : IDisposable
     {
-        public static readonly string[] Labels = { "square", "circle", "lightning", "triangle", "noise" };
+        public static string[] Labels => RuneLabels.All;
 
         readonly Worker m_Worker;
         readonly TensorShape m_Shape = new TensorShape(1, 1, StrokePreprocessor.k_RasterSize, StrokePreprocessor.k_RasterSize);

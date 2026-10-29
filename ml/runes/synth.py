@@ -7,7 +7,7 @@ a drawing plane that is neither flat nor facing the head, and an arbitrary head 
 import numpy as np
 
 from .preprocess import rotate
-from .shapes import hard_negatives, rune_variants
+from .shapes import CLOSED, hard_negatives, rune_variants
 
 FRAME_TIME = 1.0 / 72.0
 MIN_POINT_DISTANCE = 0.006
@@ -195,7 +195,7 @@ def generate(label, count, rng):
             path, closed = noise_path(rng)
         else:
             path = variants[rng.integers(len(variants))]
-            closed = label != "lightning"
+            closed = label in CLOSED
         stroke = make_stroke(path, label, rng, closed)
         if stroke is not None:
             strokes.append(stroke)

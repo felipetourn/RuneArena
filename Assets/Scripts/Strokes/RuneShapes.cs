@@ -28,6 +28,17 @@ namespace RuneArena.Strokes
                 new Vector2(-1f, 1f), new Vector2(1f, 1f), new Vector2(-1f, -1f), new Vector2(1f, -1f)
             });
 
+            for (int start = 0; start < 360; start += 45)
+            {
+                AddOpen(variants, "spiral", Spiral(start * Mathf.Deg2Rad, 1f));
+                AddOpen(variants, "spiral", Spiral(start * Mathf.Deg2Rad, -1f));
+            }
+
+            AddOpen(variants, "v", new[]
+            {
+                new Vector2(-1f, 1f), new Vector2(0f, -1f), new Vector2(1f, 1f)
+            });
+
             return variants;
         }
 
@@ -53,6 +64,22 @@ namespace RuneArena.Strokes
             backward.Reverse();
             variants.Add(new KeyValuePair<string, List<Vector2>>(label, forward));
             variants.Add(new KeyValuePair<string, List<Vector2>>(label, backward));
+        }
+
+        // 1.5 turns drawn from the center outwards. Must match spiral() in ml/runes/shapes.py.
+        static Vector2[] Spiral(float start, float direction)
+        {
+            const int n = 48;
+            float last = 1.5f * 2f * Mathf.PI;
+            var points = new Vector2[n];
+            for (int i = 0; i < n; i++)
+            {
+                float t = last * i / (n - 1);
+                float r = 0.15f + t / last;
+                float a = start + direction * t;
+                points[i] = new Vector2(Mathf.Cos(a) * r, Mathf.Sin(a) * r);
+            }
+            return points;
         }
 
         static Vector2[] Circle(int segments)
