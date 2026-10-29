@@ -15,11 +15,13 @@ namespace RuneArena.Spells
         EarthWallSpell m_Spell;
         Vector3 m_Ground;
         float m_Start;
+        float m_Duration;
         float m_BrokenAt = -1f;
         float m_HeightAtBreak;
 
-        public void Raise(EarthWallSpell spell, Vector3 ground, Quaternion rotation)
+        public void Raise(EarthWallSpell spell, Vector3 ground, Quaternion rotation, float duration)
         {
+            m_Duration = duration;
             m_Spell = spell;
             m_Ground = ground;
             m_Start = Time.time;
@@ -58,7 +60,7 @@ namespace RuneArena.Spells
             }
 
             Place(CurrentUp());
-            if (Time.time - m_Start >= m_Spell.Duration)
+            if (Time.time - m_Start >= m_Duration)
                 Destroy(gameObject);
         }
 
@@ -69,10 +71,10 @@ namespace RuneArena.Spells
             float up;
             if (age < rise)
                 up = age / rise;
-            else if (age < m_Spell.Duration - rise)
+            else if (age < m_Duration - rise)
                 up = 1f;
             else
-                up = Mathf.Clamp01((m_Spell.Duration - age) / rise);
+                up = Mathf.Clamp01((m_Duration - age) / rise);
             return up;
         }
 

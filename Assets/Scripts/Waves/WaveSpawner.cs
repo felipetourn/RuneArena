@@ -35,6 +35,9 @@ namespace RuneArena.Waves
         [SerializeField] DifficultyScale m_Easy = new DifficultyScale { speed = 1f, damage = 1f, health = 1f };
         [SerializeField] DifficultyScale m_Normal = new DifficultyScale { speed = 1.1f, damage = 1.25f, health = 1f };
         [SerializeField] DifficultyScale m_Hard = new DifficultyScale { speed = 1.2f, damage = 1.5f, health = 1.4f };
+        [Tooltip("A stage is one pass through the Wave Set, ending with its boss. Enemies are as many levels as the stage, " +
+                 "and each level above 1 adds this much health and damage.")]
+        [SerializeField] float m_PerLevel = 0.3f;
         [SerializeField] bool m_StartOnPlay = true;
         [SerializeField] float m_StartDelay = 3f;
         [Tooltip("Seconds between the end of a wave and the start of the next one.")]
@@ -53,7 +56,21 @@ namespace RuneArena.Waves
 
         // Counts from 1. 0 before the first wave.
         public int CurrentWave { get; private set; }
+        public int WavesPerStage => m_Waves != null ? m_Waves.Count : 0;
+
+        // Counts from 1: one stage per pass through the Wave Set.
+        public int CurrentStage { get; private set; }
         public int Alive { get; private set; }
+
+        // While true, the next wave waits after the current one is cleared (the player is choosing an upgrade).
+        public bool HoldBeforeNextWave { get; set; }
+
+        // Set it off before Start when something else (the GameManager) decides when the waves begin.
+        public bool StartOnPlay
+        {
+            get => m_StartOnPlay;
+            set => m_StartOnPlay = value;
+        }
 
         // Set it before the waves start; it applies to enemies spawned from then on.
         public Difficulty Difficulty
@@ -110,10 +127,12 @@ namespace RuneArena.Waves
             for (int index = 0; ; index++)
             {
                 CurrentWave = index + 1;
+                bool newStage = index % m_Waves.Count == 0;
+                CurrentStage = index / m_Waves.Count + 1;
                 WaveSet.Wave wave = m_Waves.Get(index, out float multiplier);
                 BuildQueue(wave, multiplier);
 
-                Announce($"Oleada {CurrentWave}", m_AnnounceTime);
+                Announce(newStage ? $"Etapa {CurrentStage} - Oleada {CurrentWave}" : $"Oleada {CurrentWave}", m_AnnounceTime);
                 WaveStarted?.Invoke(CurrentWave);
 
                 foreach (Enemy prefab in m_Queue)
@@ -133,6 +152,8 @@ namespace RuneArena.Waves
 
                 Announce($"Oleada {CurrentWave} superada", m_AnnounceTime);
                 WaveCleared?.Invoke(CurrentWave);
+                while (HoldBeforeNextWave)
+                    yield return null;
                 yield return new WaitForSeconds(m_BreakTime);
             }
         }
@@ -157,12 +178,28 @@ namespace RuneArena.Waves
                 int j = UnityEngine.Random.Range(0, i + 1);
                 (m_Queue[i], m_Queue[j]) = (m_Queue[j], m_Queue[i]);
             }
+
+            // Bosses open the wave.
+            int front = 0;
+            for (int i = 0; i < m_Queue.Count; i++)
+            {
+                if (m_Queue[i] is BossEnemy)
+                {
+                    (m_Queue[front], m_Queue[i]) = (m_Queue[i], m_Queue[front]);
+                    front++;
+                }
+            }
         }
 
         IEnumerator Spawn(Enemy prefab)
         {
-            ArenaGate gate = m_Gates[m_NextGate];
-            m_NextGate = (m_NextGate + 1) % m_Gates.Length;
+            // Bosses come through the first door, the one in front of the player's start.
+            bool boss = prefab is BossEnemy;
+            ArenaGate gate = boss ? m_Gates[0] : m_Gates[m_NextGate];
+            if (!boss)
+                m_NextGate = (m_NextGate + 1) % m_Gates.Length;
+            else
+                Announce("¡Llega el jefe!", m_AnnounceTime);
             Transform point = gate.SpawnPoint;
 
             gate.Open(m_GateHold);
@@ -172,6 +209,7 @@ namespace RuneArena.Waves
             Enemy enemy = Instantiate(prefab, point.position, point.rotation);
             DifficultyScale scale = m_Difficulty == Difficulty.Hard ? m_Hard : m_Difficulty == Difficulty.Normal ? m_Normal : m_Easy;
             enemy.ApplyDifficulty(scale.speed, scale.damage, scale.health);
+            enemy.SetLevel(CurrentStage, m_PerLevel);
             gate.LetThrough(enemy);
             gate.Open(m_GateHold);
 
@@ -186,7 +224,7 @@ namespace RuneArena.Waves
             EnemyDied?.Invoke(enemy);
         }
 
-        void Announce(string text, float seconds = 0f)
+        public void Announce(string text, float seconds = 0f)
         {
             if (m_Label == null)
                 return;

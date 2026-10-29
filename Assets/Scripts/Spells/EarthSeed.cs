@@ -8,9 +8,11 @@ namespace RuneArena.Spells
         EarthWallSpell m_Spell;
         Vector3 m_Ground;
         Material m_Material;
+        float m_Duration;
 
-        public void Launch(EarthWallSpell spell, Vector3 ground, Material material)
+        public void Launch(EarthWallSpell spell, Vector3 ground, Material material, float duration)
         {
+            m_Duration = duration;
             m_Spell = spell;
             m_Ground = ground;
             m_Material = material;
@@ -25,7 +27,7 @@ namespace RuneArena.Spells
 
             Vector3 forward = transform.forward;
             forward.y = 0f;
-            m_Spell.RaiseWall(m_Ground, Quaternion.LookRotation(forward.normalized), m_Material);
+            m_Spell.RaiseWall(m_Ground, Quaternion.LookRotation(forward.normalized), m_Material, m_Duration);
             Destroy(gameObject);
         }
     }

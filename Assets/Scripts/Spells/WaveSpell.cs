@@ -34,11 +34,11 @@ namespace RuneArena.Spells
         public override float ManaCost => m_ManaCost;
 
         public float Speed => m_Speed;
-        public float Range => m_Range;
+        public float Range => m_Range * (HasPerk(SpellPerks.HighTide) ? 1.5f : 1f);
         public float Damage => m_Damage;
         public float Duration => m_Duration;
 
-        public float Width(float t) => Mathf.Lerp(m_StartWidth, m_EndWidth, t);
+        public float Width(float t) => Mathf.Lerp(m_StartWidth, m_EndWidth, t) * (HasPerk(SpellPerks.HighTide) ? 1.5f : 1f);
         public float Height(float t) => Mathf.Lerp(m_StartHeight, m_EndHeight, t);
         public float Slow(float t) => Mathf.Lerp(m_CloseSlow, m_FarSlow, t);
         public float Push(float t) => Mathf.Lerp(m_ClosePush, m_FarPush, t);
@@ -59,7 +59,7 @@ namespace RuneArena.Spells
 
             direction.Normalize();
             GameObject go = CreateVisual(PrimitiveType.Cube, "Wave", cast.Material, m_Color);
-            go.AddComponent<WaveFront>().Launch(this, start + direction * m_StartOffset, direction);
+            go.AddComponent<WaveFront>().Launch(this, start + direction * m_StartOffset, direction, cast.Power);
         }
     }
 }

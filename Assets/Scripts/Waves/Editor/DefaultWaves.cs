@@ -17,9 +17,11 @@ namespace RuneArena.Waves.Editor
             Enemy melee = Load("Melee Enemy");
             Enemy ranged = Load("Ranged Enemy");
             Enemy flying = Load("Flying Enemy");
-            if (melee == null || ranged == null || flying == null)
+            Enemy healer = Load("Healer Enemy");
+            Enemy boss = Load("Boss Enemy");
+            if (melee == null || ranged == null || flying == null || healer == null || boss == null)
             {
-                Debug.LogError($"Missing enemy prefabs in {k_Prefabs}. Run RuneArena > Create Placeholder Enemies first.");
+                Debug.LogError($"Missing enemy prefabs in {k_Prefabs}. Run RuneArena > Create Placeholder Enemies and Create Placeholder Healer and Boss first.");
                 return;
             }
 
@@ -27,10 +29,9 @@ namespace RuneArena.Waves.Editor
             {
                 Wave(2.5f, (melee, 3)),
                 Wave(2.5f, (melee, 3), (ranged, 2)),
-                Wave(2f, (melee, 3), (ranged, 2), (flying, 2)),
-                Wave(2f, (melee, 5), (ranged, 3), (flying, 2)),
-                // The boss wave will go here.
-                Wave(1.5f, (melee, 6), (ranged, 3), (flying, 3)),
+                Wave(2f, (melee, 3), (ranged, 2), (flying, 2), (healer, 1)),
+                Wave(2f, (melee, 5), (ranged, 3), (flying, 2), (healer, 1)),
+                Wave(3f, (boss, 1), (melee, 3), (ranged, 2), (healer, 1)),
             };
 
             var set = AssetDatabase.LoadAssetAtPath<WaveSet>(k_Path);
@@ -42,7 +43,7 @@ namespace RuneArena.Waves.Editor
                 AssetDatabase.CreateAsset(set, k_Path);
             }
 
-            set.SetWaves(waves);
+            set.SetWaves(waves, 0.3f);
             EditorUtility.SetDirty(set);
             AssetDatabase.SaveAssets();
             Selection.activeObject = set;

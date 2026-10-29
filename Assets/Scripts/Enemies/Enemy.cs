@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using RuneArena.Arena;
 using RuneArena.Player;
 using UnityEngine;
@@ -35,6 +36,9 @@ namespace RuneArena.Enemies
         [SerializeField] float m_KnockbackDrag = 6f;
         [Tooltip("Seconds after a stun ends during which it can't be stunned again.")]
         [SerializeField] float m_StunImmunity = 1f;
+        [Tooltip("0 takes stuns in full, 1 ignores them. For tougher enemies like the boss.")]
+        [SerializeField, Range(0f, 1f)] float m_StunResistance = 0f;
+        [SerializeField, Range(0f, 1f)] float m_KnockbackResistance = 0f;
 
         [Header("Feedback")]
         [SerializeField] Color m_TelegraphColor = new Color(1f, 0.9f, 0.3f);
@@ -44,13 +48,20 @@ namespace RuneArena.Enemies
         [SerializeField] float m_FlashTime = 0.1f;
         [SerializeField] float m_DeathTime = 0.3f;
 
+        static readonly List<Enemy> s_All = new List<Enemy>();
+
+        // Every living enemy in the scene.
+        public static IReadOnlyList<Enemy> All => s_All;
+
         public event Action<Enemy> Died;
+        public event Action<Enemy, float> Healed;
         // Amount actually taken and what kind of hit it was.
         public event Action<Enemy, float, DamageKind> Damaged;
 
         public float Health { get; private set; }
         public float MaxHealth => m_MaxHealth;
         public bool IsDead { get; private set; }
+        public int Level { get; private set; } = 1;
         public bool CanBeStunned => Time.time >= m_StunImmuneUntil;
 
         // False while it is still outside the colosseum wall (spawning behind a gate or walking through a door).
@@ -132,9 +143,29 @@ namespace RuneArena.Enemies
         public void ApplyDifficulty(float speed, float damage, float health)
         {
             m_SpeedScale = speed;
-            m_DamageScale = damage;
+            m_DamageScale *= damage;
             m_MaxHealth *= health;
             Health = m_MaxHealth;
+        }
+
+        // Call right after spawning. Level 1 leaves the stats as they are; each level above adds perLevel.
+        public void SetLevel(int level, float perLevel)
+        {
+            Level = Mathf.Max(level, 1);
+            float scale = 1f + (Level - 1) * perLevel;
+            m_DamageScale *= scale;
+            m_MaxHealth *= scale;
+            Health = m_MaxHealth;
+        }
+
+        protected virtual void OnEnable()
+        {
+            s_All.Add(this);
+        }
+
+        protected virtual void OnDisable()
+        {
+            s_All.Remove(this);
         }
 
         protected abstract void Tick(float deltaTime);
@@ -165,13 +196,22 @@ namespace RuneArena.Enemies
                 Die();
         }
 
+        public void Heal(float amount)
+        {
+            if (IsDead || Health >= m_MaxHealth)
+                return;
+            float healed = Mathf.Min(amount, m_MaxHealth - Health);
+            Health += healed;
+            Healed?.Invoke(this, healed);
+        }
+
         // Velocity in m/s, applied horizontally and fading out.
         public void Push(Vector3 velocity)
         {
             if (!IsInsideArena)
                 return;
             velocity.y = 0f;
-            m_Knockback += velocity;
+            m_Knockback += velocity * (1f - m_KnockbackResistance);
         }
 
         // Returns false if the status didn't take, which only happens to a stun right after another one.
@@ -182,9 +222,9 @@ namespace RuneArena.Enemies
             int i = (int)status;
             if (status == EnemyStatus.Stunned)
             {
-                if (!CanBeStunned)
+                if (!CanBeStunned || m_StunResistance >= 1f)
                     return false;
-                m_StatusUntil[i] = Time.time + duration;
+                m_StatusUntil[i] = Time.time + duration * (1f - m_StunResistance);
                 m_StunImmuneUntil = m_StatusUntil[i] + m_StunImmunity;
                 Interrupt();
                 return true;
@@ -238,6 +278,7 @@ namespace RuneArena.Enemies
         {
             IsDead = true;
             m_DiedAt = Time.time;
+            s_All.Remove(this);
             Interrupt();
             OnDied();
             foreach (Collider c in GetComponentsInChildren<Collider>())

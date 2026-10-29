@@ -25,11 +25,14 @@ namespace RuneArena.Enemies
         {
             if (!Agent.isOnNavMesh)
                 return;
-            Agent.speed = m_BaseSpeed * SpeedMultiplier;
+            Agent.speed = m_BaseSpeed * SpeedMultiplier * SpeedBonus;
             Think(deltaTime);
         }
 
         protected abstract void Think(float deltaTime);
+
+        // Extra speed a subclass can add on its own, like the boss when it gets angry.
+        protected virtual float SpeedBonus => 1f;
 
         protected void MoveTo(Vector3 destination)
         {

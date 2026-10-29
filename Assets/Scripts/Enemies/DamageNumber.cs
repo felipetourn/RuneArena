@@ -17,6 +17,12 @@ namespace RuneArena.Enemies
         float m_Born;
         float m_Pop;
 
+        public static void SpawnHeal(Vector3 position, float amount, Transform head)
+        {
+            DamageNumber number = Create(position, head, $"+{Mathf.Max(1, Mathf.RoundToInt(amount))}", 2.6f, new Color(0.3f, 1f, 0.4f));
+            number.m_Pop = 0.2f;
+        }
+
         public static void Spawn(Vector3 position, float amount, DamageKind kind, Transform head)
         {
             var go = new GameObject("Damage Number");
@@ -55,6 +61,29 @@ namespace RuneArena.Enemies
             text.color = number.m_Color;
             go.transform.position = number.m_Start;
             Destroy(go, k_Lifetime);
+        }
+
+        static DamageNumber Create(Vector3 position, Transform head, string value, float size, Color color)
+        {
+            var go = new GameObject("Damage Number");
+            var number = go.AddComponent<DamageNumber>();
+            number.m_Head = head;
+            number.m_Start = position + new Vector3(Random.Range(-0.25f, 0.25f), 0.1f, 0f);
+            number.m_Born = Time.time;
+            number.m_Color = color;
+
+            TextMeshPro text = go.AddComponent<TextMeshPro>();
+            text.alignment = TextAlignmentOptions.Center;
+            text.rectTransform.sizeDelta = new Vector2(2f, 0.6f);
+            text.fontStyle = FontStyles.Bold;
+            text.text = value;
+            text.fontSize = size;
+            text.color = color;
+            number.m_Text = text;
+
+            go.transform.position = number.m_Start;
+            Destroy(go, k_Lifetime);
+            return number;
         }
 
         void LateUpdate()

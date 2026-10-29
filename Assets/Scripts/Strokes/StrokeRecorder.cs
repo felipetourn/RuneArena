@@ -4,6 +4,7 @@ using System.Globalization;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
+using RuneArena.Player;
 using TMPro;
 using Unity.XR.CoreUtils;
 using UnityEngine;
@@ -107,6 +108,7 @@ namespace RuneArena.Strokes
             if (m_SaveIndicator == null)
                 CreateSaveIndicator();
             UpdateSaveIndicator();
+            DebugView.Changed += OnDebugChanged;
         }
 
         void OnEnable()
@@ -127,6 +129,11 @@ namespace RuneArena.Strokes
                 m_NextLabelAction.action.Disable();
             if (m_ToggleSaveAction.reference == null)
                 m_ToggleSaveAction.action.Disable();
+
+            // Disabled mid-stroke (a menu opened): drop the stroke instead of resuming it later.
+            m_Drawing = false;
+            if (m_Line != null)
+                m_Line.positionCount = 0;
         }
 
         void Update()
@@ -338,6 +345,16 @@ namespace RuneArena.Strokes
             m_SaveIndicator = text;
         }
 
+        void OnDestroy()
+        {
+            DebugView.Changed -= OnDebugChanged;
+        }
+
+        void OnDebugChanged(bool enabled)
+        {
+            UpdateSaveIndicator();
+        }
+
         void UpdateSaveIndicator()
         {
             m_ShownSaveState = m_SaveStrokes;
@@ -347,6 +364,8 @@ namespace RuneArena.Strokes
             if (m_SaveIndicator == null)
                 return;
 
+            // "REC OFF" is only a debug hint; "REC" always shows, so recording is never silent.
+            m_SaveIndicator.gameObject.SetActive(m_SaveStrokes || DebugView.Enabled);
             m_SaveIndicator.text = m_SaveStrokes ? "REC" : "REC OFF";
             m_SaveIndicator.color = m_SaveStrokes ? new Color(1f, 0.3f, 0.3f) : new Color(0.6f, 0.6f, 0.6f);
         }

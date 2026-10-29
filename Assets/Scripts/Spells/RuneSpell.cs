@@ -14,13 +14,16 @@ namespace RuneArena.Spells
         public readonly PlayerHealth Player;
         // Unlit material shared by every spell visual, tinted per spell.
         public readonly Material Material;
+        // Upgrade multiplier: damage for attack spells, duration for the earth wall. 1 without upgrades.
+        public readonly float Power;
 
-        public SpellCast(Vector3 origin, Ray aim, PlayerHealth player, Material material)
+        public SpellCast(Vector3 origin, Ray aim, PlayerHealth player, Material material, float power = 1f)
         {
             Origin = origin;
             Aim = aim;
             Player = player;
             Material = material;
+            Power = power;
         }
     }
 
@@ -35,6 +38,20 @@ namespace RuneArena.Spells
         public abstract float ManaCost { get; }
 
         public abstract void Cast(in SpellCast cast);
+
+        SpellBook m_Book;
+        bool m_BookSearched;
+
+        // Whether a diamond upgrade has given this spell's caster a special effect.
+        protected bool HasPerk(string perk)
+        {
+            if (!m_BookSearched)
+            {
+                m_Book = GetComponent<SpellBook>();
+                m_BookSearched = true;
+            }
+            return m_Book != null && m_Book.HasPerk(perk);
+        }
 
         protected static int EnemyMask => LayerMask.GetMask("Enemy");
         protected static int FloorMask => LayerMask.GetMask("Floor");

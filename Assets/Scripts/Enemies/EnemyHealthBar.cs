@@ -1,5 +1,6 @@
 using RuneArena.Player;
 using RuneArena.Strokes;
+using TMPro;
 using UnityEngine;
 
 namespace RuneArena.Enemies
@@ -42,11 +43,20 @@ namespace RuneArena.Enemies
         void OnEnable()
         {
             m_Enemy.Damaged += OnDamaged;
+            m_Enemy.Healed += OnHealed;
         }
 
         void OnDisable()
         {
             m_Enemy.Damaged -= OnDamaged;
+            m_Enemy.Healed -= OnHealed;
+        }
+
+        void OnHealed(Enemy enemy, float amount)
+        {
+            if (m_Root == null)
+                return;
+            DamageNumber.SpawnHeal(m_Root.position, amount, m_Head);
         }
 
         void Start()
@@ -56,7 +66,7 @@ namespace RuneArena.Enemies
 
             if (s_Material == null)
             {
-                var recorder = FindAnyObjectByType<StrokeRecorder>();
+                var recorder = FindAnyObjectByType<StrokeRecorder>(FindObjectsInactive.Include);
                 s_Material = recorder != null ? recorder.LineMaterial : null;
             }
 
@@ -72,6 +82,16 @@ namespace RuneArena.Enemies
             m_Trail = Part("Trail", k_Width, 0.015f, k_NormalTrail);
             m_TrailRenderer = m_Trail.GetComponent<Renderer>();
             m_Fill = Part("Fill", k_Width, 0.02f, k_Fill);
+
+            var level = new GameObject("Level");
+            level.transform.SetParent(m_Root, false);
+            level.transform.localPosition = new Vector3(-k_Width * 0.5f - 0.12f, 0f, 0f);
+            var text = level.AddComponent<TextMeshPro>();
+            text.text = m_Enemy.Level.ToString();
+            text.fontSize = 1.2f;
+            text.alignment = TextAlignmentOptions.Right;
+            text.rectTransform.sizeDelta = new Vector2(0.3f, 0.1f);
+
             m_Root.gameObject.SetActive(false);
         }
 
@@ -81,7 +101,8 @@ namespace RuneArena.Enemies
                 return;
 
             float health = m_Enemy.Health / m_Enemy.MaxHealth;
-            if (Time.time >= m_TrailMovesAt)
+            // A heal raises the bar past the trail; the trail follows it up right away.
+            if (health > m_TrailValue || Time.time >= m_TrailMovesAt)
                 m_TrailValue = Mathf.MoveTowards(m_TrailValue, health, k_TrailSpeed * Time.deltaTime);
 
             Set(m_Fill, health);

@@ -21,6 +21,10 @@ namespace RuneArena.Spells
         [SerializeField] float m_DirectDamage = 30f;
         [SerializeField] float m_DirectStun = 1.5f;
 
+        [Tooltip("With the Chain diamond upgrade: how far a direct hit jumps, and its damage multiplier.")]
+        [SerializeField] float m_ChainRange = 5f;
+        [SerializeField] float m_ChainDamage = 0.5f;
+
         [Header("Floor strike")]
         [SerializeField] float m_FloorRadius = 1.5f;
         [SerializeField] float m_FloorDamage = 20f;
@@ -43,8 +47,10 @@ namespace RuneArena.Spells
             Enemy direct = hit.collider.GetComponentInParent<Enemy>();
             if (direct != null)
             {
-                Strike(direct, m_DirectDamage, m_DirectStun);
+                Strike(direct, m_DirectDamage * cast.Power, m_DirectStun);
                 Bolt(hit.point, cast.Material, 0f);
+                if (HasPerk(SpellPerks.ChainLightning))
+                    Chain(direct, cast);
                 return;
             }
 
@@ -52,12 +58,40 @@ namespace RuneArena.Spells
             {
                 EnemiesInSphere(hit.point, m_FloorRadius, s_Enemies);
                 foreach (Enemy enemy in s_Enemies)
-                    Strike(enemy, m_FloorDamage, m_FloorStun);
+                    Strike(enemy, m_FloorDamage * cast.Power, m_FloorStun);
                 Bolt(hit.point, cast.Material, m_FloorRadius);
                 return;
             }
 
             // Against a wall the rune just fizzles out.
+        }
+
+        void Chain(Enemy from, in SpellCast cast)
+        {
+            Enemy next = null;
+            float best = m_ChainRange * m_ChainRange;
+            foreach (Enemy enemy in Enemy.All)
+            {
+                if (enemy == from || enemy.IsDead || !enemy.IsInsideArena)
+                    continue;
+                float d = (enemy.transform.position - from.transform.position).sqrMagnitude;
+                if (d < best)
+                {
+                    best = d;
+                    next = enemy;
+                }
+            }
+            if (next == null)
+                return;
+
+            Strike(next, m_DirectDamage * cast.Power * m_ChainDamage, m_DirectStun * 0.5f);
+
+            var go = new GameObject("Chain Bolt");
+            var line = go.AddComponent<LineRenderer>();
+            line.useWorldSpace = true;
+            line.widthMultiplier = m_BoltWidth;
+            Tint(line, cast.Material, m_Color);
+            go.AddComponent<LightningBolt>().Strike(from.transform.position + Vector3.up, next.transform.position + Vector3.up, m_BoltTime);
         }
 
         void Strike(Enemy enemy, float damage, float stun)

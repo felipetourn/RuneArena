@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using RuneArena.Player;
 using TMPro;
 using Unity.InferenceEngine;
 using UnityEngine;
@@ -48,6 +49,15 @@ namespace RuneArena.Strokes
             m_Cnn?.Dispose();
         }
 
+        bool ShowResult => m_Recorder.IsSaving || DebugView.Enabled;
+
+        void Start()
+        {
+            // Hidden until a recording session needs it, instead of showing its placeholder text.
+            if (m_ResultText != null)
+                m_ResultText.gameObject.SetActive(ShowResult);
+        }
+
         void OnEnable()
         {
             m_Recorder.StrokeCompleted += OnStrokeCompleted;
@@ -86,8 +96,8 @@ namespace RuneArena.Strokes
             bool useCnn = m_UseCnn && m_Cnn != null;
             // Recognition details are for recording sessions; while playing they're just clutter.
             if (m_ResultText != null)
-                m_ResultText.gameObject.SetActive(recorder.IsSaving);
-            if (m_ResultText != null && recorder.IsSaving)
+                m_ResultText.gameObject.SetActive(ShowResult);
+            if (m_ResultText != null && ShowResult)
             {
                 string text = Line(!useCnn, "P", pLabel, pBest, pScore, pMs);
                 if (m_Cnn != null)

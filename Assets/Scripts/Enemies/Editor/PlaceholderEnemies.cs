@@ -29,6 +29,82 @@ namespace RuneArena.Enemies.Editor
             Debug.Log($"Placeholder enemies created in {k_PrefabFolder}");
         }
 
+        // Separate from the menu above so making these doesn't reset the tuning of the other prefabs.
+        [MenuItem("RuneArena/Create Placeholder Healer and Boss")]
+        static void CreateHealerAndBoss()
+        {
+            EnsureFolder(k_PrefabFolder);
+            EnsureFolder(k_MaterialFolder);
+
+            var projectile = AssetDatabase.LoadAssetAtPath<GameObject>($"{k_PrefabFolder}/Enemy Projectile.prefab");
+            if (projectile == null)
+            {
+                Debug.LogError("Run RuneArena > Create Placeholder Enemies first: the boss needs the Enemy Projectile prefab.");
+                return;
+            }
+
+            int enemyLayer = Mathf.Max(LayerMask.NameToLayer("Enemy"), 0);
+            BuildHealer(enemyLayer, LayerMask.GetMask("Wall"));
+            BuildBoss(enemyLayer, projectile.GetComponent<EnemyProjectile>());
+
+            AssetDatabase.SaveAssets();
+            Debug.Log($"Healer and boss created in {k_PrefabFolder}");
+        }
+
+        static void BuildHealer(int layer, int sightMask)
+        {
+            Material material = GetMaterial("Enemy Healer", new Color(0.3f, 0.8f, 0.4f));
+            GameObject root = GroundRoot("Healer Enemy", layer, 1.8f, out Renderer body, material);
+
+            GameObject orb = Primitive(PrimitiveType.Sphere, "Orb", GetMaterial("Enemy Healer Orb", new Color(0.7f, 1f, 0.7f)));
+            Object.DestroyImmediate(orb.GetComponent<Collider>());
+            orb.layer = layer;
+            orb.transform.SetParent(root.transform, false);
+            orb.transform.localPosition = new Vector3(0f, 2.05f, 0f);
+            orb.transform.localScale = Vector3.one * 0.3f;
+
+            var so = new SerializedObject(root.AddComponent<HealerEnemy>());
+            so.FindProperty("m_Body").objectReferenceValue = body;
+            so.FindProperty("m_MaxHealth").floatValue = 60f;
+            so.FindProperty("m_SightMask").intValue = sightMask;
+            so.ApplyModifiedPropertiesWithoutUndo();
+            Save(root);
+        }
+
+        static void BuildBoss(int layer, EnemyProjectile projectile)
+        {
+            Material material = GetMaterial("Enemy Boss", new Color(0.35f, 0.15f, 0.45f));
+            GameObject root = GroundRoot("Boss Enemy", layer, 1.5f, out Renderer body, material);
+
+            // Bigger than the others: 2.6 m tall.
+            var collider = root.GetComponent<CapsuleCollider>();
+            collider.center = new Vector3(0f, 1.3f, 0f);
+            collider.height = 2.6f;
+            collider.radius = 0.8f;
+            var agent = root.GetComponent<NavMeshAgent>();
+            agent.radius = 0.8f;
+            agent.height = 2.6f;
+            body.transform.localPosition = new Vector3(0f, 1.3f, 0f);
+            body.transform.localScale = new Vector3(1.6f, 1.3f, 1.6f);
+
+            GameObject muzzle = Primitive(PrimitiveType.Sphere, "Muzzle", material);
+            Object.DestroyImmediate(muzzle.GetComponent<Collider>());
+            muzzle.layer = layer;
+            muzzle.transform.SetParent(root.transform, false);
+            muzzle.transform.localPosition = new Vector3(0f, 2.1f, 0.85f);
+            muzzle.transform.localScale = Vector3.one * 0.35f;
+
+            var so = new SerializedObject(root.AddComponent<BossEnemy>());
+            so.FindProperty("m_Body").objectReferenceValue = body;
+            so.FindProperty("m_MaxHealth").floatValue = 600f;
+            so.FindProperty("m_StunResistance").floatValue = 0.5f;
+            so.FindProperty("m_KnockbackResistance").floatValue = 0.7f;
+            so.FindProperty("m_Projectile").objectReferenceValue = projectile;
+            so.FindProperty("m_Muzzle").objectReferenceValue = muzzle.transform;
+            so.ApplyModifiedPropertiesWithoutUndo();
+            Save(root);
+        }
+
         static GameObject BuildProjectile(int blockMask)
         {
             GameObject go = Primitive(PrimitiveType.Sphere, "Enemy Projectile", GetMaterial("Enemy Projectile", new Color(1f, 0.5f, 0.1f)));

@@ -13,9 +13,13 @@ namespace RuneArena.Spells
         Vector3 m_Direction;
         Material m_Material;
         float m_Traveled;
+        float m_Power = 1f;
+        float m_ExplosionScale = 1f;
 
-        public void Launch(FireballSpell spell, Vector3 direction, Material material)
+        public void Launch(FireballSpell spell, Vector3 direction, Material material, float power, float explosionScale)
         {
+            m_ExplosionScale = explosionScale;
+            m_Power = power;
             m_Spell = spell;
             m_Direction = direction;
             m_Material = material;
@@ -59,23 +63,23 @@ namespace RuneArena.Spells
             if (direct != null && !direct.IsDead)
             {
                 Push(direct, point);
-                float damage = Burn(direct, m_Spell.Damage, out DamageKind kind);
+                float damage = Burn(direct, m_Spell.Damage * m_Power, out DamageKind kind);
                 direct.Damage(damage, kind);
             }
 
-            RuneSpell.EnemiesInSphere(point, m_Spell.ExplosionRadius, s_Enemies);
+            RuneSpell.EnemiesInSphere(point, m_Spell.ExplosionRadius * m_ExplosionScale, s_Enemies);
             foreach (Enemy enemy in s_Enemies)
             {
                 if (enemy == direct)
                     continue;
                 Push(enemy, point);
-                float splash = Burn(enemy, m_Spell.ExplosionDamage, out DamageKind splashKind);
+                float splash = Burn(enemy, m_Spell.ExplosionDamage * m_Power, out DamageKind splashKind);
                 enemy.Damage(splash, splashKind);
             }
 
             GameObject flash = RuneSpell.CreateVisual(PrimitiveType.Sphere, "Fireball Explosion", m_Material, m_Spell.Color);
             flash.transform.position = point;
-            SpellVisual.Spawn(flash, Vector3.one * m_Spell.Radius * 2f, Vector3.one * m_Spell.ExplosionRadius * 2f, 0.15f);
+            SpellVisual.Spawn(flash, Vector3.one * m_Spell.Radius * 2f, Vector3.one * m_Spell.ExplosionRadius * m_ExplosionScale * 2f, 0.15f);
             Destroy(gameObject);
         }
 

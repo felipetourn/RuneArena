@@ -25,7 +25,7 @@ namespace RuneArena.Strokes
         [SerializeField] float m_ChargeTimeout = 4f;
         [SerializeField] float m_FadeTime = 0.3f;
         [SerializeField] Color m_RejectColor = new Color(1f, 0.2f, 0.2f);
-        [Tooltip("Color of a recognized rune there isn't enough mana for.")]
+        [Tooltip("Color of a recognized rune there isn't enough mana for, or that isn't unlocked yet.")]
         [SerializeField] Color m_NoManaColor = new Color(0.5f, 0.5f, 0.5f);
 
         // Label, start position and direction, in world space.
@@ -36,6 +36,7 @@ namespace RuneArena.Strokes
         StrokeRecorder m_Recorder;
         RuneRecognizer m_Recognizer;
         RuneSpell[] m_Spells;
+        SpellBook m_Book;
         PlayerHealth m_Player;
         PlayerMana m_Mana;
         string m_Charged;
@@ -49,6 +50,7 @@ namespace RuneArena.Strokes
             m_Recorder = GetComponent<StrokeRecorder>();
             m_Recognizer = GetComponent<RuneRecognizer>();
             m_Spells = GetComponents<RuneSpell>();
+            m_Book = GetComponent<SpellBook>();
         }
 
         void Start()
@@ -71,6 +73,7 @@ namespace RuneArena.Strokes
             m_Recorder.StrokeStarted -= OnStrokeStarted;
             if (m_LaunchAction.reference == null)
                 m_LaunchAction.action.Disable();
+            m_Charged = null;
         }
 
         void Update()
@@ -104,7 +107,8 @@ namespace RuneArena.Strokes
             }
 
             RuneSpell spell = SpellFor(label);
-            if (spell != null && m_Mana != null && !m_Mana.CanCast(spell.ManaCost))
+            bool locked = m_Book != null && !m_Book.IsUnlocked(label);
+            if (spell != null && (locked || (m_Mana != null && !m_Mana.CanCast(CostOf(spell)))))
             {
                 Discard(m_NoManaColor);
                 return;
@@ -147,8 +151,9 @@ namespace RuneArena.Strokes
             if (spell != null)
             {
                 if (m_Mana != null)
-                    m_Mana.Spend(spell.ManaCost);
-                spell.Cast(new SpellCast(center, aim, m_Player, m_Recorder.LineMaterial));
+                    m_Mana.Spend(CostOf(spell));
+                float power = m_Book != null ? m_Book.Power(label) : 1f;
+                spell.Cast(new SpellCast(center, aim, m_Player, m_Recorder.LineMaterial, power));
             }
             else
                 Debug.LogWarning($"RuneCaster: no RuneSpell for '{label}' on {name}", this);
@@ -187,6 +192,11 @@ namespace RuneArena.Strokes
         Vector3 TipInOrigin()
         {
             return m_Recorder.Origin.InverseTransformPoint(m_Recorder.Tip.position);
+        }
+
+        float CostOf(RuneSpell spell)
+        {
+            return m_Book != null ? m_Book.Cost(spell) : spell.ManaCost;
         }
 
         RuneSpell SpellFor(string label)

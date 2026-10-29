@@ -29,7 +29,7 @@ namespace RuneArena.Player
             m_Controller = GetComponent<CharacterController>();
             m_Movement = GetComponent<PlayerMovement>();
             if (m_Caster == null)
-                m_Caster = GetComponentInChildren<RuneCaster>();
+                m_Caster = GetComponentInChildren<RuneCaster>(true);
         }
 
         void OnDisable()

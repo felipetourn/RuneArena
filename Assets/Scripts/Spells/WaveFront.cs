@@ -18,9 +18,11 @@ namespace RuneArena.Spells
         float m_Traveled;
         int m_EnemyMask;
         int m_WallMask;
+        float m_Power = 1f;
 
-        public void Launch(WaveSpell spell, Vector3 start, Vector3 direction)
+        public void Launch(WaveSpell spell, Vector3 start, Vector3 direction, float power)
         {
+            m_Power = power;
             m_Spell = spell;
             m_Start = start;
             m_Direction = direction;
@@ -48,7 +50,7 @@ namespace RuneArena.Spells
                 enemy.ApplyStatus(EnemyStatus.Wet, m_Spell.Duration);
                 enemy.ApplySlow(m_Spell.Slow(t), m_Spell.Duration);
                 enemy.Push(m_Direction * m_Spell.Push(t));
-                enemy.Damage(m_Spell.Damage);
+                enemy.Damage(m_Spell.Damage * m_Power);
             }
 
             // Breaks when its middle hits the arena wall, a gate or an earth wall. Only the middle,

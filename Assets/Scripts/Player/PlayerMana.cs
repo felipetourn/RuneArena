@@ -34,6 +34,7 @@ namespace RuneArena.Player
         public bool IsExhausted => Time.time < m_ExhaustedUntil;
 
         float m_Regen;
+        float m_RegenScale = 1f;
         float m_ExhaustedUntil;
         WaveSpawner m_Spawner;
 
@@ -69,7 +70,7 @@ namespace RuneArena.Player
 
         void Update()
         {
-            float regen = m_Regen * (IsExhausted ? m_ExhaustRegen : 1f);
+            float regen = m_Regen * m_RegenScale * (IsExhausted ? m_ExhaustRegen : 1f);
             Mana = Mathf.Min(Mana + regen * Time.deltaTime, MaxMana);
         }
 
@@ -86,6 +87,18 @@ namespace RuneArena.Player
                 Mana = 0f;
                 m_ExhaustedUntil = Time.time + m_ExhaustTime;
             }
+        }
+
+        public void AddMax(float amount)
+        {
+            MaxMana += amount;
+            Mana += amount;
+        }
+
+        // Upgrades stack additively: two +20% are +40%.
+        public void AddRegen(float fraction)
+        {
+            m_RegenScale += fraction;
         }
 
         public void Add(float amount)

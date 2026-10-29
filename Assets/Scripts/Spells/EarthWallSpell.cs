@@ -49,16 +49,16 @@ namespace RuneArena.Spells
             GameObject seed = CreateVisual(PrimitiveType.Cube, "Earth Seed", cast.Material, m_Color);
             seed.transform.SetPositionAndRotation(cast.Origin, Quaternion.LookRotation(facing.normalized));
             seed.transform.localScale = Vector3.one * 0.3f;
-            seed.AddComponent<EarthSeed>().Launch(this, hit.point, cast.Material);
+            seed.AddComponent<EarthSeed>().Launch(this, hit.point, cast.Material, m_Duration * cast.Power);
         }
 
-        public void RaiseWall(Vector3 ground, Quaternion rotation, Material material)
+        public void RaiseWall(Vector3 ground, Quaternion rotation, Material material, float duration)
         {
             GameObject go = GameObject.CreatePrimitive(PrimitiveType.Cube);
             go.name = "Earth Wall";
             go.layer = LayerMask.NameToLayer("Wall");
             Tint(go.GetComponent<Renderer>(), material, m_Color);
-            go.AddComponent<EarthWall>().Raise(this, ground, rotation);
+            go.AddComponent<EarthWall>().Raise(this, ground, rotation, duration);
         }
 
         public float TravelSpeed => m_TravelSpeed;

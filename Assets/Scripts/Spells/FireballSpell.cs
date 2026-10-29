@@ -44,7 +44,8 @@ namespace RuneArena.Spells
             GameObject go = CreateVisual(PrimitiveType.Sphere, "Fireball", cast.Material, m_Color);
             go.transform.position = cast.Origin;
             go.transform.localScale = Vector3.one * (m_Radius * 2f);
-            go.AddComponent<FireballProjectile>().Launch(this, (target - cast.Origin).normalized, cast.Material);
+            go.AddComponent<FireballProjectile>().Launch(this, (target - cast.Origin).normalized, cast.Material, cast.Power,
+                HasPerk(SpellPerks.BigExplosion) ? 2f : 1f);
         }
     }
 }

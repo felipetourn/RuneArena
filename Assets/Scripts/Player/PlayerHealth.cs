@@ -24,6 +24,14 @@ namespace RuneArena.Player
         public Vector3 Feet => new Vector3(Head.position.x, transform.position.y, Head.position.z);
 
         float m_VulnerableAt;
+        int m_ExtraLives;
+
+        public int ExtraLives => m_ExtraLives;
+
+        public void AddExtraLife()
+        {
+            m_ExtraLives++;
+        }
 
         void Awake()
         {
@@ -39,10 +47,25 @@ namespace RuneArena.Player
 
             Health = Mathf.Max(Health - amount, 0f);
             m_VulnerableAt = Time.time + m_InvulnerableTime;
+
+            // Second chance: back up at half health, with a longer grace period.
+            if (Health <= 0f && m_ExtraLives > 0)
+            {
+                m_ExtraLives--;
+                Health = m_MaxHealth * 0.5f;
+                m_VulnerableAt = Time.time + 2f;
+            }
             UpdateLabel();
             Damaged?.Invoke(amount);
             if (IsDead)
                 Died?.Invoke();
+        }
+
+        public void AddMaxHealth(float amount)
+        {
+            m_MaxHealth += amount;
+            Health += amount;
+            UpdateLabel();
         }
 
         public void Heal(float amount)

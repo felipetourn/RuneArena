@@ -25,7 +25,7 @@ namespace RuneArena.Waves
 
         [SerializeField] List<Wave> m_Waves = new List<Wave>();
         [Tooltip("After the last wave the list starts over, with counts multiplied by 1 + this for each loop.")]
-        [SerializeField] float m_LoopGrowth = 0.5f;
+        [SerializeField] float m_LoopGrowth = 0.3f;
 
         public int Count => m_Waves.Count;
 
@@ -37,9 +37,10 @@ namespace RuneArena.Waves
             return m_Waves[index % m_Waves.Count];
         }
 
-        public void SetWaves(List<Wave> waves)
+        public void SetWaves(List<Wave> waves, float loopGrowth)
         {
             m_Waves = waves;
+            m_LoopGrowth = loopGrowth;
         }
     }
 }

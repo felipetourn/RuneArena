@@ -27,7 +27,7 @@ namespace RuneArena.Player
         {
             m_Health = GetComponent<PlayerHealth>();
             if (m_Vignette == null)
-                m_Vignette = GetComponentInChildren<TunnelingVignetteController>();
+                m_Vignette = GetComponentInChildren<TunnelingVignetteController>(true);
 
             m_Parameters = new VignetteParameters
             {

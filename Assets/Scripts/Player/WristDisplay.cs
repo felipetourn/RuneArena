@@ -42,7 +42,7 @@ namespace RuneArena.Player
             m_Mana = FindAnyObjectByType<PlayerMana>();
             m_Block = new MaterialPropertyBlock();
 
-            var recorder = FindAnyObjectByType<StrokeRecorder>();
+            var recorder = FindAnyObjectByType<StrokeRecorder>(FindObjectsInactive.Include);
             Material material = recorder != null ? recorder.LineMaterial : null;
 
             var root = new GameObject("Wrist Display").transform;

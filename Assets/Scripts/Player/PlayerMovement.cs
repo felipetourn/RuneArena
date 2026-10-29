@@ -19,12 +19,13 @@ namespace RuneArena.Player
 
         StrokeRecorder m_Recorder;
         float m_Speed;
+        float m_SpeedScale = 1f;
 
         void Awake()
         {
             if (m_MoveProvider == null)
-                m_MoveProvider = GetComponentInChildren<ContinuousMoveProvider>();
-            m_Recorder = GetComponentInChildren<StrokeRecorder>();
+                m_MoveProvider = GetComponentInChildren<ContinuousMoveProvider>(true);
+            m_Recorder = GetComponentInChildren<StrokeRecorder>(true);
             m_Speed = m_ForwardSpeed;
         }
 
@@ -34,6 +35,12 @@ namespace RuneArena.Player
                 return;
             Vector2 input = m_MoveProvider.leftHandMoveInput.ReadValue() + m_MoveProvider.rightHandMoveInput.ReadValue();
             m_MoveProvider.moveSpeed = UpdateSpeed(input, Time.deltaTime);
+        }
+
+        // Upgrades stack additively.
+        public void AddSpeed(float fraction)
+        {
+            m_SpeedScale += fraction;
         }
 
         // input is a stick-style vector: y forward, x sideways. Returns the speed to move at this frame.
@@ -51,7 +58,7 @@ namespace RuneArena.Player
                 : Mathf.Lerp(m_SideSpeed, m_BackSpeed, -direction.y);
             if (m_Recorder != null && m_Recorder.IsDrawing)
                 speed *= m_DrawingMultiplier;
-            return speed;
+            return speed * m_SpeedScale;
         }
     }
 }
