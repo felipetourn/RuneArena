@@ -5,6 +5,16 @@ using UnityEngine;
 
 namespace RuneArena.Enemies
 {
+    // How a hit relates to the enemy's state, so feedback can tell a combo apart.
+    public enum DamageKind
+    {
+        Normal,
+        // Boosted by a combo, like lightning on a wet enemy.
+        Combo,
+        // Reduced by a bad combo, like fire on a wet enemy.
+        Weakened,
+    }
+
     public enum EnemyStatus
     {
         Wet,
@@ -35,6 +45,8 @@ namespace RuneArena.Enemies
         [SerializeField] float m_DeathTime = 0.3f;
 
         public event Action<Enemy> Died;
+        // Amount actually taken and what kind of hit it was.
+        public event Action<Enemy, float, DamageKind> Damaged;
 
         public float Health { get; private set; }
         public float MaxHealth => m_MaxHealth;
@@ -76,6 +88,8 @@ namespace RuneArena.Enemies
                 m_Body = GetComponentInChildren<Renderer>();
             m_Block = new MaterialPropertyBlock();
             m_Color = m_Body.sharedMaterial.color;
+            if (GetComponent<EnemyHealthBar>() == null)
+                gameObject.AddComponent<EnemyHealthBar>();
         }
 
         protected virtual void Start()
@@ -138,13 +152,15 @@ namespace RuneArena.Enemies
         {
         }
 
-        public void Damage(float amount)
+        public void Damage(float amount, DamageKind kind = DamageKind.Normal)
         {
             if (IsDead || !IsInsideArena)
                 return;
 
-            Health -= amount;
+            float taken = Mathf.Min(amount, Health);
+            Health -= taken;
             m_FlashUntil = Time.time + m_FlashTime;
+            Damaged?.Invoke(this, taken, kind);
             if (Health <= 0f)
                 Die();
         }

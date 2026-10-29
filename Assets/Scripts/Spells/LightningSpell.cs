@@ -62,13 +62,15 @@ namespace RuneArena.Spells
 
         void Strike(Enemy enemy, float damage, float stun)
         {
+            var kind = DamageKind.Normal;
             if (enemy.HasStatus(EnemyStatus.Wet))
             {
                 damage *= m_WetMultiplier;
                 enemy.ClearStatus(EnemyStatus.Wet);
+                kind = DamageKind.Combo;
             }
             enemy.ApplyStatus(EnemyStatus.Stunned, stun);
-            enemy.Damage(damage);
+            enemy.Damage(damage, kind);
         }
 
         void Bolt(Vector3 point, Material material, float ringRadius)

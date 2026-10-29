@@ -25,17 +25,36 @@ namespace RuneArena.Player
         [Tooltip("Regeneration multiplier while exhausted.")]
         [SerializeField, Range(0f, 1f)] float m_ExhaustRegen = 0.5f;
 
+        [Header("Clearing a wave")]
+        [Tooltip("Fraction of the missing mana given back at once when a wave is cleared. Also ends exhaustion.")]
+        [SerializeField, Range(0f, 1f)] float m_WaveRestore = 0.5f;
+
         public float Mana { get; private set; }
         public float MaxMana { get; private set; }
         public bool IsExhausted => Time.time < m_ExhaustedUntil;
 
         float m_Regen;
         float m_ExhaustedUntil;
+        WaveSpawner m_Spawner;
 
         void Start()
         {
-            var spawner = FindAnyObjectByType<WaveSpawner>();
-            SetDifficulty(spawner != null ? spawner.Difficulty : Difficulty.Normal);
+            m_Spawner = FindAnyObjectByType<WaveSpawner>();
+            SetDifficulty(m_Spawner != null ? m_Spawner.Difficulty : Difficulty.Normal);
+            if (m_Spawner != null)
+                m_Spawner.WaveCleared += OnWaveCleared;
+        }
+
+        void OnDestroy()
+        {
+            if (m_Spawner != null)
+                m_Spawner.WaveCleared -= OnWaveCleared;
+        }
+
+        void OnWaveCleared(int wave)
+        {
+            Mana += (MaxMana - Mana) * m_WaveRestore;
+            m_ExhaustedUntil = 0f;
         }
 
         // Also refills the mana.
