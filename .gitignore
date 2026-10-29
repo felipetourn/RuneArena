@@ -64,3 +64,9 @@ ml/checkpoints/
 Thumbs.db
 desktop.ini
 ml/data/parity_cs.txt
+
+# Unity build temp files
+/.utmp/
+/[Aa]ssets/XR/Temp/
+/[Aa]ssets/XR/Temp.meta
+/[Aa]ssets/Resources/PerformanceTestRun*
