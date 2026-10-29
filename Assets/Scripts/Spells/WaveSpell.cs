@@ -8,6 +8,7 @@ namespace RuneArena.Spells
     public class WaveSpell : RuneSpell
     {
         [SerializeField] Color m_Color = new Color(0.2f, 0.6f, 1f);
+        [SerializeField] float m_ManaCost = 20f;
         [SerializeField] float m_Speed = 8f;
         [SerializeField] float m_Range = 10f;
         [Tooltip("How far in front of the player the wave starts, so it doesn't fill the view.")]
@@ -30,6 +31,7 @@ namespace RuneArena.Spells
 
         public override string Label => "triangle";
         public override Color Color => m_Color;
+        public override float ManaCost => m_ManaCost;
 
         public float Speed => m_Speed;
         public float Range => m_Range;

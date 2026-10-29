@@ -1,4 +1,3 @@
-using RuneArena.Arena;
 using UnityEngine;
 
 namespace RuneArena.Enemies
@@ -43,9 +42,7 @@ namespace RuneArena.Enemies
         float m_OrbitDirection;
         Vector3 m_Velocity;
         Vector3 m_DiveTarget;
-        Vector3 m_ArenaCenter;
         float m_ArenaLimit = float.PositiveInfinity;
-        float m_FloorY;
         bool m_Entered;
         float m_EnteredAt;
 
@@ -55,13 +52,8 @@ namespace RuneArena.Enemies
             m_OrbitDirection = Random.value < 0.5f ? -1f : 1f;
             m_ReadyAt = Time.time + Random.Range(1f, m_Cooldown);
 
-            var arena = FindAnyObjectByType<ColosseumBuilder>();
-            if (arena != null)
-            {
-                m_ArenaCenter = arena.transform.position;
-                m_ArenaLimit = arena.Radius - arena.Thickness - 1f;
-                m_FloorY = arena.transform.position.y;
-            }
+            if (ArenaRadius > 0f)
+                m_ArenaLimit = ArenaRadius - 1f;
         }
 
         protected override void Tick(float deltaTime)
@@ -71,7 +63,7 @@ namespace RuneArena.Enemies
             switch (m_State)
             {
                 case State.Enter:
-                    var low = new Vector3(m_ArenaCenter.x, m_FloorY + m_EntryHeight, m_ArenaCenter.z);
+                    var low = new Vector3(ArenaCenter.x, ArenaCenter.y + m_EntryHeight, ArenaCenter.z);
                     Steer(low, m_Speed * SpeedMultiplier, deltaTime);
                     if (m_Entered && Time.time >= m_EnteredAt + m_ClimbDelay)
                         m_State = State.Orbit;
@@ -139,7 +131,7 @@ namespace RuneArena.Enemies
             offset.Normalize();
             Vector3 tangent = Vector3.Cross(Vector3.up, offset) * m_OrbitDirection;
             Vector3 point = head + offset * m_OrbitRadius + tangent * 3f;
-            point.y = m_FloorY + m_Altitude;
+            point.y = ArenaCenter.y + m_Altitude;
             return point;
         }
 
@@ -152,10 +144,10 @@ namespace RuneArena.Enemies
         void Move(Vector3 offset)
         {
             Vector3 p = transform.position + offset;
-            p.y = Mathf.Clamp(p.y, m_FloorY + 0.5f, Mathf.Max(m_FloorY + m_Altitude + 3f, transform.position.y));
+            p.y = Mathf.Clamp(p.y, ArenaCenter.y + 0.5f, Mathf.Max(ArenaCenter.y + m_Altitude + 3f, transform.position.y));
 
             // Kept inside the colosseum, but only once it is in: it spawns outside and comes through a door.
-            Vector3 flat = p - m_ArenaCenter;
+            Vector3 flat = p - ArenaCenter;
             flat.y = 0f;
             if (flat.magnitude <= m_ArenaLimit && !m_Entered)
             {
@@ -165,7 +157,7 @@ namespace RuneArena.Enemies
             else if (m_Entered && flat.magnitude > m_ArenaLimit)
             {
                 flat = flat.normalized * m_ArenaLimit;
-                p = new Vector3(m_ArenaCenter.x + flat.x, p.y, m_ArenaCenter.z + flat.z);
+                p = new Vector3(ArenaCenter.x + flat.x, p.y, ArenaCenter.z + flat.z);
             }
             transform.position = p;
         }

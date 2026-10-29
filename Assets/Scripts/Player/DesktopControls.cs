@@ -11,6 +11,7 @@ namespace RuneArena.Player
     public class DesktopControls : MonoBehaviour
     {
         [SerializeField] bool m_Active = true;
+        [Tooltip("Used when there is no PlayerMovement; otherwise its speeds apply here too.")]
         [SerializeField] float m_MoveSpeed = 2.5f;
         [SerializeField] RuneCaster m_Caster;
 
@@ -18,6 +19,7 @@ namespace RuneArena.Player
 
         XROrigin m_Origin;
         CharacterController m_Controller;
+        PlayerMovement m_Movement;
         float m_VerticalSpeed;
         float m_NextSearch;
 
@@ -25,6 +27,7 @@ namespace RuneArena.Player
         {
             m_Origin = GetComponent<XROrigin>();
             m_Controller = GetComponent<CharacterController>();
+            m_Movement = GetComponent<PlayerMovement>();
             if (m_Caster == null)
                 m_Caster = GetComponentInChildren<RuneCaster>();
         }
@@ -66,7 +69,8 @@ namespace RuneArena.Player
             Transform head = m_Origin.Camera.transform;
             Vector3 forward = Vector3.ProjectOnPlane(head.forward, transform.up).normalized;
             Vector3 right = Vector3.ProjectOnPlane(head.right, transform.up).normalized;
-            Vector3 motion = Vector3.ClampMagnitude(forward * input.y + right * input.x, 1f) * m_MoveSpeed;
+            float speed = m_Movement != null ? m_Movement.UpdateSpeed(input, deltaTime) : m_MoveSpeed;
+            Vector3 motion = Vector3.ClampMagnitude(forward * input.y + right * input.x, 1f) * speed;
 
             if (m_Controller == null)
             {

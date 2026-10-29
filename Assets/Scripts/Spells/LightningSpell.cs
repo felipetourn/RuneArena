@@ -12,6 +12,7 @@ namespace RuneArena.Spells
         static readonly List<Enemy> s_Enemies = new List<Enemy>();
 
         [SerializeField] Color m_Color = new Color(1f, 0.95f, 0.3f);
+        [SerializeField] float m_ManaCost = 25f;
         [SerializeField] float m_Range = 50f;
         [Tooltip("Damage multiplier against wet enemies.")]
         [SerializeField] float m_WetMultiplier = 1.5f;
@@ -32,6 +33,7 @@ namespace RuneArena.Spells
 
         public override string Label => "lightning";
         public override Color Color => m_Color;
+        public override float ManaCost => m_ManaCost;
 
         public override void Cast(in SpellCast cast)
         {

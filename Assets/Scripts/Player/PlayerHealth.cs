@@ -11,7 +11,7 @@ namespace RuneArena.Player
         [SerializeField] float m_MaxHealth = 100f;
         [Tooltip("Seconds without taking damage after a hit.")]
         [SerializeField] float m_InvulnerableTime = 0.4f;
-        [Tooltip("Small label fixed to the top left of the view. Created if left empty.")]
+        [Tooltip("Optional text showing the health. The WristDisplay already shows it.")]
         [SerializeField] TMP_Text m_Label;
 
         public event Action<float> Damaged;
@@ -29,8 +29,6 @@ namespace RuneArena.Player
         {
             Head = GetComponent<XROrigin>().Camera.transform;
             Health = m_MaxHealth;
-            if (m_Label == null)
-                CreateLabel();
             UpdateLabel();
         }
 
@@ -51,19 +49,6 @@ namespace RuneArena.Player
         {
             Health = Mathf.Min(Health + amount, m_MaxHealth);
             UpdateLabel();
-        }
-
-        void CreateLabel()
-        {
-            var go = new GameObject("HealthLabel");
-            go.transform.SetParent(Head, false);
-            go.transform.localPosition = new Vector3(-0.12f, 0.08f, 0.4f);
-
-            var text = go.AddComponent<TextMeshPro>();
-            text.fontSize = 0.12f;
-            text.alignment = TextAlignmentOptions.TopLeft;
-            text.rectTransform.sizeDelta = new Vector2(0.1f, 0.02f);
-            m_Label = text;
         }
 
         void UpdateLabel()

@@ -58,9 +58,8 @@ namespace RuneArena.Spells
 
             if (direct != null && !direct.IsDead)
             {
-                direct.ClearStatus(EnemyStatus.Wet);
                 Push(direct, point);
-                direct.Damage(m_Spell.Damage);
+                direct.Damage(Burn(direct, m_Spell.Damage));
             }
 
             RuneSpell.EnemiesInSphere(point, m_Spell.ExplosionRadius, s_Enemies);
@@ -68,15 +67,23 @@ namespace RuneArena.Spells
             {
                 if (enemy == direct)
                     continue;
-                enemy.ClearStatus(EnemyStatus.Wet);
                 Push(enemy, point);
-                enemy.Damage(m_Spell.ExplosionDamage);
+                enemy.Damage(Burn(enemy, m_Spell.ExplosionDamage));
             }
 
             GameObject flash = RuneSpell.CreateVisual(PrimitiveType.Sphere, "Fireball Explosion", m_Material, m_Spell.Color);
             flash.transform.position = point;
             SpellVisual.Spawn(flash, Vector3.one * m_Spell.Radius * 2f, Vector3.one * m_Spell.ExplosionRadius * 2f, 0.15f);
             Destroy(gameObject);
+        }
+
+        // Wet enemies take less and dry off.
+        float Burn(Enemy enemy, float damage)
+        {
+            if (!enemy.HasStatus(EnemyStatus.Wet))
+                return damage;
+            enemy.ClearStatus(EnemyStatus.Wet);
+            return damage * m_Spell.WetMultiplier;
         }
 
         void Push(Enemy enemy, Vector3 point)

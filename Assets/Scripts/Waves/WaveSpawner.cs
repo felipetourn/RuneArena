@@ -49,6 +49,7 @@ namespace RuneArena.Waves
 
         public event Action<int> WaveStarted;
         public event Action<int> WaveCleared;
+        public event Action<Enemy> EnemyDied;
 
         // Counts from 1. 0 before the first wave.
         public int CurrentWave { get; private set; }
@@ -182,6 +183,7 @@ namespace RuneArena.Waves
         {
             enemy.Died -= OnEnemyDied;
             Alive--;
+            EnemyDied?.Invoke(enemy);
         }
 
         void Announce(string text, float seconds = 0f)

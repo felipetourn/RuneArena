@@ -49,6 +49,9 @@ namespace RuneArena.Enemies
         public float SpeedMultiplier => (HasStatus(EnemyStatus.Slowed) ? 1f - m_Slow : 1f) * m_SpeedScale;
 
         protected PlayerHealth Player { get; private set; }
+        // Center of the colosseum floor and the inner radius of its wall. Radius is 0 when there is no colosseum.
+        protected Vector3 ArenaCenter => m_ArenaCenter;
+        protected float ArenaRadius => m_ArenaRadius;
         // Attacks multiply their damage by this. Set by the difficulty.
         protected float DamageMultiplier => m_DamageScale;
         protected bool Telegraphing { get; set; }

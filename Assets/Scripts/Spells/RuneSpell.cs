@@ -32,6 +32,7 @@ namespace RuneArena.Spells
         // Label the recognizer gives the rune that casts this spell.
         public abstract string Label { get; }
         public abstract Color Color { get; }
+        public abstract float ManaCost { get; }
 
         public abstract void Cast(in SpellCast cast);
 

@@ -7,6 +7,7 @@ namespace RuneArena.Spells
     public class EarthWallSpell : RuneSpell
     {
         [SerializeField] Color m_Color = new Color(0.6f, 0.4f, 0.2f);
+        [SerializeField] float m_ManaCost = 35f;
         [SerializeField] float m_Range = 30f;
         [Tooltip("Speed (m/s) of the square flying to the floor. The wall comes up when it lands.")]
         [SerializeField] float m_TravelSpeed = 15f;
@@ -20,6 +21,7 @@ namespace RuneArena.Spells
 
         public override string Label => "square";
         public override Color Color => m_Color;
+        public override float ManaCost => m_ManaCost;
 
         public float Width => m_Width;
         public float Height => m_Height;

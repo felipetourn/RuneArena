@@ -25,6 +25,8 @@ namespace RuneArena.Strokes
         [SerializeField] float m_ChargeTimeout = 4f;
         [SerializeField] float m_FadeTime = 0.3f;
         [SerializeField] Color m_RejectColor = new Color(1f, 0.2f, 0.2f);
+        [Tooltip("Color of a recognized rune there isn't enough mana for.")]
+        [SerializeField] Color m_NoManaColor = new Color(0.5f, 0.5f, 0.5f);
 
         // Label, start position and direction, in world space.
         public event Action<string, Vector3, Vector3> RuneLaunched;
@@ -35,6 +37,7 @@ namespace RuneArena.Strokes
         RuneRecognizer m_Recognizer;
         RuneSpell[] m_Spells;
         PlayerHealth m_Player;
+        PlayerMana m_Mana;
         string m_Charged;
         float m_ChargedAt;
         Vector3 m_PrevTip;
@@ -51,6 +54,7 @@ namespace RuneArena.Strokes
         void Start()
         {
             m_Player = FindAnyObjectByType<PlayerHealth>();
+            m_Mana = FindAnyObjectByType<PlayerMana>();
         }
 
         void OnEnable()
@@ -99,6 +103,13 @@ namespace RuneArena.Strokes
                 return;
             }
 
+            RuneSpell spell = SpellFor(label);
+            if (spell != null && m_Mana != null && !m_Mana.CanCast(spell.ManaCost))
+            {
+                Discard(m_NoManaColor);
+                return;
+            }
+
             m_Charged = label;
             m_ChargedAt = Time.time;
             m_PushCount = 0;
@@ -134,7 +145,11 @@ namespace RuneArena.Strokes
 
             RuneSpell spell = SpellFor(label);
             if (spell != null)
+            {
+                if (m_Mana != null)
+                    m_Mana.Spend(spell.ManaCost);
                 spell.Cast(new SpellCast(center, aim, m_Player, m_Recorder.LineMaterial));
+            }
             else
                 Debug.LogWarning($"RuneCaster: no RuneSpell for '{label}' on {name}", this);
 

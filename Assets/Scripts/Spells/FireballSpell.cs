@@ -3,15 +3,18 @@ using UnityEngine;
 namespace RuneArena.Spells
 {
     // Circle. A ball that is easy to hit with: big direct damage to the first enemy it touches,
-    // plus a small explosion that hurts and pushes whoever is around. Dries wet enemies.
+    // plus a small explosion that hurts and pushes whoever is around. Dries wet enemies, but does less damage to them.
     public class FireballSpell : RuneSpell
     {
         [SerializeField] Color m_Color = new Color(1f, 0.45f, 0.1f);
+        [SerializeField] float m_ManaCost = 15f;
         [SerializeField] float m_Speed = 14f;
         [Tooltip("Radius of the ball. Bigger is easier to hit with.")]
         [SerializeField] float m_Radius = 0.35f;
         [SerializeField] float m_Range = 40f;
         [SerializeField] float m_Damage = 35f;
+        [Tooltip("Damage multiplier against wet enemies: the water puts the fire out a bit. Keep the loss smaller than the lightning's gain.")]
+        [SerializeField, Range(0f, 1f)] float m_WetMultiplier = 0.75f;
 
         [Header("Explosion")]
         [SerializeField] float m_ExplosionRadius = 1f;
@@ -21,11 +24,13 @@ namespace RuneArena.Spells
 
         public override string Label => "circle";
         public override Color Color => m_Color;
+        public override float ManaCost => m_ManaCost;
 
         public float Speed => m_Speed;
         public float Radius => m_Radius;
         public float Range => m_Range;
         public float Damage => m_Damage;
+        public float WetMultiplier => m_WetMultiplier;
         public float ExplosionRadius => m_ExplosionRadius;
         public float ExplosionDamage => m_ExplosionDamage;
         public float ExplosionPush => m_ExplosionPush;

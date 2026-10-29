@@ -1464,6 +1464,7 @@ GameObject:
   m_Component:
   - component: {fileID: 496516582}
   - component: {fileID: 496516581}
+  - component: {fileID: 496516583}
   m_Layer: 0
   m_Name: Game
   m_TagString: Untagged
@@ -1484,11 +1485,23 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RuneArena.Waves.WaveSpawner
   m_Waves: {fileID: 11400000, guid: 860480f1f04b31b45832e058e6f8151f, type: 2}
+  m_Difficulty: 1
+  m_Easy:
+    speed: 1
+    damage: 1
+    health: 1
+  m_Normal:
+    speed: 1.1
+    damage: 1.25
+    health: 1
+  m_Hard:
+    speed: 1.2
+    damage: 1.5
+    health: 1.4
   m_StartOnPlay: 1
   m_StartDelay: 3
   m_BreakTime: 5
   m_GateHold: 2
-  m_FlyerHeight: 1.5
   m_Label: {fileID: 0}
   m_AnnounceTime: 2.5
 --- !u!4 &496516582
@@ -1506,6 +1519,29 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &496516583
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 496516580}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e9f85f47762d0a499d2fd86c00c76db, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RuneArena.Pickups.PickupDropper
+  m_Spawner: {fileID: 0}
+  m_HealthChance: 0.15
+  m_HealthAmount: 15
+  m_HealthColor: {r: 0.2, g: 0.9, b: 0.3, a: 1}
+  m_ManaChance: 0.3
+  m_ManaAmount: 25
+  m_ManaColor: {r: 0.25, g: 0.5, b: 1, a: 1}
+  m_Radius: 1.2
+  m_Lifetime: 15
+  m_Height: 1
+  m_Size: 0.3
 --- !u!1 &539899840
 GameObject:
   m_ObjectHideFlags: 0
@@ -2122,6 +2158,7 @@ MonoBehaviour:
   m_ChargeTimeout: 4
   m_FadeTime: 0.3
   m_RejectColor: {r: 1, g: 0.2, b: 0.2, a: 1}
+  m_NoManaColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
 --- !u!114 &729441617
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2135,6 +2172,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RuneArena.Spells.WaveSpell
   m_Color: {r: 0.2, g: 0.6, b: 1, a: 1}
+  m_ManaCost: 20
   m_Speed: 8
   m_Range: 10
   m_StartOffset: 1
@@ -2161,6 +2199,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RuneArena.Spells.LightningSpell
   m_Color: {r: 1, g: 0.95, b: 0.3, a: 1}
+  m_ManaCost: 25
   m_Range: 50
   m_WetMultiplier: 1.5
   m_DirectDamage: 30
@@ -2184,6 +2223,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RuneArena.Spells.FireballSpell
   m_Color: {r: 1, g: 0.45, b: 0.1, a: 1}
+  m_ManaCost: 15
   m_Speed: 14
   m_Radius: 0.35
   m_Range: 40
@@ -2204,6 +2244,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RuneArena.Spells.EarthWallSpell
   m_Color: {r: 0.6, g: 0.4, b: 0.2, a: 1}
+  m_ManaCost: 35
   m_Range: 30
   m_TravelSpeed: 15
   m_Width: 4
@@ -9068,6 +9109,18 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 8806329115733545877, guid: 77e7c27b2c5525e4aa8cc9f99d654486, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1373153115}
+    - targetCorrespondingSourceObject: {fileID: 8806329115733545877, guid: 77e7c27b2c5525e4aa8cc9f99d654486, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1373153124}
+    - targetCorrespondingSourceObject: {fileID: 8806329115733545877, guid: 77e7c27b2c5525e4aa8cc9f99d654486, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1373153123}
+    - targetCorrespondingSourceObject: {fileID: 8806329115733545877, guid: 77e7c27b2c5525e4aa8cc9f99d654486, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1373153122}
+    - targetCorrespondingSourceObject: {fileID: 7917674758919744183, guid: 77e7c27b2c5525e4aa8cc9f99d654486, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1653758097}
     - targetCorrespondingSourceObject: {fileID: 7917674758240283208, guid: 77e7c27b2c5525e4aa8cc9f99d654486, type: 3}
       insertIndex: -1
       addedObject: {fileID: 729441611}
@@ -9125,6 +9178,65 @@ MonoBehaviour:
   m_Active: 1
   m_MoveSpeed: 2.5
   m_Caster: {fileID: 0}
+--- !u!114 &1373153122
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1373153107}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6a740d035ca89f747a68f55376aaf3db, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RuneArena.Player.DamageFeedback
+  m_Vignette: {fileID: 0}
+  m_Color: {r: 0.8, g: 0, b: 0, a: 1}
+  m_Aperture: 0.65
+  m_Feathering: 0.4
+  m_Hold: 0.12
+  m_FadeOut: 0.4
+--- !u!114 &1373153123
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1373153107}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 98d7ec436e1ae6d4fa842f32644640c2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RuneArena.Player.PlayerMana
+  m_Easy:
+    max: 100
+    regen: 5
+  m_Normal:
+    max: 85
+    regen: 4
+  m_Hard:
+    max: 70
+    regen: 3
+  m_ExhaustTime: 5
+  m_ExhaustRegen: 0.5
+--- !u!114 &1373153124
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1373153107}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 994d4e8ba9aa83449aea1bb6aef32367, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RuneArena.Player.PlayerMovement
+  m_MoveProvider: {fileID: 0}
+  m_ForwardSpeed: 3
+  m_SideSpeed: 1.8
+  m_BackSpeed: 1.8
+  m_DrawingMultiplier: 0.5
+  m_SpeedChange: 6
 --- !u!1 &1393045263
 GameObject:
   m_ObjectHideFlags: 0
@@ -9627,6 +9739,31 @@ ReflectionProbe:
   m_UseOcclusionCulling: 1
   m_Importance: 1
   m_CustomBakedTexture: {fileID: 0}
+--- !u!1 &1653758092 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 7917674758919744183, guid: 77e7c27b2c5525e4aa8cc9f99d654486, type: 3}
+  m_PrefabInstance: {fileID: 1373153106}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1653758097
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1653758092}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0e8483bc94206c34180cd95ffa284182, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RuneArena.Player.WristDisplay
+  m_LocalPosition: {x: 0, y: 0.035, z: -0.1}
+  m_LocalRotation: {x: 45, y: 0, z: 0}
+  m_PinToViewInEditor: 1
+  m_ViewPosition: {x: -0.13, y: -0.09, z: 0.4}
+  m_Background: {r: 0.1, g: 0.1, b: 0.1, a: 1}
+  m_HealthColor: {r: 0.85, g: 0.2, b: 0.2, a: 1}
+  m_ManaColor: {r: 0.25, g: 0.5, b: 1, a: 1}
+  m_ExhaustedColor: {r: 0.45, g: 0.35, b: 0.6, a: 1}
 --- !u!1 &1703568385
 GameObject:
   m_ObjectHideFlags: 0
