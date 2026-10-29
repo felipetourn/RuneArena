@@ -45,7 +45,8 @@ namespace RuneArena.Enemies.Editor
 
             int enemyLayer = Mathf.Max(LayerMask.NameToLayer("Enemy"), 0);
             BuildHealer(enemyLayer, LayerMask.GetMask("Wall"));
-            BuildBoss(enemyLayer, projectile.GetComponent<EnemyProjectile>());
+            var melee = AssetDatabase.LoadAssetAtPath<GameObject>($"{k_PrefabFolder}/Melee Enemy.prefab");
+            BuildBoss(enemyLayer, projectile.GetComponent<EnemyProjectile>(), melee != null ? melee.GetComponent<Enemy>() : null);
 
             AssetDatabase.SaveAssets();
             Debug.Log($"Healer and boss created in {k_PrefabFolder}");
@@ -71,7 +72,7 @@ namespace RuneArena.Enemies.Editor
             Save(root);
         }
 
-        static void BuildBoss(int layer, EnemyProjectile projectile)
+        static void BuildBoss(int layer, EnemyProjectile projectile, Enemy minion)
         {
             Material material = GetMaterial("Enemy Boss", new Color(0.35f, 0.15f, 0.45f));
             GameObject root = GroundRoot("Boss Enemy", layer, 1.5f, out Renderer body, material);
@@ -101,6 +102,10 @@ namespace RuneArena.Enemies.Editor
             so.FindProperty("m_KnockbackResistance").floatValue = 0.7f;
             so.FindProperty("m_Projectile").objectReferenceValue = projectile;
             so.FindProperty("m_Muzzle").objectReferenceValue = muzzle.transform;
+            so.FindProperty("m_Minion").objectReferenceValue = minion;
+            so.FindProperty("m_BarScale").floatValue = 2.5f;
+            so.FindProperty("m_AlwaysShowBar").boolValue = true;
+            so.FindProperty("m_DisplayName").stringValue = "Jefe";
             so.ApplyModifiedPropertiesWithoutUndo();
             Save(root);
         }

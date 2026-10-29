@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using RuneArena.Enemies;
 using RuneArena.Player;
 using RuneArena.Strokes;
 using RuneArena.Waves;
@@ -261,12 +262,27 @@ namespace RuneArena.Game
 
         void OnPlayerDied()
         {
+            ClearArena();
+
             if (Score > Best)
             {
                 PlayerPrefs.SetInt(k_BestKey + GameSession.Difficulty, Score);
                 PlayerPrefs.Save();
             }
             Enter(GameState.GameOver);
+        }
+
+        // Out of the way of the game over menu: enemies, their shots and anything they left behind.
+        void ClearArena()
+        {
+            if (m_Spawner != null)
+                m_Spawner.StopWaves();
+            foreach (Enemy enemy in new List<Enemy>(Enemy.All))
+                enemy.Despawn();
+            foreach (EnemyProjectile shot in FindObjectsByType<EnemyProjectile>(FindObjectsSortMode.None))
+                Destroy(shot.gameObject);
+            foreach (Pickups.Pickup pickup in FindObjectsByType<Pickups.Pickup>(FindObjectsSortMode.None))
+                Destroy(pickup.gameObject);
         }
 
         void Reload()

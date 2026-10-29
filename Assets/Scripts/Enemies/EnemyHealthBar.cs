@@ -12,8 +12,8 @@ namespace RuneArena.Enemies
         static readonly int k_BaseColor = Shader.PropertyToID("_BaseColor");
         static Material s_Material;
 
-        const float k_Width = 0.8f;
-        const float k_Height = 0.07f;
+        const float k_BaseWidth = 0.8f;
+        const float k_BaseHeight = 0.07f;
         const float k_Margin = 0.3f;
         const float k_TrailHold = 0.35f;
         const float k_TrailSpeed = 1.2f;
@@ -32,6 +32,8 @@ namespace RuneArena.Enemies
         Renderer m_TrailRenderer;
         MaterialPropertyBlock m_Block;
         float m_TrailValue = 1f;
+        float m_Width = k_BaseWidth;
+        float m_Height = k_BaseHeight;
         float m_TrailMovesAt;
 
         void Awake()
@@ -74,25 +76,41 @@ namespace RuneArena.Enemies
             foreach (Renderer r in GetComponentsInChildren<Renderer>())
                 top = Mathf.Max(top, r.bounds.max.y - transform.position.y);
 
+            m_Width = k_BaseWidth * m_Enemy.BarScale;
+            m_Height = k_BaseHeight * Mathf.Min(m_Enemy.BarScale, 1.6f);
+
             m_Root = new GameObject("Health Bar").transform;
             m_Root.SetParent(transform, false);
             m_Root.localPosition = Vector3.up * (top + k_Margin);
 
-            Part("Background", k_Width, 0.01f, k_Background);
-            m_Trail = Part("Trail", k_Width, 0.015f, k_NormalTrail);
+            Part("Background", m_Width, 0.01f, k_Background);
+            m_Trail = Part("Trail", m_Width, 0.015f, k_NormalTrail);
             m_TrailRenderer = m_Trail.GetComponent<Renderer>();
-            m_Fill = Part("Fill", k_Width, 0.02f, k_Fill);
+            m_Fill = Part("Fill", m_Width, 0.02f, k_Fill);
 
             var level = new GameObject("Level");
             level.transform.SetParent(m_Root, false);
-            level.transform.localPosition = new Vector3(-k_Width * 0.5f - 0.12f, 0f, 0f);
+            level.transform.localPosition = new Vector3(-m_Width * 0.5f - 0.12f, 0f, 0f);
             var text = level.AddComponent<TextMeshPro>();
             text.text = m_Enemy.Level.ToString();
             text.fontSize = 1.2f;
             text.alignment = TextAlignmentOptions.Right;
             text.rectTransform.sizeDelta = new Vector2(0.3f, 0.1f);
 
-            m_Root.gameObject.SetActive(false);
+            if (!string.IsNullOrEmpty(m_Enemy.DisplayName))
+            {
+                var title = new GameObject("Name");
+                title.transform.SetParent(m_Root, false);
+                title.transform.localPosition = new Vector3(0f, m_Height + 0.12f, 0f);
+                var label = title.AddComponent<TextMeshPro>();
+                label.text = m_Enemy.DisplayName;
+                label.fontSize = 2.5f;
+                label.fontStyle = FontStyles.Bold;
+                label.alignment = TextAlignmentOptions.Center;
+                label.rectTransform.sizeDelta = new Vector2(m_Width, 0.3f);
+            }
+
+            m_Root.gameObject.SetActive(m_Enemy.AlwaysShowBar);
         }
 
         void LateUpdate()
@@ -123,13 +141,13 @@ namespace RuneArena.Enemies
             DamageNumber.Spawn(m_Root.position, amount, kind, m_Head);
         }
 
-        static void Set(Transform bar, float fraction)
+        void Set(Transform bar, float fraction)
         {
             fraction = Mathf.Clamp01(fraction);
             Vector3 scale = bar.localScale;
-            scale.x = Mathf.Max(k_Width * fraction, 0.0001f);
+            scale.x = Mathf.Max(m_Width * fraction, 0.0001f);
             bar.localScale = scale;
-            bar.localPosition = new Vector3(-k_Width * 0.5f + scale.x * 0.5f, 0f, 0f);
+            bar.localPosition = new Vector3(-m_Width * 0.5f + scale.x * 0.5f, 0f, 0f);
         }
 
         // Thicker parts sit in front of thinner ones from either side.
@@ -139,7 +157,7 @@ namespace RuneArena.Enemies
             go.name = name;
             Destroy(go.GetComponent<Collider>());
             go.transform.SetParent(m_Root, false);
-            go.transform.localScale = new Vector3(width, k_Height, depth);
+            go.transform.localScale = new Vector3(width, m_Height, depth);
 
             var renderer = go.GetComponent<Renderer>();
             if (s_Material != null)

@@ -40,6 +40,13 @@ namespace RuneArena.Enemies
         [SerializeField, Range(0f, 1f)] float m_StunResistance = 0f;
         [SerializeField, Range(0f, 1f)] float m_KnockbackResistance = 0f;
 
+        [Header("Health bar")]
+        [SerializeField] float m_BarScale = 1f;
+        [Tooltip("Show the bar from the start instead of after the first hit.")]
+        [SerializeField] bool m_AlwaysShowBar;
+        [Tooltip("Shown over the bar. Empty for regular enemies.")]
+        [SerializeField] string m_DisplayName;
+
         [Header("Feedback")]
         [SerializeField] Color m_TelegraphColor = new Color(1f, 0.9f, 0.3f);
         [SerializeField] Color m_WetTint = new Color(0.4f, 0.6f, 1f);
@@ -62,6 +69,9 @@ namespace RuneArena.Enemies
         public float MaxHealth => m_MaxHealth;
         public bool IsDead { get; private set; }
         public int Level { get; private set; } = 1;
+        public float BarScale => m_BarScale;
+        public bool AlwaysShowBar => m_AlwaysShowBar;
+        public string DisplayName => m_DisplayName;
         public bool CanBeStunned => Time.time >= m_StunImmuneUntil;
 
         // False while it is still outside the colosseum wall (spawning behind a gate or walking through a door).
@@ -232,6 +242,23 @@ namespace RuneArena.Enemies
 
             m_StatusUntil[i] = Mathf.Max(m_StatusUntil[i], Time.time + duration);
             return true;
+        }
+
+        // Removes it without dying: no death event, no drops. For clearing the arena.
+        public void Despawn()
+        {
+            Destroy(gameObject);
+        }
+
+        // A stun that ignores resistance and immunity, for the enemy's own mistakes (a boss charging into a wall).
+        public void ForceStun(float duration)
+        {
+            if (IsDead)
+                return;
+            int i = (int)EnemyStatus.Stunned;
+            m_StatusUntil[i] = Time.time + duration;
+            m_StunImmuneUntil = m_StatusUntil[i] + m_StunImmunity;
+            Interrupt();
         }
 
         // fraction is how much speed is taken away (0.3 = 30% slower). A stronger slow replaces a weaker one.

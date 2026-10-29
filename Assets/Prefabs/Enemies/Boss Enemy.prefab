@@ -279,6 +279,9 @@ MonoBehaviour:
   m_StunImmunity: 1
   m_StunResistance: 0.5
   m_KnockbackResistance: 0.7
+  m_BarScale: 2.5
+  m_AlwaysShowBar: 1
+  m_DisplayName: Jefe
   m_TelegraphColor: {r: 1, g: 0.9, b: 0.3, a: 1}
   m_WetTint: {r: 0.4, g: 0.6, b: 1, a: 1}
   m_StunnedColor: {r: 0.55, g: 0.55, b: 0.55, a: 1}
@@ -286,21 +289,32 @@ MonoBehaviour:
   m_FlashTime: 0.1
   m_DeathTime: 0.3
   m_RepathInterval: 0.25
+  m_Recover: 1.5
+  m_AngerHealth: 0.5
+  m_AngerSpeed: 1.3
+  m_AngerTime: 0.7
+  m_ChargeWindUp: 1.2
+  m_ChargeSpeed: 12
+  m_ChargeDistance: 14
+  m_ChargeDamage: 25
+  m_ChargeHitRadius: 1.6
+  m_WallStun: 2.5
+  m_ChargeColor: {r: 0.9, g: 0.35, b: 0.1, a: 1}
   m_SlamRange: 3
   m_SlamRadius: 3.5
   m_SlamDamage: 30
   m_SlamWindUp: 1.5
-  m_SlamCooldown: 3
+  m_SlamApproach: 3
   m_SlamColor: {r: 0.8, g: 0.1, b: 0.1, a: 1}
   m_Projectile: {fileID: 4781129896438912589, guid: ccb8977195fe6a04eb92684f2fc6c8e3, type: 3}
   m_Muzzle: {fileID: 1919398054712731513}
   m_Shots: 3
   m_Spread: 12
+  m_Bursts: 2
+  m_BurstGap: 0.5
   m_ShotDamage: 12
   m_ShotSpeed: 7
   m_VolleyWindUp: 1.2
-  m_VolleyCooldown: 4.5
-  m_VolleyMinDistance: 6
-  m_AngerHealth: 0.5
-  m_AngerSpeed: 1.3
-  m_AngerCooldown: 0.7
+  m_Minion: {fileID: 3049992508773306487, guid: 79135dfe4a7024a45a193a9ecf7c1ed1, type: 3}
+  m_MinionCount: 2
+  m_SummonWindUp: 1

@@ -99,6 +99,9 @@ MonoBehaviour:
   m_StunImmunity: 1
   m_StunResistance: 0
   m_KnockbackResistance: 0
+  m_BarScale: 1
+  m_AlwaysShowBar: 0
+  m_DisplayName: 
   m_TelegraphColor: {r: 1, g: 0.9, b: 0.3, a: 1}
   m_WetTint: {r: 0.4, g: 0.6, b: 1, a: 1}
   m_StunnedColor: {r: 0.55, g: 0.55, b: 0.55, a: 1}

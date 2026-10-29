@@ -108,6 +108,11 @@ namespace RuneArena.Waves
                 StartWaves();
         }
 
+        public void StopWaves()
+        {
+            StopAllCoroutines();
+        }
+
         public void StartWaves()
         {
             StopAllCoroutines();
@@ -206,15 +211,25 @@ namespace RuneArena.Waves
             while (!gate.IsOpen)
                 yield return null;
 
-            Enemy enemy = Instantiate(prefab, point.position, point.rotation);
+            Enemy enemy = Track(Instantiate(prefab, point.position, point.rotation));
+            gate.LetThrough(enemy);
+            gate.Open(m_GateHold);
+        }
+
+        // For enemies that appear inside the arena mid-wave, like a boss's minions. They count for the wave.
+        public Enemy SpawnExtra(Enemy prefab, Vector3 position, Quaternion rotation)
+        {
+            return Track(Instantiate(prefab, position, rotation));
+        }
+
+        Enemy Track(Enemy enemy)
+        {
             DifficultyScale scale = m_Difficulty == Difficulty.Hard ? m_Hard : m_Difficulty == Difficulty.Normal ? m_Normal : m_Easy;
             enemy.ApplyDifficulty(scale.speed, scale.damage, scale.health);
             enemy.SetLevel(CurrentStage, m_PerLevel);
-            gate.LetThrough(enemy);
-            gate.Open(m_GateHold);
-
             Alive++;
             enemy.Died += OnEnemyDied;
+            return enemy;
         }
 
         void OnEnemyDied(Enemy enemy)
