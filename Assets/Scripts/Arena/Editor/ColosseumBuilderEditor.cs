@@ -1,7 +1,9 @@
 using System.Collections.Generic;
 using System.IO;
+using Unity.AI.Navigation;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.AI;
 
 namespace RuneArena.Arena.Editor
 {
@@ -72,6 +74,14 @@ namespace RuneArena.Arena.Editor
                 gate.transform.localScale = new Vector3(builder.DoorWidth, builder.DoorHeight, k_GateDepth);
                 gate.GetComponent<MeshRenderer>().sharedMaterial = builder.GateMaterial;
 
+                // Left out of the NavMesh bake; it blocks paths through its obstacle only while closed.
+                gate.AddComponent<NavMeshModifier>().ignoreFromBuild = true;
+                var obstacle = gate.AddComponent<NavMeshObstacle>();
+                obstacle.shape = NavMeshObstacleShape.Box;
+                obstacle.size = Vector3.one;
+                obstacle.carving = true;
+                obstacle.carveOnlyStationary = false;
+
                 if (builder.OutsideDepth > 0f)
                 {
                     GameObject floor = GameObject.CreatePrimitive(PrimitiveType.Cube);
@@ -87,10 +97,63 @@ namespace RuneArena.Arena.Editor
                 var spawn = new GameObject("SpawnPoint");
                 spawn.transform.SetParent(door.transform, false);
                 spawn.transform.localPosition = new Vector3(0f, 0f, -outsideCenter);
+
+                door.AddComponent<ArenaGate>().Setup(gate.transform, spawn.transform);
             }
+
+            BuildPillars(builder, root, wallLayer);
 
             EditorUtility.SetDirty(root.gameObject);
             UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(root.gameObject.scene);
+        }
+
+        // Round pillars with a wider base and cap. They give cover: in the Wall layer, they stop enemy shots
+        // and spells, and the NavMesh goes around them.
+        static void BuildPillars(ColosseumBuilder builder, Transform root, int layer)
+        {
+            if (builder.PillarCount == 0)
+                return;
+
+            var pillars = new GameObject("Pillars");
+            Undo.RegisterCreatedObjectUndo(pillars, "Build Colosseum");
+            pillars.transform.SetParent(root, false);
+
+            float w = builder.PillarWidth;
+            float h = builder.PillarHeight;
+            float trim = Mathf.Min(0.3f, h * 0.15f);
+
+            for (int i = 0; i < builder.PillarCount; i++)
+            {
+                float angle = (builder.PillarAngle + i * 360f / builder.PillarCount) * Mathf.Deg2Rad;
+                var outward = new Vector3(Mathf.Sin(angle), 0f, Mathf.Cos(angle));
+
+                var pillar = new GameObject($"Pillar {i}");
+                pillar.transform.SetParent(pillars.transform, false);
+                pillar.transform.localPosition = outward * builder.PillarDistance;
+                pillar.transform.localRotation = Quaternion.LookRotation(-outward);
+
+                PillarPart(pillar.transform, "Base", new Vector3(w * 1.3f, trim, w * 1.3f), trim * 0.5f, layer, builder.WallMaterial);
+                PillarPart(pillar.transform, "Shaft", new Vector3(w, h - 2f * trim, w), h * 0.5f, layer, builder.WallMaterial);
+                PillarPart(pillar.transform, "Cap", new Vector3(w * 1.3f, trim, w * 1.3f), h - trim * 0.5f, layer, builder.WallMaterial);
+            }
+        }
+
+        // size is diameter, height, diameter.
+        static void PillarPart(Transform parent, string name, Vector3 size, float y, int layer, Material material)
+        {
+            GameObject part = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            part.name = name;
+            part.layer = layer;
+            part.isStatic = true;
+            part.transform.SetParent(parent, false);
+            part.transform.localPosition = new Vector3(0f, y, 0f);
+            // The built-in cylinder is 2 units tall.
+            part.transform.localScale = new Vector3(size.x, size.y * 0.5f, size.z);
+            part.GetComponent<MeshRenderer>().sharedMaterial = material;
+
+            // Its default capsule collider rounds off the flat top and bottom.
+            Object.DestroyImmediate(part.GetComponent<Collider>());
+            part.AddComponent<MeshCollider>().convex = true;
         }
 
         static Mesh SaveMesh(Mesh built, string path)

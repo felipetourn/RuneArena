@@ -84,7 +84,10 @@ namespace RuneArena.Strokes
             }
 
             bool useCnn = m_UseCnn && m_Cnn != null;
+            // Recognition details are for recording sessions; while playing they're just clutter.
             if (m_ResultText != null)
+                m_ResultText.gameObject.SetActive(recorder.IsSaving);
+            if (m_ResultText != null && recorder.IsSaving)
             {
                 string text = Line(!useCnn, "P", pLabel, pBest, pScore, pMs);
                 if (m_Cnn != null)

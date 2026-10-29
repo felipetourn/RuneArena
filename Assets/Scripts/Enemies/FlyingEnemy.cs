@@ -9,6 +9,7 @@ namespace RuneArena.Enemies
     {
         enum State
         {
+            Enter,
             Orbit,
             WindUp,
             Dive,
@@ -21,6 +22,12 @@ namespace RuneArena.Enemies
         [Tooltip("Height above the arena floor while circling.")]
         [SerializeField] float m_Altitude = 3.5f;
         [SerializeField] float m_OrbitRadius = 7f;
+
+        [Header("Entry")]
+        [Tooltip("It comes in through a door at this height, then climbs.")]
+        [SerializeField] float m_EntryHeight = 1f;
+        [Tooltip("Seconds after getting inside before it starts climbing.")]
+        [SerializeField] float m_ClimbDelay = 0.5f;
 
         [Header("Dive")]
         [SerializeField] float m_Damage = 10f;
@@ -39,6 +46,8 @@ namespace RuneArena.Enemies
         Vector3 m_ArenaCenter;
         float m_ArenaLimit = float.PositiveInfinity;
         float m_FloorY;
+        bool m_Entered;
+        float m_EnteredAt;
 
         protected override void Start()
         {
@@ -61,8 +70,15 @@ namespace RuneArena.Enemies
 
             switch (m_State)
             {
+                case State.Enter:
+                    var low = new Vector3(m_ArenaCenter.x, m_FloorY + m_EntryHeight, m_ArenaCenter.z);
+                    Steer(low, m_Speed * SpeedMultiplier, deltaTime);
+                    if (m_Entered && Time.time >= m_EnteredAt + m_ClimbDelay)
+                        m_State = State.Orbit;
+                    break;
+
                 case State.Orbit:
-                    Steer(OrbitPoint(head), m_Speed, deltaTime);
+                    Steer(OrbitPoint(head), m_Speed * SpeedMultiplier, deltaTime);
                     if (Time.time >= m_ReadyAt)
                         Enter(State.WindUp, m_WindUp);
                     break;
@@ -77,10 +93,10 @@ namespace RuneArena.Enemies
                     break;
 
                 case State.Dive:
-                    m_Velocity = (m_DiveTarget - transform.position).normalized * m_DiveSpeed;
+                    m_Velocity = (m_DiveTarget - transform.position).normalized * (m_DiveSpeed * SpeedMultiplier);
                     if ((transform.position - head).sqrMagnitude <= m_HitRadius * m_HitRadius)
                     {
-                        Player.Damage(m_Damage);
+                        Player.Damage(m_Damage * DamageMultiplier);
                         Enter(State.Recover, m_RecoverTime);
                     }
                     else if ((transform.position - m_DiveTarget).sqrMagnitude < 0.25f || Time.time >= m_StateUntil)
@@ -92,7 +108,7 @@ namespace RuneArena.Enemies
                 case State.Recover:
                     Vector3 away = transform.position - head;
                     away.y = 0f;
-                    Steer(transform.position + away.normalized * 3f + Vector3.up * 3f, m_Speed, deltaTime);
+                    Steer(transform.position + away.normalized * 3f + Vector3.up * 3f, m_Speed * SpeedMultiplier, deltaTime);
                     if (Time.time >= m_StateUntil)
                     {
                         m_State = State.Orbit;
@@ -102,7 +118,7 @@ namespace RuneArena.Enemies
             }
 
             Move(m_Velocity * deltaTime);
-            Vector3 look = m_State == State.Orbit || m_State == State.Recover ? m_Velocity : head - transform.position;
+            Vector3 look = m_State == State.WindUp || m_State == State.Dive ? head - transform.position : m_Velocity;
             if (look.sqrMagnitude > 1e-4f)
                 transform.rotation = Quaternion.RotateTowards(transform.rotation, Quaternion.LookRotation(look), 360f * deltaTime);
         }
@@ -136,11 +152,17 @@ namespace RuneArena.Enemies
         void Move(Vector3 offset)
         {
             Vector3 p = transform.position + offset;
-            p.y = Mathf.Clamp(p.y, m_FloorY + 0.5f, m_FloorY + m_Altitude + 3f);
+            p.y = Mathf.Clamp(p.y, m_FloorY + 0.5f, Mathf.Max(m_FloorY + m_Altitude + 3f, transform.position.y));
 
+            // Kept inside the colosseum, but only once it is in: it spawns outside and comes through a door.
             Vector3 flat = p - m_ArenaCenter;
             flat.y = 0f;
-            if (flat.magnitude > m_ArenaLimit)
+            if (flat.magnitude <= m_ArenaLimit && !m_Entered)
+            {
+                m_Entered = true;
+                m_EnteredAt = Time.time;
+            }
+            else if (m_Entered && flat.magnitude > m_ArenaLimit)
             {
                 flat = flat.normalized * m_ArenaLimit;
                 p = new Vector3(m_ArenaCenter.x + flat.x, p.y, m_ArenaCenter.z + flat.z);

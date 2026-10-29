@@ -26,7 +26,7 @@ namespace RuneArena.Enemies
                 {
                     // Backing off during the wind-up dodges the hit.
                     if (distance <= m_AttackRange * 1.2f)
-                        Player.Damage(m_Damage);
+                        Player.Damage(m_Damage * DamageMultiplier);
                     m_HitAt = -1f;
                     m_ReadyAt = Time.time + m_Cooldown;
                     Telegraphing = false;

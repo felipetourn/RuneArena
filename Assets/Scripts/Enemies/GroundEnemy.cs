@@ -12,17 +12,21 @@ namespace RuneArena.Enemies
         protected NavMeshAgent Agent { get; private set; }
 
         float m_NextRepath;
+        float m_BaseSpeed;
 
         protected override void Awake()
         {
             base.Awake();
             Agent = GetComponent<NavMeshAgent>();
+            m_BaseSpeed = Agent.speed;
         }
 
         protected sealed override void Tick(float deltaTime)
         {
-            if (Agent.isOnNavMesh)
-                Think(deltaTime);
+            if (!Agent.isOnNavMesh)
+                return;
+            Agent.speed = m_BaseSpeed * SpeedMultiplier;
+            Think(deltaTime);
         }
 
         protected abstract void Think(float deltaTime);

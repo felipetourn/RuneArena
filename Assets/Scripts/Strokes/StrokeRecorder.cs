@@ -57,6 +57,7 @@ namespace RuneArena.Strokes
         public LineRenderer Line => m_Line;
         public Material LineMaterial => m_LineMaterial;
         public bool IsDrawing => m_Drawing;
+        public bool IsSaving => m_SaveStrokes;
 
         readonly List<Vector4> m_Points = new List<Vector4>(k_MaxPoints);
         readonly StringBuilder m_Json = new StringBuilder(16 * 1024);
@@ -340,6 +341,9 @@ namespace RuneArena.Strokes
         void UpdateSaveIndicator()
         {
             m_ShownSaveState = m_SaveStrokes;
+            // The per-rune counts are only useful while recording.
+            if (m_StatusText != null)
+                m_StatusText.gameObject.SetActive(m_SaveStrokes);
             if (m_SaveIndicator == null)
                 return;
 

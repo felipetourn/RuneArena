@@ -86,7 +86,7 @@ namespace RuneArena.Enemies
             Vector3 from = m_Muzzle.position;
             Vector3 direction = (target - from).normalized;
             EnemyProjectile projectile = Instantiate(m_Projectile, from, Quaternion.LookRotation(direction));
-            projectile.Launch(direction * m_ProjectileSpeed, m_Damage, Player);
+            projectile.Launch(direction * m_ProjectileSpeed, m_Damage * DamageMultiplier, Player);
         }
 
         protected override void Interrupt()

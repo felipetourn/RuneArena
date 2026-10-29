@@ -1,4 +1,5 @@
 using System;
+using RuneArena.Arena;
 using RuneArena.Player;
 using UnityEngine;
 
@@ -8,6 +9,7 @@ namespace RuneArena.Enemies
     {
         Wet,
         Stunned,
+        Slowed,
     }
 
     // Shared by every enemy: health, statuses, knockback and color feedback.
@@ -21,11 +23,14 @@ namespace RuneArena.Enemies
         [SerializeField] Renderer m_Body;
         [Tooltip("How fast a push slows down.")]
         [SerializeField] float m_KnockbackDrag = 6f;
+        [Tooltip("Seconds after a stun ends during which it can't be stunned again.")]
+        [SerializeField] float m_StunImmunity = 1f;
 
         [Header("Feedback")]
         [SerializeField] Color m_TelegraphColor = new Color(1f, 0.9f, 0.3f);
         [SerializeField] Color m_WetTint = new Color(0.4f, 0.6f, 1f);
         [SerializeField] Color m_StunnedColor = new Color(0.55f, 0.55f, 0.55f);
+        [SerializeField] Color m_StunImmuneTint = new Color(0.9f, 0.9f, 1f);
         [SerializeField] float m_FlashTime = 0.1f;
         [SerializeField] float m_DeathTime = 0.3f;
 
@@ -34,14 +39,30 @@ namespace RuneArena.Enemies
         public float Health { get; private set; }
         public float MaxHealth => m_MaxHealth;
         public bool IsDead { get; private set; }
+        public bool CanBeStunned => Time.time >= m_StunImmuneUntil;
+
+        // False while it is still outside the colosseum wall (spawning behind a gate or walking through a door).
+        // Spells can't touch it until it is in, so the player can't farm enemies at the gates.
+        public bool IsInsideArena => m_ArenaRadius <= 0f || FlatDistance(transform.position, m_ArenaCenter) < m_ArenaRadius;
+
+        // 1 normally, lower while slowed. Movement code multiplies its speed by this.
+        public float SpeedMultiplier => (HasStatus(EnemyStatus.Slowed) ? 1f - m_Slow : 1f) * m_SpeedScale;
 
         protected PlayerHealth Player { get; private set; }
+        // Attacks multiply their damage by this. Set by the difficulty.
+        protected float DamageMultiplier => m_DamageScale;
         protected bool Telegraphing { get; set; }
 
         readonly float[] m_StatusUntil = new float[k_StatusCount];
         MaterialPropertyBlock m_Block;
         Color m_Color;
         Vector3 m_Knockback;
+        float m_Slow;
+        float m_StunImmuneUntil;
+        float m_SpeedScale = 1f;
+        float m_DamageScale = 1f;
+        Vector3 m_ArenaCenter;
+        float m_ArenaRadius;
         float m_FlashUntil;
         float m_DiedAt;
 
@@ -57,6 +78,13 @@ namespace RuneArena.Enemies
         protected virtual void Start()
         {
             Player = FindAnyObjectByType<PlayerHealth>();
+
+            var arena = FindAnyObjectByType<ColosseumBuilder>();
+            if (arena != null)
+            {
+                m_ArenaCenter = arena.transform.position;
+                m_ArenaRadius = arena.Radius - arena.Thickness;
+            }
         }
 
         void Update()
@@ -83,6 +111,15 @@ namespace RuneArena.Enemies
             UpdateColor();
         }
 
+        // Call right after spawning. 1 leaves the stat as it is in the prefab.
+        public void ApplyDifficulty(float speed, float damage, float health)
+        {
+            m_SpeedScale = speed;
+            m_DamageScale = damage;
+            m_MaxHealth *= health;
+            Health = m_MaxHealth;
+        }
+
         protected abstract void Tick(float deltaTime);
 
         // Moves the enemy by a knockback offset, respecting how it normally moves.
@@ -100,7 +137,7 @@ namespace RuneArena.Enemies
 
         public void Damage(float amount)
         {
-            if (IsDead)
+            if (IsDead || !IsInsideArena)
                 return;
 
             Health -= amount;
@@ -112,16 +149,41 @@ namespace RuneArena.Enemies
         // Velocity in m/s, applied horizontally and fading out.
         public void Push(Vector3 velocity)
         {
+            if (!IsInsideArena)
+                return;
             velocity.y = 0f;
             m_Knockback += velocity;
         }
 
-        public void ApplyStatus(EnemyStatus status, float duration)
+        // Returns false if the status didn't take, which only happens to a stun right after another one.
+        public bool ApplyStatus(EnemyStatus status, float duration)
         {
+            if (!IsInsideArena)
+                return false;
             int i = (int)status;
-            m_StatusUntil[i] = Mathf.Max(m_StatusUntil[i], Time.time + duration);
             if (status == EnemyStatus.Stunned)
+            {
+                if (!CanBeStunned)
+                    return false;
+                m_StatusUntil[i] = Time.time + duration;
+                m_StunImmuneUntil = m_StatusUntil[i] + m_StunImmunity;
                 Interrupt();
+                return true;
+            }
+
+            m_StatusUntil[i] = Mathf.Max(m_StatusUntil[i], Time.time + duration);
+            return true;
+        }
+
+        // fraction is how much speed is taken away (0.3 = 30% slower). A stronger slow replaces a weaker one.
+        public void ApplySlow(float fraction, float duration)
+        {
+            if (!IsInsideArena)
+                return;
+            fraction = Mathf.Clamp01(fraction);
+            if (!HasStatus(EnemyStatus.Slowed) || fraction >= m_Slow)
+                m_Slow = fraction;
+            ApplyStatus(EnemyStatus.Slowed, duration);
         }
 
         public void ClearStatus(EnemyStatus status)
@@ -142,6 +204,9 @@ namespace RuneArena.Enemies
 
         [ContextMenu("Test/Wet 4s")]
         void TestWet() => ApplyStatus(EnemyStatus.Wet, 4f);
+
+        [ContextMenu("Test/Slow 50% 5s")]
+        void TestSlow() => ApplySlow(0.5f, 5f);
 
         [ContextMenu("Test/Push Back")]
         void TestPush()
@@ -169,6 +234,8 @@ namespace RuneArena.Enemies
                 color = Color.Lerp(color, m_WetTint, 0.5f);
             if (HasStatus(EnemyStatus.Stunned))
                 color = m_StunnedColor;
+            else if (!CanBeStunned)
+                color = Color.Lerp(color, m_StunImmuneTint, 0.4f);
             if (Telegraphing)
                 color = Color.Lerp(color, m_TelegraphColor, 0.5f + 0.5f * Mathf.Sin(Time.time * 25f));
             if (Time.time < m_FlashUntil)

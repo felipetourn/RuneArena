@@ -1,5 +1,7 @@
 using System;
 using System.Collections;
+using RuneArena.Player;
+using RuneArena.Spells;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -7,23 +9,12 @@ namespace RuneArena.Strokes
 {
     // Recognized rune -> charged (colored, follows the player) -> launched with a push or the grip.
     // Pulling the trigger again throws the charged rune away and starts a new one.
+    // Each rune casts the RuneSpell with the same label found on this object.
     [RequireComponent(typeof(StrokeRecorder), typeof(RuneRecognizer))]
     public class RuneCaster : MonoBehaviour
     {
-        [Serializable]
-        struct RuneColor
-        {
-            public string label;
-            public Color color;
-        }
-
         [Tooltip("Grip or A on the right controller.")]
         [SerializeField] InputActionProperty m_LaunchAction = CreateLaunchAction();
-
-        [Header("Aim")]
-        [Tooltip("The rune flies from where it was drawn towards what the right controller points at.")]
-        [SerializeField] float m_AimDistance = 50f;
-        [SerializeField] LayerMask m_AimMask = ~0;
 
         [Header("Push to launch")]
         [Tooltip("Forward speed of the controller (m/s, relative to the player) that counts as a push.")]
@@ -34,17 +25,6 @@ namespace RuneArena.Strokes
         [SerializeField] float m_ChargeTimeout = 4f;
         [SerializeField] float m_FadeTime = 0.3f;
         [SerializeField] Color m_RejectColor = new Color(1f, 0.2f, 0.2f);
-        [SerializeField] RuneColor[] m_Colors =
-        {
-            new RuneColor { label = "square", color = new Color(0.6f, 0.4f, 0.2f) },
-            new RuneColor { label = "circle", color = new Color(1f, 0.45f, 0.1f) },
-            new RuneColor { label = "lightning", color = new Color(1f, 0.95f, 0.3f) },
-            new RuneColor { label = "triangle", color = new Color(0.2f, 0.6f, 1f) },
-        };
-
-        [Header("Projectile")]
-        [SerializeField] float m_ProjectileSpeed = 8f;
-        [SerializeField] float m_ProjectileLifetime = 3f;
 
         // Label, start position and direction, in world space.
         public event Action<string, Vector3, Vector3> RuneLaunched;
@@ -53,6 +33,8 @@ namespace RuneArena.Strokes
 
         StrokeRecorder m_Recorder;
         RuneRecognizer m_Recognizer;
+        RuneSpell[] m_Spells;
+        PlayerHealth m_Player;
         string m_Charged;
         float m_ChargedAt;
         Vector3 m_PrevTip;
@@ -63,6 +45,12 @@ namespace RuneArena.Strokes
         {
             m_Recorder = GetComponent<StrokeRecorder>();
             m_Recognizer = GetComponent<RuneRecognizer>();
+            m_Spells = GetComponents<RuneSpell>();
+        }
+
+        void Start()
+        {
+            m_Player = FindAnyObjectByType<PlayerHealth>();
         }
 
         void OnEnable()
@@ -137,41 +125,20 @@ namespace RuneArena.Strokes
             string label = m_Charged;
             m_Charged = null;
 
-            LineRenderer source = m_Recorder.Line;
-            var positions = new Vector3[source.positionCount];
+            LineRenderer line = m_Recorder.Line;
             Vector3 center = Vector3.zero;
-            for (int i = 0; i < positions.Length; i++)
-            {
-                positions[i] = source.transform.TransformPoint(source.GetPosition(i));
-                center += positions[i];
-            }
-            center /= positions.Length;
-            for (int i = 0; i < positions.Length; i++)
-                positions[i] -= center;
-
-            var go = new GameObject($"Rune ({label})");
-            go.transform.position = center;
-
-            var line = go.AddComponent<LineRenderer>();
-            line.useWorldSpace = false;
-            line.widthMultiplier = source.widthMultiplier;
-            line.sharedMaterial = source.sharedMaterial;
-            line.numCapVertices = source.numCapVertices;
-            line.numCornerVertices = source.numCornerVertices;
-            line.shadowCastingMode = source.shadowCastingMode;
-            line.receiveShadows = false;
-            line.positionCount = positions.Length;
-            line.SetPositions(positions);
-
-            var block = new MaterialPropertyBlock();
-            source.GetPropertyBlock(block);
-            line.SetPropertyBlock(block);
-
-            Vector3 direction = (AimPoint(aim) - center).normalized;
-            go.AddComponent<RuneProjectile>().Launch(direction * m_ProjectileSpeed, m_ProjectileLifetime);
+            for (int i = 0; i < line.positionCount; i++)
+                center += line.transform.TransformPoint(line.GetPosition(i));
+            center /= Mathf.Max(line.positionCount, 1);
             m_Recorder.ClearLine();
 
-            RuneLaunched?.Invoke(label, center, direction);
+            RuneSpell spell = SpellFor(label);
+            if (spell != null)
+                spell.Cast(new SpellCast(center, aim, m_Player, m_Recorder.LineMaterial));
+            else
+                Debug.LogWarning($"RuneCaster: no RuneSpell for '{label}' on {name}", this);
+
+            RuneLaunched?.Invoke(label, center, aim.direction);
         }
 
         void Discard(Color color)
@@ -194,13 +161,6 @@ namespace RuneArena.Strokes
             m_Fade = null;
         }
 
-        Vector3 AimPoint(Ray aim)
-        {
-            if (Physics.Raycast(aim, out RaycastHit hit, m_AimDistance, m_AimMask, QueryTriggerInteraction.Ignore))
-                return hit.point;
-            return aim.GetPoint(m_AimDistance);
-        }
-
         static InputActionProperty CreateLaunchAction()
         {
             var action = new InputAction("Launch", InputActionType.Button);
@@ -214,14 +174,20 @@ namespace RuneArena.Strokes
             return m_Recorder.Origin.InverseTransformPoint(m_Recorder.Tip.position);
         }
 
+        RuneSpell SpellFor(string label)
+        {
+            foreach (RuneSpell spell in m_Spells)
+            {
+                if (spell.Label == label)
+                    return spell;
+            }
+            return null;
+        }
+
         Color ColorFor(string label)
         {
-            foreach (RuneColor entry in m_Colors)
-            {
-                if (entry.label == label)
-                    return entry.color;
-            }
-            return Color.white;
+            RuneSpell spell = SpellFor(label);
+            return spell != null ? spell.Color : Color.white;
         }
     }
 }

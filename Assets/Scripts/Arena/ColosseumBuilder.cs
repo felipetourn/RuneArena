@@ -9,7 +9,7 @@ namespace RuneArena.Arena
         [Tooltip("Outer radius in meters.")]
         [SerializeField] float m_Radius = 15f;
         [SerializeField] float m_Thickness = 1f;
-        [SerializeField] float m_Height = 4f;
+        [SerializeField] float m_Height = 5f;
         [Tooltip("Segments around the full circle.")]
         [SerializeField] int m_Segments = 128;
 
@@ -25,6 +25,16 @@ namespace RuneArena.Arena
         [Tooltip("Depth of the floor outside each door, where enemies spawn.")]
         [SerializeField] float m_OutsideDepth = 3f;
 
+        [Header("Pillars")]
+        [SerializeField] int m_PillarCount = 4;
+        [Tooltip("Distance from the center of the arena.")]
+        [SerializeField] float m_PillarDistance = 9f;
+        [Tooltip("Angle of the first pillar. 45 puts four pillars between four doors.")]
+        [SerializeField] float m_PillarAngle = 45f;
+        [Tooltip("Diameter of the shaft. Base and cap are a bit wider.")]
+        [SerializeField] float m_PillarWidth = 1.2f;
+        [SerializeField] float m_PillarHeight = 4f;
+
         [Header("Materials")]
         [SerializeField] Material m_WallMaterial;
         [SerializeField] Material m_GateMaterial;
@@ -39,6 +49,11 @@ namespace RuneArena.Arena
         public float DoorAngle => m_DoorAngle;
         public int ArchSegments => m_ArchSegments;
         public float OutsideDepth => m_OutsideDepth;
+        public int PillarCount => m_PillarCount;
+        public float PillarDistance => m_PillarDistance;
+        public float PillarAngle => m_PillarAngle;
+        public float PillarWidth => m_PillarWidth;
+        public float PillarHeight => m_PillarHeight;
         public Material WallMaterial { get => m_WallMaterial; set => m_WallMaterial = value; }
         public Material GateMaterial { get => m_GateMaterial; set => m_GateMaterial = value; }
 
@@ -57,6 +72,11 @@ namespace RuneArena.Arena
                 m_DoorWidth = Mathf.Clamp(m_DoorWidth, 0.5f, section - 0.5f);
             }
             m_DoorHeight = Mathf.Clamp(m_DoorHeight, m_DoorWidth * 0.5f, m_Height - 0.25f);
+
+            m_PillarCount = Mathf.Max(m_PillarCount, 0);
+            m_PillarWidth = Mathf.Max(m_PillarWidth, 0.3f);
+            m_PillarHeight = Mathf.Max(m_PillarHeight, 1f);
+            m_PillarDistance = Mathf.Clamp(m_PillarDistance, 0f, m_Radius - m_Thickness - m_PillarWidth);
         }
     }
 }
