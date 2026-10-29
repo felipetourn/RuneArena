@@ -32,6 +32,11 @@ namespace RuneArena.Spells
             m_Spells = GetComponents<RuneSpell>();
             foreach (string label in m_LockedAtStart)
                 m_Locked.Add(label);
+            foreach (RuneSpell spell in m_Spells)
+            {
+                if (spell.StartsLocked)
+                    m_Locked.Add(spell.Label);
+            }
         }
 
         public RuneSpell Find(string label)

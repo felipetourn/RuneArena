@@ -62,9 +62,9 @@ namespace RuneArena.Spells
 
             if (direct != null && !direct.IsDead)
             {
-                Push(direct, point);
                 float damage = Burn(direct, m_Spell.Damage * m_Power, out DamageKind kind);
-                direct.Damage(damage, kind);
+                direct.Damage(damage, kind, m_Spell.Label);
+                Push(direct, point);
             }
 
             RuneSpell.EnemiesInSphere(point, m_Spell.ExplosionRadius * m_ExplosionScale, s_Enemies);
@@ -72,9 +72,20 @@ namespace RuneArena.Spells
             {
                 if (enemy == direct)
                     continue;
-                Push(enemy, point);
                 float splash = Burn(enemy, m_Spell.ExplosionDamage * m_Power, out DamageKind splashKind);
-                enemy.Damage(splash, splashKind);
+                enemy.Damage(splash, splashKind, m_Spell.Label);
+                Push(enemy, point);
+            }
+
+            // Ivy under the explosion burns away.
+            float reach = m_Spell.ExplosionRadius * m_ExplosionScale;
+            for (int i = IvyPatch.All.Count - 1; i >= 0; i--)
+            {
+                IvyPatch patch = IvyPatch.All[i];
+                Vector3 d = patch.Center - point;
+                d.y = 0f;
+                if (d.magnitude <= patch.Radius + reach)
+                    patch.Burn();
             }
 
             GameObject flash = RuneSpell.CreateVisual(PrimitiveType.Sphere, "Fireball Explosion", m_Material, m_Spell.Color);
@@ -83,16 +94,26 @@ namespace RuneArena.Spells
             Destroy(gameObject);
         }
 
-        // Wet enemies take less and dry off.
+        // Water, ice and ivy all take the edge off fire: wet, frozen or entangled enemies take less,
+        // and lose the status. Once, even if several apply.
         float Burn(Enemy enemy, float damage, out DamageKind kind)
         {
             kind = DamageKind.Normal;
-            if (!enemy.HasStatus(EnemyStatus.Wet))
+            bool weakened = false;
+            foreach (EnemyStatus status in k_Quenching)
+            {
+                if (!enemy.HasStatus(status))
+                    continue;
+                enemy.ClearStatus(status);
+                weakened = true;
+            }
+            if (!weakened)
                 return damage;
-            enemy.ClearStatus(EnemyStatus.Wet);
             kind = DamageKind.Weakened;
             return damage * m_Spell.WetMultiplier;
         }
+
+        static readonly EnemyStatus[] k_Quenching = { EnemyStatus.Wet, EnemyStatus.Frozen, EnemyStatus.Entangled };
 
         void Push(Enemy enemy, Vector3 point)
         {

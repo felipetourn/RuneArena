@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using RuneArena.Player;
 using RuneArena.Strokes;
 using TMPro;
@@ -29,6 +30,8 @@ namespace RuneArena.Enemies
         Transform m_Root;
         Transform m_Fill;
         Transform m_Trail;
+        Transform m_ArmorRoot;
+        Transform m_ArmorFill;
         Renderer m_TrailRenderer;
         MaterialPropertyBlock m_Block;
         float m_TrailValue = 1f;
@@ -46,12 +49,32 @@ namespace RuneArena.Enemies
         {
             m_Enemy.Damaged += OnDamaged;
             m_Enemy.Healed += OnHealed;
+            m_Enemy.ArmorHit += OnArmorHit;
+            m_Enemy.ArmorBroken += OnArmorBroken;
         }
 
         void OnDisable()
         {
             m_Enemy.Damaged -= OnDamaged;
             m_Enemy.Healed -= OnHealed;
+            m_Enemy.ArmorHit -= OnArmorHit;
+            m_Enemy.ArmorBroken -= OnArmorBroken;
+        }
+
+        void OnArmorHit(Enemy enemy, float amount)
+        {
+            if (m_Root == null)
+                return;
+            DamageNumber.SpawnText(m_Root.position, Mathf.Max(1, Mathf.RoundToInt(amount)).ToString(), 2f, new Color(0.7f, 0.7f, 0.75f), m_Head);
+        }
+
+        void OnArmorBroken(Enemy enemy)
+        {
+            if (m_Root == null)
+                return;
+            if (m_ArmorRoot != null)
+                m_ArmorRoot.gameObject.SetActive(false);
+            DamageNumber.SpawnText(m_Root.position + Vector3.up * 0.3f, "¡Armadura rota!", 3f, Armor.ColorOf(m_Enemy.Armor), m_Head);
         }
 
         void OnHealed(Enemy enemy, float amount)
@@ -110,11 +133,20 @@ namespace RuneArena.Enemies
                 label.rectTransform.sizeDelta = new Vector2(m_Width, 0.3f);
             }
 
-            m_Root.gameObject.SetActive(m_Enemy.AlwaysShowBar);
+            if (m_Enemy.IsArmored)
+                BuildArmor();
+            // Armored enemies show their armor from the start, so the player knows what to use.
+            m_Root.gameObject.SetActive(m_Enemy.AlwaysShowBar || m_Enemy.IsArmored);
         }
 
         void LateUpdate()
         {
+            // Armor given after spawning (the test menu) still gets its bar.
+            if (m_Root != null && m_ArmorFill == null && m_Enemy.IsArmored)
+            {
+                BuildArmor();
+                m_Root.gameObject.SetActive(true);
+            }
             if (m_Root == null || !m_Root.gameObject.activeSelf)
                 return;
 
@@ -125,6 +157,8 @@ namespace RuneArena.Enemies
 
             Set(m_Fill, health);
             Set(m_Trail, Mathf.Max(m_TrailValue, health));
+            if (m_ArmorFill != null && m_Enemy.MaxArmor > 0f)
+                Set(m_ArmorFill, m_Enemy.ArmorPoints / m_Enemy.MaxArmor);
 
             if (m_Head != null)
                 m_Root.rotation = Quaternion.LookRotation(m_Root.position - m_Head.position);
@@ -147,16 +181,67 @@ namespace RuneArena.Enemies
             Vector3 scale = bar.localScale;
             scale.x = Mathf.Max(m_Width * fraction, 0.0001f);
             bar.localScale = scale;
-            bar.localPosition = new Vector3(-m_Width * 0.5f + scale.x * 0.5f, 0f, 0f);
+            bar.localPosition = new Vector3(-m_Width * 0.5f + scale.x * 0.5f, bar.localPosition.y, 0f);
+        }
+
+        // A bar of the armor's color over the health bar, with the rune that breaks it drawn at its end.
+        void BuildArmor()
+        {
+            Color color = Armor.ColorOf(m_Enemy.Armor);
+            m_ArmorRoot = new GameObject("Armor").transform;
+            m_ArmorRoot.SetParent(m_Root, false);
+            m_ArmorRoot.localPosition = Vector3.up * (m_Height * 1.4f);
+
+            Part("Armor Background", m_Width, 0.01f, k_Background, m_ArmorRoot);
+            m_ArmorFill = Part("Armor Fill", m_Width, 0.02f, color, m_ArmorRoot);
+
+            string label = Armor.Breaker(m_Enemy.Armor);
+            List<Vector2> glyph = null;
+            foreach (var variant in RuneShapes.CreateVariants())
+            {
+                if (variant.Key == label)
+                {
+                    glyph = variant.Value;
+                    break;
+                }
+            }
+            if (glyph == null)
+                return;
+
+            Vector2 min = glyph[0];
+            Vector2 max = glyph[0];
+            foreach (Vector2 p in glyph)
+            {
+                min = Vector2.Min(min, p);
+                max = Vector2.Max(max, p);
+            }
+            Vector2 center = (min + max) * 0.5f;
+            float size = 0.16f / Mathf.Max(max.x - min.x, max.y - min.y);
+
+            var go = new GameObject("Breaker Rune");
+            go.transform.SetParent(m_ArmorRoot, false);
+            go.transform.localPosition = new Vector3(m_Width * 0.5f + 0.14f, 0f, 0f);
+            var line = go.AddComponent<LineRenderer>();
+            line.useWorldSpace = false;
+            line.widthMultiplier = 0.015f;
+            line.positionCount = glyph.Count;
+            for (int i = 0; i < glyph.Count; i++)
+            {
+                Vector2 p = (glyph[i] - center) * size;
+                line.SetPosition(i, new Vector3(p.x, p.y, 0f));
+            }
+            if (s_Material != null)
+                line.sharedMaterial = s_Material;
+            SetColor(line, color);
         }
 
         // Thicker parts sit in front of thinner ones from either side.
-        Transform Part(string name, float width, float depth, Color color)
+        Transform Part(string name, float width, float depth, Color color, Transform parent = null)
         {
             GameObject go = GameObject.CreatePrimitive(PrimitiveType.Cube);
             go.name = name;
             Destroy(go.GetComponent<Collider>());
-            go.transform.SetParent(m_Root, false);
+            go.transform.SetParent(parent != null ? parent : m_Root, false);
             go.transform.localScale = new Vector3(width, m_Height, depth);
 
             var renderer = go.GetComponent<Renderer>();

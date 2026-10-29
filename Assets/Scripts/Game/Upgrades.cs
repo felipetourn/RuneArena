@@ -249,6 +249,8 @@ namespace RuneArena.Game
                 case "lightning": return "Rayo";
                 case "triangle": return "Ola";
                 case "square": return "Pared";
+                case "spiral": return "Hiedra";
+                case "v": return "Hielo";
                 default: return label;
             }
         }

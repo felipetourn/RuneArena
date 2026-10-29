@@ -17,6 +17,11 @@ namespace RuneArena.Enemies
         float m_Born;
         float m_Pop;
 
+        public static void SpawnText(Vector3 position, string text, float size, Color color, Transform head)
+        {
+            Create(position, head, text, size, color).m_Pop = 0.4f;
+        }
+
         public static void SpawnHeal(Vector3 position, float amount, Transform head)
         {
             DamageNumber number = Create(position, head, $"+{Mathf.Max(1, Mathf.RoundToInt(amount))}", 2.6f, new Color(0.3f, 1f, 0.4f));

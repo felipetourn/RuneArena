@@ -38,6 +38,16 @@ namespace RuneArena.Waves
         [Tooltip("A stage is one pass through the Wave Set, ending with its boss. Enemies are as many levels as the stage, " +
                  "and each level above 1 adds this much health and damage.")]
         [SerializeField] float m_PerLevel = 0.3f;
+
+        [Header("Armor")]
+        [Tooltip("Chance for each walking enemy (not bosses) to come armored, once armor types are in play.")]
+        [SerializeField, Range(0f, 1f)] float m_ArmorChance = 0.25f;
+        [Tooltip("Armor points relative to the enemy's max health.")]
+        [SerializeField] float m_ArmorAmount = 0.5f;
+        [Tooltip("Stage from which each type shows up: ice, magma, metal.")]
+        [SerializeField] int m_IceArmorStage = 2;
+        [SerializeField] int m_MagmaArmorStage = 3;
+        [SerializeField] int m_MetalArmorStage = 4;
         [SerializeField] bool m_StartOnPlay = true;
         [SerializeField] float m_StartDelay = 3f;
         [Tooltip("Seconds between the end of a wave and the start of the next one.")]
@@ -80,6 +90,8 @@ namespace RuneArena.Waves
         }
 
         readonly List<Enemy> m_Queue = new List<Enemy>();
+        readonly List<ArmorType> m_ArmorTypes = new List<ArmorType>();
+        readonly HashSet<ArmorType> m_SeenArmor = new HashSet<ArmorType>();
 
         ColosseumBuilder m_Arena;
         ArenaGate[] m_Gates;
@@ -227,9 +239,33 @@ namespace RuneArena.Waves
             DifficultyScale scale = m_Difficulty == Difficulty.Hard ? m_Hard : m_Difficulty == Difficulty.Normal ? m_Normal : m_Easy;
             enemy.ApplyDifficulty(scale.speed, scale.damage, scale.health);
             enemy.SetLevel(CurrentStage, m_PerLevel);
+            RollArmor(enemy);
             Alive++;
             enemy.Died += OnEnemyDied;
             return enemy;
+        }
+
+        void RollArmor(Enemy enemy)
+        {
+            if (enemy is BossEnemy || enemy is FlyingEnemy)
+                return;
+
+            m_ArmorTypes.Clear();
+            if (CurrentStage >= m_IceArmorStage)
+                m_ArmorTypes.Add(ArmorType.Ice);
+            if (CurrentStage >= m_MagmaArmorStage)
+                m_ArmorTypes.Add(ArmorType.Magma);
+            if (CurrentStage >= m_MetalArmorStage)
+                m_ArmorTypes.Add(ArmorType.Metal);
+            if (m_ArmorTypes.Count == 0 || UnityEngine.Random.value >= m_ArmorChance)
+                return;
+
+            ArmorType type = m_ArmorTypes[UnityEngine.Random.Range(0, m_ArmorTypes.Count)];
+            enemy.SetArmor(type, m_ArmorAmount);
+
+            // The first time each type shows up, say what breaks it.
+            if (m_SeenArmor.Add(type))
+                Announce($"Armadura de {Armor.Name(type)}: rompela con {Armor.BreakerName(type)}", 3.5f);
         }
 
         void OnEnemyDied(Enemy enemy)

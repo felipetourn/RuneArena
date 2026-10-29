@@ -48,7 +48,7 @@ namespace RuneArena.Game.Editor
             var so = new SerializedObject(menu);
             so.FindProperty("m_Canvas").objectReferenceValue = canvas;
 
-            GameObject start = Panel(root.transform, "Start Panel", "RuneArena", "Dibujá runas en el aire para lanzar hechizos.\nElegí la dificultad:", out _);
+            GameObject start = Panel(root.transform, "Start Panel", "RuneArena", "Elegí la dificultad:", out _);
             so.FindProperty("m_StartPanel").objectReferenceValue = start;
             so.FindProperty("m_EasyButton").objectReferenceValue = ButtonIn(start, "Fácil");
             so.FindProperty("m_NormalButton").objectReferenceValue = ButtonIn(start, "Normal");
@@ -62,7 +62,7 @@ namespace RuneArena.Game.Editor
             so.FindProperty("m_PauseRestartButton").objectReferenceValue = ButtonIn(pause, "Reiniciar");
             so.FindProperty("m_PauseMenuButton").objectReferenceValue = ButtonIn(pause, "Menú principal");
 
-            GameObject over = Panel(root.transform, "Game Over Panel", "Caíste", "", out TMP_Text overInfo);
+            GameObject over = Panel(root.transform, "Game Over Panel", "Moriste", "", out TMP_Text overInfo);
             so.FindProperty("m_GameOverPanel").objectReferenceValue = over;
             so.FindProperty("m_GameOverInfo").objectReferenceValue = overInfo;
             so.FindProperty("m_RetryButton").objectReferenceValue = ButtonIn(over, "Reintentar");

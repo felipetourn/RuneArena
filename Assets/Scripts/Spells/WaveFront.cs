@@ -47,10 +47,11 @@ namespace RuneArena.Spells
                 if (enemy == null || enemy.IsDead || !m_Hit.Add(enemy))
                     continue;
 
+                // Damage first: it breaks magma armor, so the push and slow then land.
+                enemy.Damage(m_Spell.Damage * m_Power, DamageKind.Normal, m_Spell.Label);
                 enemy.ApplyStatus(EnemyStatus.Wet, m_Spell.Duration);
                 enemy.ApplySlow(m_Spell.Slow(t), m_Spell.Duration);
                 enemy.Push(m_Direction * m_Spell.Push(t));
-                enemy.Damage(m_Spell.Damage * m_Power);
             }
 
             // Breaks when its middle hits the arena wall, a gate or an earth wall. Only the middle,

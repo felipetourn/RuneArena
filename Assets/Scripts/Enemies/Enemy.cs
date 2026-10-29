@@ -21,6 +21,12 @@ namespace RuneArena.Enemies
         Wet,
         Stunned,
         Slowed,
+        // Like a stun: can't move or attack.
+        Frozen,
+        // Standing on ivy. Only matters for fire, which does less to it.
+        Entangled,
+        // Held by roots: can't move, can still attack.
+        Rooted,
     }
 
     // Shared by every enemy: health, statuses, knockback and color feedback.
@@ -39,6 +45,8 @@ namespace RuneArena.Enemies
         [Tooltip("0 takes stuns in full, 1 ignores them. For tougher enemies like the boss.")]
         [SerializeField, Range(0f, 1f)] float m_StunResistance = 0f;
         [SerializeField, Range(0f, 1f)] float m_KnockbackResistance = 0f;
+        [Tooltip("While armored, damage from the wrong spells wears the armor down at this rate instead of hurting.")]
+        [SerializeField, Range(0f, 1f)] float m_ArmorChip = 0.25f;
 
         [Header("Health bar")]
         [SerializeField] float m_BarScale = 1f;
@@ -52,6 +60,8 @@ namespace RuneArena.Enemies
         [SerializeField] Color m_WetTint = new Color(0.4f, 0.6f, 1f);
         [SerializeField] Color m_StunnedColor = new Color(0.55f, 0.55f, 0.55f);
         [SerializeField] Color m_StunImmuneTint = new Color(0.9f, 0.9f, 1f);
+        [SerializeField] Color m_FrozenColor = new Color(0.65f, 0.9f, 1f);
+        [SerializeField] Color m_EntangledTint = new Color(0.3f, 0.75f, 0.3f);
         [SerializeField] float m_FlashTime = 0.1f;
         [SerializeField] float m_DeathTime = 0.3f;
 
@@ -62,6 +72,9 @@ namespace RuneArena.Enemies
 
         public event Action<Enemy> Died;
         public event Action<Enemy, float> Healed;
+        // Armor worn down by a hit that couldn't break it.
+        public event Action<Enemy, float> ArmorHit;
+        public event Action<Enemy> ArmorBroken;
         // Amount actually taken and what kind of hit it was.
         public event Action<Enemy, float, DamageKind> Damaged;
 
@@ -72,14 +85,22 @@ namespace RuneArena.Enemies
         public float BarScale => m_BarScale;
         public bool AlwaysShowBar => m_AlwaysShowBar;
         public string DisplayName => m_DisplayName;
+
+        public ArmorType Armor { get; private set; }
+        public float ArmorPoints { get; private set; }
+        public float MaxArmor { get; private set; }
+        public bool IsArmored => Armor != ArmorType.None && ArmorPoints > 0f;
         public bool CanBeStunned => Time.time >= m_StunImmuneUntil;
 
         // False while it is still outside the colosseum wall (spawning behind a gate or walking through a door).
         // Spells can't touch it until it is in, so the player can't farm enemies at the gates.
         public bool IsInsideArena => m_ArenaRadius <= 0f || FlatDistance(transform.position, m_ArenaCenter) < m_ArenaRadius;
+        // Stays true once it is well past the doorway. From then on it can't leave: not walking, not pushed.
+        public bool HasEntered { get; private set; }
 
         // 1 normally, lower while slowed. Movement code multiplies its speed by this.
-        public float SpeedMultiplier => (HasStatus(EnemyStatus.Slowed) ? 1f - m_Slow : 1f) * m_SpeedScale;
+        public float SpeedMultiplier => HasStatus(EnemyStatus.Rooted) ? 0f : (HasStatus(EnemyStatus.Slowed) ? 1f - m_Slow : 1f) * m_SpeedScale;
+        public bool IsFlying => this is FlyingEnemy;
 
         protected PlayerHealth Player { get; private set; }
         // Center of the colosseum floor and the inner radius of its wall. Radius is 0 when there is no colosseum.
@@ -95,10 +116,15 @@ namespace RuneArena.Enemies
         Vector3 m_Knockback;
         float m_Slow;
         float m_StunImmuneUntil;
+        float m_FreezeImmuneUntil;
         float m_SpeedScale = 1f;
         float m_DamageScale = 1f;
         Vector3 m_ArenaCenter;
         float m_ArenaRadius;
+
+        // How far past the wall it has to get to count as in, and how close to the wall it can get after that.
+        const float k_EntryDepth = 1.5f;
+        const float k_WallMargin = 1f;
         float m_FlashUntil;
         float m_DiedAt;
 
@@ -134,6 +160,9 @@ namespace RuneArena.Enemies
                 return;
             }
 
+            if (!HasEntered && (m_ArenaRadius <= 0f || FlatDistance(transform.position, m_ArenaCenter) < m_ArenaRadius - k_EntryDepth))
+                HasEntered = true;
+
             float dt = Time.deltaTime;
             if (m_Knockback != Vector3.zero)
             {
@@ -143,10 +172,24 @@ namespace RuneArena.Enemies
                     m_Knockback = Vector3.zero;
             }
 
-            if (Player != null && !Player.IsDead && !HasStatus(EnemyStatus.Stunned))
+            if (Player != null && !Player.IsDead && !HasStatus(EnemyStatus.Stunned) && !HasStatus(EnemyStatus.Frozen))
                 Tick(dt);
 
             UpdateColor();
+        }
+
+        // Pulls a point back from the colosseum wall once the enemy is in, so nothing takes it out again.
+        protected Vector3 KeepInside(Vector3 point)
+        {
+            if (!HasEntered || m_ArenaRadius <= 0f)
+                return point;
+            Vector3 flat = point - m_ArenaCenter;
+            flat.y = 0f;
+            float limit = m_ArenaRadius - k_WallMargin;
+            if (flat.magnitude <= limit)
+                return point;
+            flat = flat.normalized * limit;
+            return new Vector3(m_ArenaCenter.x + flat.x, point.y, m_ArenaCenter.z + flat.z);
         }
 
         // Call right after spawning. 1 leaves the stat as it is in the prefab.
@@ -156,6 +199,14 @@ namespace RuneArena.Enemies
             m_DamageScale *= damage;
             m_MaxHealth *= health;
             Health = m_MaxHealth;
+        }
+
+        // Call right after spawning, after the level. fraction is the armor points relative to max health.
+        public void SetArmor(ArmorType type, float fraction)
+        {
+            Armor = type;
+            MaxArmor = type == ArmorType.None ? 0f : m_MaxHealth * fraction;
+            ArmorPoints = MaxArmor;
         }
 
         // Call right after spawning. Level 1 leaves the stats as they are; each level above adds perLevel.
@@ -193,10 +244,25 @@ namespace RuneArena.Enemies
         {
         }
 
-        public void Damage(float amount, DamageKind kind = DamageKind.Normal)
+        // source is the label of the rune whose spell did it, so the right one can break armor.
+        public void Damage(float amount, DamageKind kind = DamageKind.Normal, string source = null)
         {
             if (IsDead || !IsInsideArena)
                 return;
+
+            // Health is untouched until the armor is gone. The hit that breaks it doesn't carry over:
+            // the right spell breaks it outright, the wrong one only wears it down.
+            if (IsArmored)
+            {
+                bool breaker = source != null && source == RuneArena.Enemies.Armor.Breaker(Armor);
+                float worn = breaker ? ArmorPoints : Mathf.Min(amount * m_ArmorChip, ArmorPoints);
+                ArmorPoints -= worn;
+                m_FlashUntil = Time.time + m_FlashTime;
+                ArmorHit?.Invoke(this, worn);
+                if (ArmorPoints <= 0f)
+                    BreakArmor();
+                return;
+            }
 
             float taken = Mathf.Min(amount, Health);
             Health -= taken;
@@ -204,6 +270,12 @@ namespace RuneArena.Enemies
             Damaged?.Invoke(this, taken, kind);
             if (Health <= 0f)
                 Die();
+        }
+
+        void BreakArmor()
+        {
+            ArmorPoints = 0f;
+            ArmorBroken?.Invoke(this);
         }
 
         public void Heal(float amount)
@@ -218,7 +290,7 @@ namespace RuneArena.Enemies
         // Velocity in m/s, applied horizontally and fading out.
         public void Push(Vector3 velocity)
         {
-            if (!IsInsideArena)
+            if (!IsInsideArena || IsArmored)
                 return;
             velocity.y = 0f;
             m_Knockback += velocity * (1f - m_KnockbackResistance);
@@ -229,6 +301,9 @@ namespace RuneArena.Enemies
         {
             if (!IsInsideArena)
                 return false;
+            // Armor keeps it on its feet: no stuns, freezes or roots until it breaks.
+            if (IsArmored && (status == EnemyStatus.Stunned || status == EnemyStatus.Frozen || status == EnemyStatus.Rooted))
+                return false;
             int i = (int)status;
             if (status == EnemyStatus.Stunned)
             {
@@ -236,6 +311,17 @@ namespace RuneArena.Enemies
                     return false;
                 m_StatusUntil[i] = Time.time + duration * (1f - m_StunResistance);
                 m_StunImmuneUntil = m_StatusUntil[i] + m_StunImmunity;
+                Interrupt();
+                return true;
+            }
+
+            // Freezing works like a stun, with its own resistance and immunity window.
+            if (status == EnemyStatus.Frozen)
+            {
+                if (Time.time < m_FreezeImmuneUntil || m_StunResistance >= 1f)
+                    return false;
+                m_StatusUntil[i] = Time.time + duration * (1f - m_StunResistance);
+                m_FreezeImmuneUntil = m_StatusUntil[i] + m_StunImmunity;
                 Interrupt();
                 return true;
             }
@@ -294,6 +380,15 @@ namespace RuneArena.Enemies
         [ContextMenu("Test/Slow 50% 5s")]
         void TestSlow() => ApplySlow(0.5f, 5f);
 
+        [ContextMenu("Test/Armor Ice")]
+        void TestArmorIce() => SetArmor(ArmorType.Ice, 0.5f);
+
+        [ContextMenu("Test/Armor Magma")]
+        void TestArmorMagma() => SetArmor(ArmorType.Magma, 0.5f);
+
+        [ContextMenu("Test/Armor Metal")]
+        void TestArmorMetal() => SetArmor(ArmorType.Metal, 0.5f);
+
         [ContextMenu("Test/Push Back")]
         void TestPush()
         {
@@ -317,9 +412,15 @@ namespace RuneArena.Enemies
         void UpdateColor()
         {
             Color color = m_Color;
+            if (IsArmored)
+                color = Color.Lerp(color, RuneArena.Enemies.Armor.ColorOf(Armor), 0.6f);
             if (HasStatus(EnemyStatus.Wet))
                 color = Color.Lerp(color, m_WetTint, 0.5f);
-            if (HasStatus(EnemyStatus.Stunned))
+            if (HasStatus(EnemyStatus.Entangled) || HasStatus(EnemyStatus.Rooted))
+                color = Color.Lerp(color, m_EntangledTint, 0.5f);
+            if (HasStatus(EnemyStatus.Frozen))
+                color = m_FrozenColor;
+            else if (HasStatus(EnemyStatus.Stunned))
                 color = m_StunnedColor;
             else if (!CanBeStunned)
                 color = Color.Lerp(color, m_StunImmuneTint, 0.4f);

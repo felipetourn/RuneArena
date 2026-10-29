@@ -103,8 +103,9 @@ namespace RuneArena.Spells
                 enemy.ClearStatus(EnemyStatus.Wet);
                 kind = DamageKind.Combo;
             }
+            // Damage first: it breaks metal armor, so the stun then lands.
+            enemy.Damage(damage, kind, Label);
             enemy.ApplyStatus(EnemyStatus.Stunned, stun);
-            enemy.Damage(damage, kind);
         }
 
         void Bolt(Vector3 point, Material material, float ringRadius)

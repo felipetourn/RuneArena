@@ -13,7 +13,7 @@ namespace RuneArena.Spells
         [SerializeField] float m_Radius = 0.35f;
         [SerializeField] float m_Range = 40f;
         [SerializeField] float m_Damage = 35f;
-        [Tooltip("Damage multiplier against wet enemies: the water puts the fire out a bit. Keep the loss smaller than the lightning's gain.")]
+        [Tooltip("Damage multiplier against wet, frozen or entangled enemies. Keep the loss smaller than the lightning's gain.")]
         [SerializeField, Range(0f, 1f)] float m_WetMultiplier = 0.75f;
 
         [Header("Explosion")]

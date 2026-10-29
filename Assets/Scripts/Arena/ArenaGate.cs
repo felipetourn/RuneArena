@@ -38,7 +38,7 @@ namespace RuneArena.Arena
             m_Obstacle = m_Gate.GetComponent<NavMeshObstacle>();
         }
 
-        // Opens and stays open for at least seconds, and until every enemy let through is inside.
+        // Opens and stays open for at least seconds, and until every enemy let through is well inside.
         public void Open(float seconds)
         {
             m_WantOpen = true;
@@ -55,7 +55,7 @@ namespace RuneArena.Arena
             for (int i = m_Passing.Count - 1; i >= 0; i--)
             {
                 Enemy enemy = m_Passing[i];
-                if (enemy == null || enemy.IsDead || enemy.IsInsideArena)
+                if (enemy == null || enemy.IsDead || enemy.HasEntered)
                     m_Passing.RemoveAt(i);
             }
 

@@ -8,6 +8,34 @@ namespace RuneArena.Spells
     // Comes up out of the floor, stays, then sinks back. Carves the NavMesh so walking enemies go around it.
     public class EarthWall : MonoBehaviour
     {
+        static readonly List<EarthWall> s_All = new List<EarthWall>();
+
+        // Standing earth walls, for spells that combo with them.
+        public static IReadOnlyList<EarthWall> All => s_All;
+
+        public bool IsBroken => m_BrokenAt >= 0f;
+
+        void OnEnable()
+        {
+            s_All.Add(this);
+        }
+
+        void OnDisable()
+        {
+            s_All.Remove(this);
+        }
+
+        // Closest point on the wall's footprint to p, on the ground.
+        public Vector3 ClosestPoint(Vector3 p)
+        {
+            Vector3 local = transform.InverseTransformPoint(p);
+            local.x = Mathf.Clamp(local.x, -0.5f, 0.5f);
+            local.z = Mathf.Clamp(local.z, -0.5f, 0.5f);
+            Vector3 world = transform.TransformPoint(local);
+            world.y = m_Ground.y;
+            return world;
+        }
+
         readonly List<Enemy> m_Enemies = new List<Enemy>();
 
         const float k_BreakTime = 0.15f;

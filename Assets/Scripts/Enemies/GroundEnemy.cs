@@ -26,6 +26,16 @@ namespace RuneArena.Enemies
             if (!Agent.isOnNavMesh)
                 return;
             Agent.speed = m_BaseSpeed * SpeedMultiplier * SpeedBonus;
+            // Rooted: speed 0 isn't enough, the agent would still slide on its current velocity.
+            if (HasStatus(EnemyStatus.Rooted))
+                Agent.velocity = Vector3.zero;
+
+            // Still in the doorway: walk in before doing anything else, so it can't stop outside and shoot from there.
+            if (!HasEntered)
+            {
+                MoveTo(ArenaRadius > 0f ? ArenaCenter : transform.position);
+                return;
+            }
             Think(deltaTime);
         }
 
@@ -39,7 +49,7 @@ namespace RuneArena.Enemies
             Agent.isStopped = false;
             if (Time.time < m_NextRepath)
                 return;
-            Agent.SetDestination(destination);
+            Agent.SetDestination(KeepInside(destination));
             m_NextRepath = Time.time + m_RepathInterval;
         }
 
@@ -52,7 +62,7 @@ namespace RuneArena.Enemies
         protected override void ApplyKnockback(Vector3 offset)
         {
             if (Agent.isOnNavMesh)
-                Agent.Move(offset);
+                Agent.Move(KeepInside(transform.position + offset) - transform.position);
         }
 
         protected override void Interrupt()

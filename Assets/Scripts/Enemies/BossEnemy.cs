@@ -234,7 +234,7 @@ namespace RuneArena.Enemies
         {
             float step = m_ChargeSpeed * deltaTime;
             Vector3 before = transform.position;
-            Agent.Move(m_ChargeDirection * step);
+            Agent.Move(KeepInside(before + m_ChargeDirection * step) - before);
             float moved = FlatDistance(before, transform.position);
             m_Charged += moved;
 
