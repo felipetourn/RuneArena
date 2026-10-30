@@ -2,12 +2,14 @@ using System.Collections;
 using System.Collections.Generic;
 using RuneArena.Effects;
 using UnityEngine;
+using UnityEngine.XR;
 
 namespace RuneArena.Strokes
 {
     // How a rune looks while it's drawn and after: sparks where the line is drawn, a glow around
     // the line, and once the rune is recognized the hand-drawn line straightens into the clean rune,
-    // which pulses until it's launched. A rejected or dropped rune crumbles into ash.
+    // which pulses until it's launched. A rejected or dropped rune crumbles into ash. Each step also has
+    // its sound and a buzz of the right controller.
     [RequireComponent(typeof(StrokeRecorder), typeof(RuneCaster))]
     public class RuneVisuals : MonoBehaviour
     {
@@ -27,12 +29,14 @@ namespace RuneArena.Strokes
         [SerializeField] Color m_SparkColor = new Color(0.65f, 0.85f, 1f);
         [Tooltip("Sparks per meter the tip travels.")]
         [SerializeField] float m_SparksPerMeter = 90f;
+        [SerializeField, Range(0f, 1f)] float m_HumVolume = 0.35f;
 
         StrokeRecorder m_Recorder;
         RuneCaster m_Caster;
         LineRenderer m_Glow;
         MaterialPropertyBlock m_Block;
         ParticleSystem m_TipSparks;
+        AudioSource m_Hum;
         Vector3[] m_Positions = new Vector3[512];
         readonly List<Vector3> m_World = new List<Vector3>(512);
         bool m_Charged;
@@ -98,6 +102,12 @@ namespace RuneArena.Strokes
             if (m_TipSparks != null && line.positionCount > 0)
                 m_TipSparks.transform.position = line.transform.TransformPoint(line.GetPosition(line.positionCount - 1));
             UpdateGlow();
+
+            if (m_Hum != null)
+            {
+                float target = m_Recorder.IsDrawing ? m_HumVolume : 0f;
+                m_Hum.volume = Mathf.MoveTowards(m_Hum.volume, target, Time.deltaTime * 3f);
+            }
         }
 
         // The glow follows the line: same points, wider, the line's color, softly pulsing while charged.
@@ -133,6 +143,8 @@ namespace RuneArena.Strokes
             StopMorph();
             m_Charged = false;
             Fx.Release(m_TipSparks);
+            if (m_Hum == null)
+                m_Hum = Sfx.Loop(Sfx.Library != null ? Sfx.Library.DrawHum : null, transform);
             FxLibrary fx = Fx.Library;
             if (fx == null)
                 return;
@@ -152,6 +164,8 @@ namespace RuneArena.Strokes
 
         void OnRuneCharged(string label)
         {
+            Sfx.Play(Sfx.Library != null ? Sfx.Library.RuneCharged : null, m_Recorder.Tip.position, 0.8f, 0.03f);
+            Sfx.Haptic(XRNode.RightHand, 0.35f, 0.08f);
             m_Charged = true;
             StopMorph();
             m_Morph = StartCoroutine(Morph(label));
@@ -159,6 +173,8 @@ namespace RuneArena.Strokes
 
         void OnRuneDiscarded()
         {
+            Sfx.Play(Sfx.Library != null ? Sfx.Library.RuneFail : null, m_Recorder.Tip.position, 0.7f);
+            Sfx.Haptic(XRNode.RightHand, 0.2f, 0.05f);
             m_Charged = false;
             StopMorph();
             FxLibrary fx = Fx.Library;
@@ -181,6 +197,8 @@ namespace RuneArena.Strokes
 
         void OnRuneLaunched(string label, Vector3 center, Vector3 direction)
         {
+            Sfx.Play(Sfx.Library != null ? Sfx.Library.RuneLaunch : null, center, 0.8f);
+            Sfx.Haptic(XRNode.RightHand, 0.7f, 0.12f);
             m_Charged = false;
             StopMorph();
             FxLibrary fx = Fx.Library;

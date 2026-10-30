@@ -3,12 +3,13 @@ using UnityEngine;
 
 namespace RuneArena.Spells
 {
-    // The particle effects of each spell, in one place so they can be tuned together.
+    // The particle effects, lights and sounds of each spell, in one place so they can be tuned together.
     // Everything here is only looks: none of it touches gameplay, and all of it does nothing
     // if the FxLibrary is missing.
     static class SpellFx
     {
         static FxLibrary Lib => Fx.Library;
+        static SfxLibrary Sounds => Sfx.Library;
 
         // Material for a spell's body, or the given fallback (the plain tinted one) without the library.
         public static Material Surface(Material fromLibrary, Material fallback)
@@ -20,19 +21,22 @@ namespace RuneArena.Spells
 
         public static void FireballTrail(Transform ball, float radius)
         {
+            Sound(Sounds?.FireLaunch, ball.position);
+            FxLight.Attach(ball, new Color(1f, 0.55f, 0.2f), 5f, 1.6f);
             if (Lib == null)
                 return;
             Fx.Attach(ball, new FxBurst
             {
-                Material = Lib.Flame,
-                Color = new Color(1f, 0.55f, 0.15f, 0.9f),
+                Material = Lib.FireSheet,
+                Color = new Color(1f, 0.8f, 0.6f, 0.95f),
                 Count = 60,
-                Size = radius * 2.4f,
+                Size = radius * 2.6f,
                 Speed = 0.4f,
-                Lifetime = 0.35f,
+                Lifetime = 0.4f,
                 Radius = radius * 0.5f,
-                Growth = FxGrowth.Shrink,
-            }, 70f, 0f);
+                Animated = true,
+                Growth = FxGrowth.Swell,
+            }, 60f, 0f);
             Fx.Attach(ball, new FxBurst
             {
                 Material = Lib.Spark,
@@ -50,6 +54,8 @@ namespace RuneArena.Spells
 
         public static void FireballExplosion(Vector3 point, float radius)
         {
+            Sound(Sounds?.FireExplode, point);
+            FxLight.Flash(point, new Color(1f, 0.6f, 0.25f), radius * 6f, 3.5f, 0.4f);
             if (Lib == null)
                 return;
             Fx.Burst(point, new FxBurst
@@ -63,27 +69,29 @@ namespace RuneArena.Spells
             });
             Fx.Burst(point, new FxBurst
             {
-                Material = Lib.Flame,
-                Color = new Color(1f, 0.45f, 0.1f, 0.9f),
-                Count = 18,
-                Size = radius * 1.2f,
-                Speed = radius * 4f,
-                Lifetime = 0.45f,
+                Material = Lib.FireSheet,
+                Color = new Color(1f, 0.75f, 0.5f, 1f),
+                Count = 14,
+                Size = radius * 2f,
+                Speed = radius * 3.5f,
+                Lifetime = 0.6f,
                 Radius = radius * 0.3f,
                 Drag = 5f,
+                Animated = true,
                 Growth = FxGrowth.Swell,
             });
             Fx.Burst(point, new FxBurst
             {
-                Material = Lib.Puff,
-                Color = new Color(0.2f, 0.18f, 0.17f, 0.55f),
-                Count = 8,
-                Size = radius * 1.4f,
-                Speed = radius * 1.5f,
-                Lifetime = 1.4f,
+                Material = Lib.SmokeSheet,
+                Color = new Color(0.3f, 0.27f, 0.25f, 0.7f),
+                Count = 7,
+                Size = radius * 2.2f,
+                Speed = radius * 1.2f,
+                Lifetime = 1.8f,
                 Gravity = -0.08f,
                 Radius = radius * 0.4f,
                 Drag = 2f,
+                Animated = true,
                 Growth = FxGrowth.Swell,
             });
             Fx.Burst(point, new FxBurst
@@ -110,20 +118,22 @@ namespace RuneArena.Spells
                 return;
             Fx.Burst(center, new FxBurst
             {
-                Material = Lib.Flame,
-                Color = new Color(1f, 0.5f, 0.12f, 0.85f),
+                Material = Lib.FireSheet,
+                Color = new Color(1f, 0.75f, 0.5f, 1f),
                 Count = 16,
-                Size = 0.5f,
+                Size = 0.8f,
                 Speed = 1.2f,
-                Lifetime = 0.6f,
+                Lifetime = 0.7f,
                 Gravity = -0.4f,
                 Radius = radius * 0.8f,
-                Growth = FxGrowth.Shrink,
+                Animated = true,
+                Growth = FxGrowth.Swell,
             });
             Fx.Burst(center, new FxBurst
             {
-                Material = Lib.Puff,
-                Color = new Color(0.15f, 0.14f, 0.13f, 0.5f),
+                Material = Lib.SmokeSheet,
+                Animated = true,
+                Color = new Color(0.2f, 0.18f, 0.17f, 0.6f),
                 Count = 10,
                 Size = 0.7f,
                 Speed = 0.6f,
@@ -136,8 +146,10 @@ namespace RuneArena.Spells
 
         // ---- Lightning ----
 
-        public static void LightningImpact(Vector3 point, Color color)
+        public static void LightningImpact(Vector3 point, Color color, float loudness = 1f)
         {
+            Sound(Sounds?.LightningStrike, point, loudness);
+            FxLight.Flash(point + Vector3.up, Color.Lerp(color, Color.white, 0.5f), 12f, 5f * loudness, 0.2f);
             if (Lib == null)
                 return;
             Fx.Burst(point, new FxBurst
@@ -191,6 +203,7 @@ namespace RuneArena.Spells
         // The box is half a meter deep; the water reaches further back behind its front.
         public static void WaveBody(Transform wave)
         {
+            Sound(Sounds?.WaveSplash, wave.position);
             if (Lib == null || Lib.Water == null)
                 return;
             var body = new GameObject("Wave Water");
@@ -254,13 +267,16 @@ namespace RuneArena.Spells
 
         // ---- Earth ----
 
-        public static void Dust(Vector3 ground, float width)
+        public static void Dust(Vector3 ground, float width, bool sound = true)
         {
+            if (sound)
+                Sound(Sounds?.EarthRise, ground);
             if (Lib == null)
                 return;
             Fx.Burst(ground + Vector3.up * 0.2f, new FxBurst
             {
-                Material = Lib.Puff,
+                Material = Lib.SmokeSheet,
+                Animated = true,
                 Color = new Color(0.55f, 0.45f, 0.33f, 0.6f),
                 Count = 14,
                 Size = 0.9f,
@@ -276,9 +292,10 @@ namespace RuneArena.Spells
         // Chunks and dust when a wall breaks.
         public static void Debris(Vector3 center, float width, float height)
         {
+            Sound(Sounds?.EarthBreak, center);
             if (Lib == null)
                 return;
-            Dust(center - Vector3.up * (height * 0.5f), width);
+            Dust(center - Vector3.up * (height * 0.5f), width, false);
             Fx.Burst(center, new FxBurst
             {
                 Material = Lib.Puff,
@@ -314,6 +331,7 @@ namespace RuneArena.Spells
 
         public static void Leaves(Vector3 center, float radius, Color color)
         {
+            Sound(Sounds?.IvyGrow, center);
             if (Lib == null)
                 return;
             Fx.Burst(center + Vector3.up * 0.1f, new FxBurst
@@ -334,6 +352,8 @@ namespace RuneArena.Spells
 
         public static void FrostTrail(Transform shard)
         {
+            Sound(Sounds?.IceLaunch, shard.position);
+            FxLight.Attach(shard, new Color(0.6f, 0.85f, 1f), 3f, 0.8f);
             if (Lib == null)
                 return;
             Fx.Attach(shard, new FxBurst
@@ -352,6 +372,7 @@ namespace RuneArena.Spells
 
         public static void Shatter(Vector3 point, Color color)
         {
+            Sound(Sounds?.IceShatter, point);
             if (Lib == null)
                 return;
             Fx.Burst(point, new FxBurst
@@ -383,6 +404,11 @@ namespace RuneArena.Spells
         }
 
         // ---- Shared ----
+
+        static void Sound(AudioClip clip, Vector3 position, float volume = 1f)
+        {
+            Sfx.Play(clip, position, volume);
+        }
 
         // Flat ring growing on the floor under the point.
         public static void GroundRing(Vector3 point, float size, Color color, float lifetime)

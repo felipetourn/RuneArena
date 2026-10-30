@@ -78,7 +78,8 @@ def ivy(out, rng):
 def effects(out, rng):
     for name, (color, alpha) in (("Fx_Glow", fx.glow(128)), ("Fx_Spark", fx.spark(128)),
                                  ("Fx_Puff", fx.puff(128, rng)), ("Fx_Ring", fx.ring(256)),
-                                 ("Fx_Line", fx.line(64, 16)), ("Fx_Water", fx.water(256, 512, rng))):
+                                 ("Fx_Line", fx.line(64, 16)), ("Fx_Water", fx.water(256, 512, rng)),
+                                 ("Fx_FireSheet", fx.fire_sheet(128, rng)), ("Fx_SmokeSheet", fx.smoke_sheet(128, rng))):
         save_albedo(out / f"{name}.png", color, alpha=alpha)
 
 

@@ -32,6 +32,8 @@ namespace RuneArena.Effects
         public bool Stretch;
         // Lying flat on the floor instead of facing the camera.
         public bool Flat;
+        // The material's texture is a 4 by 4 flipbook, played once over each particle's life.
+        public bool Animated;
         public FxGrowth Growth;
     }
 
@@ -172,6 +174,16 @@ namespace RuneArena.Effects
                 case FxGrowth.Expand:
                     size.size = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.EaseInOut(0f, 0.1f, 1f, 1f));
                     break;
+            }
+
+            if (b.Animated)
+            {
+                ParticleSystem.TextureSheetAnimationModule sheet = ps.textureSheetAnimation;
+                sheet.enabled = true;
+                sheet.numTilesX = 4;
+                sheet.numTilesY = 4;
+                sheet.animation = ParticleSystemAnimationType.WholeSheet;
+                sheet.frameOverTime = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.Linear(0f, 0f, 1f, 1f));
             }
 
             if (b.Drag > 0f)

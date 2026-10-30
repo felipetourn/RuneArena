@@ -87,3 +87,53 @@ def water(width, height, rng):
     alpha = 0.6 + 0.2 * smoothstep(v, 0.2, 0.6) + 0.2 * foam
     alpha = alpha * (0.92 + 0.08 * fine)
     return np.clip(color, 0, 1), np.clip(alpha, 0, 1)
+
+
+def _sheet(frames, size, columns):
+    rows = int(np.ceil(len(frames) / columns))
+    color = np.zeros((rows * size, columns * size, 3))
+    alpha = np.zeros((rows * size, columns * size))
+    for i, (c, a) in enumerate(frames):
+        # Unity's texture sheet animation reads frames left to right, top row first.
+        r, k = divmod(i, columns)
+        color[r * size:(r + 1) * size, k * size:(k + 1) * size] = c
+        alpha[r * size:(r + 1) * size, k * size:(k + 1) * size] = a
+    return color, alpha
+
+
+def fire_sheet(size, rng, frames=16, columns=4):
+    """Flipbook of a flame burst: starts as a bright tight core, swells, breaks into licks and fades."""
+    noise = spectral((size * 2, size), rng, beta=2.6, low=2, high=10)
+    fine = spectral((size * 2, size), rng, beta=2.0, low=6, high=20)
+    xx, yy = _grid(size)
+    out = []
+    for f in range(frames):
+        t = f / (frames - 1)
+        shift = int(t * size * 0.8)
+        n = np.roll(noise, -shift, axis=0)[:size] + 0.35 * np.roll(fine, -shift * 2, axis=0)[:size]
+        # Teardrop that grows and rises: wide at the bottom, pointed at the top.
+        radius = 0.35 + 0.45 * np.sqrt(t)
+        cy = 0.1 - 0.25 * t
+        shape = np.sqrt(xx ** 2 * (1.3 + 0.8 * np.clip(-(yy - cy), 0, None)) + (yy - cy) ** 2) / radius
+        heat = (1 - smoothstep(shape + 0.35 * n, 0.3, 1.0)) * (1 - 0.85 * t ** 1.5)
+        color = np.stack([np.ones_like(heat), smoothstep(heat, 0.15, 0.85) * 0.9 + 0.1, smoothstep(heat, 0.55, 1.0) * 0.8], -1)
+        out.append((color, smoothstep(heat, 0.05, 0.45)))
+    return _sheet(out, size, columns)
+
+
+def smoke_sheet(size, rng, frames=16, columns=4):
+    """Flipbook of a smoke puff billowing out and thinning. Grey, lit a little from above."""
+    a = spectral((size, size), rng, beta=2.6, low=2, high=10)
+    b = spectral((size, size), rng, beta=2.6, low=2, high=10)
+    xx, yy = _grid(size)
+    r = np.sqrt(xx ** 2 + yy ** 2)
+    out = []
+    for f in range(frames):
+        t = f / (frames - 1)
+        n = np.cos(t * np.pi * 0.5) * a + np.sin(t * np.pi * 0.5) * b
+        radius = 0.45 + 0.4 * t
+        density = (1 - smoothstep(r / radius + 0.25 * n, 0.4, 1.0)) * (1 - t) ** 1.2
+        light = 0.65 + 0.35 * smoothstep(-yy - 0.3 * n, -0.8, 0.8)
+        color = np.repeat(light[..., None], 3, axis=2)
+        out.append((color, np.clip(density * 1.3, 0, 1)))
+    return _sheet(out, size, columns)

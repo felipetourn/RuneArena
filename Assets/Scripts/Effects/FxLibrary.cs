@@ -19,12 +19,18 @@ namespace RuneArena.Effects
         public Material Ring;
         [Tooltip("Additive glow across a line renderer.")]
         public Material Line;
+        [Tooltip("Additive 4x4 flipbook of a flame burst.")]
+        public Material FireSheet;
+        [Tooltip("Alpha-blended 4x4 flipbook of a smoke puff.")]
+        public Material SmokeSheet;
 
         [Header("Spell surfaces")]
         [Tooltip("Glowing core of the fireball.")]
         public Material FireCore;
-        [Tooltip("Packed earth for the earth walls.")]
+        [Tooltip("Packed earth for the earth seed.")]
         public Material Earth;
+        [Tooltip("Rock slabs of the earth wall.")]
+        public Material Rock;
         [Tooltip("Mat of leaves for the ivy patch.")]
         public Material Ivy;
         [Tooltip("Shiny blue ice for the shards.")]
@@ -35,7 +41,7 @@ namespace RuneArena.Effects
         public Material Thorn;
 
         // False for a library made by an older version of Create Effects, missing the newer materials.
-        public bool IsComplete => FireCore != null && Earth != null && Ivy != null && Ice != null
-                                  && Water != null && Vine != null && Thorn != null;
+        public bool IsComplete => FireSheet != null && SmokeSheet != null && FireCore != null && Earth != null && Ivy != null && Ice != null
+                                  && Water != null && Vine != null && Thorn != null && Rock != null;
     }
 }

@@ -61,8 +61,22 @@ namespace RuneArena.Spells
             go.name = "Earth Wall";
             go.layer = LayerMask.NameToLayer("Wall");
             Tint(go.GetComponent<Renderer>(), Earth(material, out Color tint), tint);
+            Rocks(go);
             go.AddComponent<EarthWall>().Raise(this, ground, rotation, duration);
             SpellFx.Dust(ground, Width);
+        }
+
+        // With effects the box is drawn as a row of rock slabs instead; it still is what blocks.
+        static void Rocks(GameObject wall)
+        {
+            FxLibrary fx = Fx.Library;
+            if (fx == null || fx.Rock == null)
+                return;
+            wall.GetComponent<Renderer>().enabled = false;
+            var rocks = new GameObject("Rocks");
+            rocks.transform.SetParent(wall.transform, false);
+            rocks.AddComponent<MeshFilter>().sharedMesh = SpellMeshes.Rocks(Random.Range(0, int.MaxValue));
+            rocks.AddComponent<MeshRenderer>().sharedMaterial = fx.Rock;
         }
 
         // The packed earth texture when there is one; otherwise the plain material in the spell's color.

@@ -21,6 +21,8 @@ namespace RuneArena.Spells
         float m_BornAt;
         // Thorny vines bursting out of it, when there are effects. A separate object: the patch itself is flattened.
         Transform m_Roots;
+        Renderer m_RootsRenderer;
+        MaterialPropertyBlock m_RootsBlock;
         float m_NextTick;
         bool m_Burning;
 
@@ -46,8 +48,9 @@ namespace RuneArena.Spells
             transform.localScale = new Vector3(diameter, 0.01f, diameter);
             if (m_Roots != null)
             {
-                float spread = Mathf.Lerp(0.5f, 1f, t);
-                m_Roots.localScale = new Vector3(spread, Mathf.SmoothStep(0f, 1f, t), spread);
+                // The vines grow out from the ground to their tips.
+                m_RootsBlock.SetFloat("_Grow", Mathf.SmoothStep(0f, 1f, t));
+                m_RootsRenderer.SetPropertyBlock(m_RootsBlock);
             }
         }
 
@@ -62,6 +65,8 @@ namespace RuneArena.Spells
             var renderer = go.AddComponent<MeshRenderer>();
             renderer.sharedMaterials = new[] { fx.Vine, fx.Thorn };
             m_Roots = go.transform;
+            m_RootsRenderer = renderer;
+            m_RootsBlock = new MaterialPropertyBlock();
         }
 
         void OnDestroy()
@@ -94,9 +99,9 @@ namespace RuneArena.Spells
             if (m_Roots != null)
             {
                 // Charred, then gone with the patch.
-                var block = new MaterialPropertyBlock();
-                block.SetColor("_BaseColor", new Color(0.08f, 0.06f, 0.05f));
-                m_Roots.GetComponent<Renderer>().SetPropertyBlock(block);
+                m_RootsBlock.SetColor("_BaseColor", new Color(0.05f, 0.04f, 0.03f));
+                m_RootsBlock.SetColor("_TipColor", new Color(0.2f, 0.1f, 0.05f));
+                m_RootsRenderer.SetPropertyBlock(m_RootsBlock);
                 Vector3 roots = m_Roots.localScale;
                 SpellVisual.Spawn(m_Roots.gameObject, roots, new Vector3(roots.x, 0.05f, roots.z), 0.4f);
             }

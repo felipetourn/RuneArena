@@ -25,6 +25,16 @@ namespace RuneArena.Spells
             s_All.Remove(this);
         }
 
+        void OnDestroy()
+        {
+            // Each wall has its own rocks mesh.
+            foreach (MeshFilter filter in GetComponentsInChildren<MeshFilter>())
+            {
+                if (filter.gameObject != gameObject)
+                    Destroy(filter.sharedMesh);
+            }
+        }
+
         // Closest point on the wall's footprint to p, on the ground.
         public Vector3 ClosestPoint(Vector3 p)
         {

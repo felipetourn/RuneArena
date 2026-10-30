@@ -18,8 +18,11 @@ MonoBehaviour:
   Flame: {fileID: 2100000, guid: 2e2cedcc215332243b591064e121c636, type: 2}
   Ring: {fileID: 2100000, guid: 51f43866606e7144b8e047d4ee33ab1a, type: 2}
   Line: {fileID: 2100000, guid: 840b5613a18338f4a9c111b00edfbc36, type: 2}
+  FireSheet: {fileID: 2100000, guid: 985f3783eb8232e4c908a78301c5549f, type: 2}
+  SmokeSheet: {fileID: 2100000, guid: 1700c6b782d78b149b53def56a983a58, type: 2}
   FireCore: {fileID: 2100000, guid: 09fe0aafc4cef494b8011d63deabb94f, type: 2}
   Earth: {fileID: 2100000, guid: 5d447f695e748634da41dbe83e08d23d, type: 2}
+  Rock: {fileID: 2100000, guid: 7b6cbe98b97fcb848aa4434095627661, type: 2}
   Ivy: {fileID: 2100000, guid: b84744ce0cc0f834b99583e284f3386d, type: 2}
   Ice: {fileID: 2100000, guid: cb8336d6df13b974898f96cf20cdfb3c, type: 2}
   Water: {fileID: 2100000, guid: 812bac844d2303b46a3c0b877617d88d, type: 2}

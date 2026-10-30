@@ -3,7 +3,8 @@ using UnityEngine;
 
 namespace RuneArena.Spells
 {
-    // Shapes for the spells, built in code: a breaking wave, an icicle and thorny roots.
+    // Shapes for the spells, built in code: a breaking wave, an icicle, thorny roots and a wall of rock.
+    // Their v coordinate runs from base to tip, which is what the Spell Surface shader colors and grows along.
     static class SpellMeshes
     {
         static Mesh s_Wave;
@@ -26,6 +27,56 @@ namespace RuneArena.Spells
             for (int i = 0; i < count; i++)
                 Vine(shape, radius, random);
             return shape.ToMesh("Ivy Roots");
+        }
+
+        // A row of rough rock slabs filling the unit box (x across, y up, z through), with an uneven top.
+        public static Mesh Rocks(int seed)
+        {
+            var random = new System.Random(seed);
+            float Range(float lo, float hi) => lo + (float)random.NextDouble() * (hi - lo);
+
+            var shape = new Shape(1);
+            int count = 7;
+            for (int i = 0; i < count; i++)
+            {
+                float x = -0.5f + (i + 0.5f) / count + Range(-0.03f, 0.03f);
+                float halfWidth = 0.5f / count * Range(1.6f, 2f);
+                float halfDepth = Range(0.4f, 0.55f);
+                float top = Range(0.3f, 0.5f);
+                var center = new Vector3(x, -0.5f, Range(-0.08f, 0.08f));
+                Slab(shape, center, halfWidth, halfDepth, top, Range(-8f, 8f), random);
+            }
+            return shape.ToMesh("Earth Rocks");
+        }
+
+        // A tapering five-sided slab from the floor up to top, leaning a few degrees, with a broken point.
+        static void Slab(Shape shape, Vector3 bottom, float halfWidth, float halfDepth, float top, float lean, System.Random random)
+        {
+            const int sides = 5;
+            float height = top + 0.5f;
+            Quaternion tilt = Quaternion.Euler(0f, 0f, lean);
+            var low = new Vector3[sides];
+            var high = new Vector3[sides];
+            for (int k = 0; k < sides; k++)
+            {
+                float a = 2f * Mathf.PI * (k + 0.3f * (float)random.NextDouble()) / sides;
+                var ring = new Vector3(Mathf.Cos(a) * halfWidth, 0f, Mathf.Sin(a) * halfDepth);
+                low[k] = bottom + ring;
+                high[k] = bottom + tilt * (ring * 0.82f + Vector3.up * (height * (0.86f + 0.1f * (float)random.NextDouble())));
+            }
+            Vector3 apex = bottom + tilt * (Vector3.up * height) + new Vector3(0f, 0f, ((float)random.NextDouble() - 0.5f) * halfDepth);
+            Vector3 inside = bottom + Vector3.up * (height * 0.4f);
+
+            for (int k = 0; k < sides; k++)
+            {
+                int n = (k + 1) % sides;
+                shape.Facet(0, low[k], low[n], high[n], inside, V(low[k]), V(low[n]), V(high[n]));
+                shape.Facet(0, low[k], high[n], high[k], inside, V(low[k]), V(high[n]), V(high[k]));
+                shape.Facet(0, high[k], high[n], apex, inside, V(high[k]), V(high[n]), V(apex));
+            }
+
+            // v is the height in the box, so the color ramps from the base of the wall to its top.
+            float V(Vector3 p) => Mathf.Clamp01(p.y + 0.5f);
         }
 
         // ---- Wave ----
@@ -159,7 +210,7 @@ namespace RuneArena.Spells
                 {
                     float a = 2f * Mathf.PI * s / sides;
                     Vector3 outward = n * Mathf.Cos(a) + binormals[k] * Mathf.Sin(a);
-                    shape.Vertex(points[k] + outward * radii[k], outward, new Vector2((float)s / sides, (float)k / segments * length * 2f));
+                    shape.Vertex(points[k] + outward * radii[k], outward, new Vector2((float)s / sides, (float)k / segments));
                 }
             }
             for (int k = 0; k < segments; k++)
@@ -182,8 +233,10 @@ namespace RuneArena.Spells
                 Vector3 tip = points[k] + outward * (radii[k] + Range(0.05f, 0.1f)) + along * 0.03f;
                 Vector3 u = Vector3.Cross(outward, along).normalized * 0.018f, v = along * 0.018f;
                 Vector3[] corners = { baseCenter + u, baseCenter + v, baseCenter - u, baseCenter - v };
+                // Thorns appear when the vine has grown up to them.
+                float reached = (float)k / segments;
                 for (int c = 0; c < 4; c++)
-                    shape.Facet(1, tip, corners[c], corners[(c + 1) % 4], baseCenter);
+                    shape.Facet(1, tip, corners[c], corners[(c + 1) % 4], baseCenter, reached, reached, reached);
             }
         }
 
@@ -222,16 +275,23 @@ namespace RuneArena.Spells
             // Flat triangle facing away from inside (a point within the solid it belongs to).
             public void Facet(int submesh, Vector3 a, Vector3 b, Vector3 c, Vector3 inside)
             {
+                Facet(submesh, a, b, c, inside, 1f, 0f, 0f);
+            }
+
+            // Same, with the v coordinate of each corner.
+            public void Facet(int submesh, Vector3 a, Vector3 b, Vector3 c, Vector3 inside, float va, float vb, float vc)
+            {
                 Vector3 n = Vector3.Cross(b - a, c - a).normalized;
                 if (Vector3.Dot(n, (a + b + c) / 3f - inside) < 0f)
                 {
                     (b, c) = (c, b);
+                    (vb, vc) = (vc, vb);
                     n = -n;
                 }
                 int i = m_Vertices.Count;
-                Vertex(a, n, new Vector2(0.5f, 1f));
-                Vertex(b, n, Vector2.zero);
-                Vertex(c, n, Vector2.right);
+                Vertex(a, n, new Vector2(0.5f, va));
+                Vertex(b, n, new Vector2(0f, vb));
+                Vertex(c, n, new Vector2(1f, vc));
                 Triangle(submesh, i, i + 1, i + 2);
             }
 
