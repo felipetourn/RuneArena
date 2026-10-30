@@ -32,7 +32,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 4669644324360774878}
+  - {fileID: 4853841277737424778}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!135 &3738247774198710368
@@ -69,7 +69,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RuneArena.Enemies.FlyingEnemy
   m_MaxHealth: 100
-  m_Body: {fileID: 5901666990320967271}
+  m_Body: {fileID: 5942298440575839539}
   m_KnockbackDrag: 6
   m_StunImmunity: 1
   m_StunResistance: 0
@@ -116,25 +116,26 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a94ca29ed4ada8e4bae943f6f4e6a9c7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RuneArena.Enemies.EnemyAnimator
-  m_Animator: {fileID: 1598149020776971940}
+  m_Animator: {fileID: 1566234764801150448}
   m_Controller: {fileID: 9100000, guid: 4915fc01ab440a34ca5758bf89868ab0, type: 2}
   m_Fade: 0.15
   m_Idle: Fly
   m_Move: Fly
-  m_Attack: WindUp
+  m_Attack: Fly
   m_Hit: Hit
   m_Stunned: Hit
   m_Death: Death
+  m_Lunge: Dive
   m_MoveSpeed: 0
   m_MaxPace: 2
-  m_AttackImpact: 1
-  m_AttackLength: 1.2
+  m_AttackImpact: 1.8
+  m_AttackLength: 1.8
   m_HitLength: 0.4
   m_SlowedPace: 0.6
   m_SinkDelay: 2.5
   m_SinkTime: 0.9999999
   m_SinkDepth: 0.92
---- !u!1001 &5136163754283369269
+--- !u!1001 &4960424244373074017
 PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
@@ -527,18 +528,18 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 4508b519bcbcdd448904a7dd96607dd4, type: 3}
---- !u!95 &1598149020776971940 stripped
+--- !u!95 &1566234764801150448 stripped
 Animator:
   m_CorrespondingSourceObject: {fileID: 5866666021909216657, guid: 4508b519bcbcdd448904a7dd96607dd4, type: 3}
-  m_PrefabInstance: {fileID: 5136163754283369269}
+  m_PrefabInstance: {fileID: 4960424244373074017}
   m_PrefabAsset: {fileID: 0}
---- !u!4 &4669644324360774878 stripped
+--- !u!4 &4853841277737424778 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 4508b519bcbcdd448904a7dd96607dd4, type: 3}
-  m_PrefabInstance: {fileID: 5136163754283369269}
+  m_PrefabInstance: {fileID: 4960424244373074017}
   m_PrefabAsset: {fileID: 0}
---- !u!137 &5901666990320967271 stripped
+--- !u!137 &5942298440575839539 stripped
 SkinnedMeshRenderer:
   m_CorrespondingSourceObject: {fileID: 1630794972795428178, guid: 4508b519bcbcdd448904a7dd96607dd4, type: 3}
-  m_PrefabInstance: {fileID: 5136163754283369269}
+  m_PrefabInstance: {fileID: 4960424244373074017}
   m_PrefabAsset: {fileID: 0}

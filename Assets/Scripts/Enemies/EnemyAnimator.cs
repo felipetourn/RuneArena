@@ -20,6 +20,8 @@ namespace RuneArena.Enemies
         [SerializeField] string m_Hit = "Hit";
         [SerializeField] string m_Stunned = "Hit";
         [SerializeField] string m_Death = "Death";
+        [Tooltip("Played while a flying enemy dives at the player. Empty to keep the move clip.")]
+        [SerializeField] string m_Lunge;
 
         [Header("Timing")]
         [Tooltip("Speed in m/s at which the move clip plays at its own pace, faster or slower with the enemy. 0 always plays it at its own pace.")]
@@ -117,6 +119,12 @@ namespace RuneArena.Enemies
                 return;
             }
 
+            if (!string.IsNullOrEmpty(m_Lunge) && m_Enemy is FlyingEnemy flyer && flyer.IsDiving)
+            {
+                Play(m_Lunge, pace);
+                return;
+            }
+
             // Called off before landing, like by a stun that already ended.
             if (Time.time < m_ImpactAt && !m_Enemy.Telegraphing)
                 m_AttackUntil = 0f;
@@ -144,7 +152,11 @@ namespace RuneArena.Enemies
             m_ImpactAt = Time.time + windUp;
             m_AttackUntil = m_ImpactAt + Mathf.Max(m_AttackLength - m_AttackImpact, 0f);
             m_HitUntil = 0f;
-            Restart(m_Attack, m_AttackSpeed);
+            // An attack on the clip already playing (the flyer's wind-up is its flying, faster) goes on from where it is.
+            if (m_Attack == m_Current)
+                m_Animator.speed = m_AttackSpeed;
+            else
+                Restart(m_Attack, m_AttackSpeed);
         }
 
         void OnDamaged(Enemy enemy, float amount, DamageKind kind)

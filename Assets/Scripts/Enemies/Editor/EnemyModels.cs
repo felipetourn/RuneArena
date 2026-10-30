@@ -63,9 +63,12 @@ namespace RuneArena.Enemies.Editor
             enemy.FindProperty("m_TelegraphGlow").floatValue = 1.5f;
             enemy.ApplyModifiedPropertiesWithoutUndo();
 
-            // It only has one clip in the air, so it hovers with it, still or moving. The wind-up is a rear
-            // back that peaks a second in; the ground clips (stun, death) would look like it lies on nothing.
-            SetAnimator(root, animator, "Fly", "Fly", "WindUp", "Hit", "Hit", "Death", 0f, 1f, 1.2f);
+            // It only has one clip in the air, so it hovers with it, still or moving. The wind-up is the same
+            // flying with the wings beating faster, and the dive has its own clip, made by tools/models.
+            SetAnimator(root, animator, "Fly", "Fly", "Fly", "Hit", "Hit", "Death", 0f, 1.8f, 1.8f);
+            var lunge = new SerializedObject(root.GetComponent<EnemyAnimator>());
+            lunge.FindProperty("m_Lunge").stringValue = "Dive";
+            lunge.ApplyModifiedPropertiesWithoutUndo();
             // Its death clip takes a couple of seconds to end up lying down.
             SetDeath(root, 3.6f, 2.5f, 0.8f * k_DragonScale);
             PrefabUtility.SaveAsPrefabAsset(root, path);
@@ -112,7 +115,8 @@ namespace RuneArena.Enemies.Editor
             var animation = new SerializedObject(root.GetComponent<EnemyAnimator>());
             animation.FindProperty("m_Animator").objectReferenceValue = animator;
             animation.FindProperty("m_Controller").objectReferenceValue = animator.runtimeAnimatorController;
-            animation.FindProperty("m_AttackImpact").floatValue = 1f;
+            animation.FindProperty("m_AttackImpact").floatValue = 2.2f;
+            animation.FindProperty("m_AttackLength").floatValue = 2.2f;
             animation.ApplyModifiedPropertiesWithoutUndo();
             SetDeath(root, 4.5f, 3.2f, 0.8f * k_BossScale);
             PrefabUtility.SaveAsPrefabAsset(root, path);

@@ -33,7 +33,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 8161954519717676699}
+  - {fileID: 3340624145045807815}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!136 &7689572043502786811
@@ -94,7 +94,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RuneArena.Enemies.MeleeEnemy
   m_MaxHealth: 100
-  m_Body: {fileID: 6948509391735831586}
+  m_Body: {fileID: 4573196427240921214}
   m_KnockbackDrag: 6
   m_StunImmunity: 1
   m_StunResistance: 0
@@ -132,7 +132,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a94ca29ed4ada8e4bae943f6f4e6a9c7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RuneArena.Enemies.EnemyAnimator
-  m_Animator: {fileID: 2856754069611437281}
+  m_Animator: {fileID: 8699946371277502653}
   m_Controller: {fileID: 9100000, guid: 29ef873f1241306459ce8825b96d64b3, type: 2}
   m_Fade: 0.15
   m_Idle: Idle
@@ -141,6 +141,7 @@ MonoBehaviour:
   m_Hit: Hit
   m_Stunned: Hit
   m_Death: Death
+  m_Lunge: 
   m_MoveSpeed: 0.5
   m_MaxPace: 2
   m_AttackImpact: 0.38
@@ -150,7 +151,7 @@ MonoBehaviour:
   m_SinkDelay: 1.8
   m_SinkTime: 1.1
   m_SinkDepth: 0.6
---- !u!1001 &8561253939404071280
+--- !u!1001 &3014876863243814188
 PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
@@ -451,18 +452,18 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 727287fec668a624499a24a95b22e4c8, type: 3}
---- !u!95 &2856754069611437281 stripped
-Animator:
-  m_CorrespondingSourceObject: {fileID: 5866666021909216657, guid: 727287fec668a624499a24a95b22e4c8, type: 3}
-  m_PrefabInstance: {fileID: 8561253939404071280}
-  m_PrefabAsset: {fileID: 0}
---- !u!137 &6948509391735831586 stripped
-SkinnedMeshRenderer:
-  m_CorrespondingSourceObject: {fileID: 1630794972795428178, guid: 727287fec668a624499a24a95b22e4c8, type: 3}
-  m_PrefabInstance: {fileID: 8561253939404071280}
-  m_PrefabAsset: {fileID: 0}
---- !u!4 &8161954519717676699 stripped
+--- !u!4 &3340624145045807815 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 727287fec668a624499a24a95b22e4c8, type: 3}
-  m_PrefabInstance: {fileID: 8561253939404071280}
+  m_PrefabInstance: {fileID: 3014876863243814188}
+  m_PrefabAsset: {fileID: 0}
+--- !u!137 &4573196427240921214 stripped
+SkinnedMeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 1630794972795428178, guid: 727287fec668a624499a24a95b22e4c8, type: 3}
+  m_PrefabInstance: {fileID: 3014876863243814188}
+  m_PrefabAsset: {fileID: 0}
+--- !u!95 &8699946371277502653 stripped
+Animator:
+  m_CorrespondingSourceObject: {fileID: 5866666021909216657, guid: 727287fec668a624499a24a95b22e4c8, type: 3}
+  m_PrefabInstance: {fileID: 3014876863243814188}
   m_PrefabAsset: {fileID: 0}

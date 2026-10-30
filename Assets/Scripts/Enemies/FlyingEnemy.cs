@@ -56,6 +56,8 @@ namespace RuneArena.Enemies
         float m_PillarRadius;
         float m_PillarTop;
 
+        public bool IsDiving => m_State == State.Dive;
+
         protected override void Start()
         {
             base.Start();
