@@ -11,9 +11,10 @@ namespace RuneArena.Arena.Editor
     class ColosseumBuilderEditor : UnityEditor.Editor
     {
         const string k_GeneratedFolder = "Assets/Arena/Generated";
-        const string k_MaterialsFolder = "Assets/Materials";
         const float k_GateDepth = 0.2f;
         const float k_OutsideFloorThickness = 0.5f;
+        const int k_FloorSegments = 128;
+        const int k_ScenerySlices = 8;
 
         public override void OnInspectorGUI()
         {
@@ -29,14 +30,12 @@ namespace RuneArena.Arena.Editor
             for (int i = root.childCount - 1; i >= 0; i--)
                 Undo.DestroyObjectImmediate(root.GetChild(i).gameObject);
 
-            if (builder.WallMaterial == null)
-                builder.WallMaterial = FindOrCreateMaterial("Arena Wall", new Color(0.62f, 0.58f, 0.52f));
-            if (builder.GateMaterial == null)
-                builder.GateMaterial = FindOrCreateMaterial("Arena Gate", new Color(0.25f, 0.25f, 0.27f));
+            ArenaMaterials.Setup(builder);
             EditorUtility.SetDirty(builder);
 
             int wallLayer = Mathf.Max(LayerMask.NameToLayer("Wall"), 0);
             int floorLayer = Mathf.Max(LayerMask.NameToLayer("Floor"), 0);
+            string prefix = $"{k_GeneratedFolder}/{root.gameObject.scene.name} {root.name}";
 
             var wall = new GameObject("Wall");
             Undo.RegisterCreatedObjectUndo(wall, "Build Colosseum");
@@ -44,10 +43,27 @@ namespace RuneArena.Arena.Editor
             wall.layer = wallLayer;
             wall.isStatic = true;
 
-            Mesh mesh = SaveMesh(ColosseumMesh.Build(builder), $"{k_GeneratedFolder}/{root.gameObject.scene.name} {root.name} Wall.asset");
+            var walls = new MeshBuilder();
+            RingWall.Build(walls, 0, new Arcade
+            {
+                Inner = builder.InnerRadius,
+                Outer = builder.Radius,
+                Bottom = 0f,
+                Top = builder.Height,
+                Arches = builder.DoorCount,
+                ArchWidth = builder.DoorWidth,
+                ArchHeight = builder.DoorHeight,
+                StartAngle = builder.DoorAngle,
+                ArchSegments = builder.ArchSegments,
+                Segments = builder.Segments,
+                Cap = true,
+            });
+            Mesh mesh = SaveMesh(walls.ToMesh(), $"{prefix} Wall.asset");
             wall.AddComponent<MeshFilter>().sharedMesh = mesh;
             wall.AddComponent<MeshRenderer>().sharedMaterial = builder.WallMaterial;
             wall.AddComponent<MeshCollider>().sharedMesh = mesh;
+
+            BuildFloor(builder, root, floorLayer, prefix);
 
             var doors = new GameObject("Doors");
             Undo.RegisterCreatedObjectUndo(doors, "Build Colosseum");
@@ -91,7 +107,7 @@ namespace RuneArena.Arena.Editor
                     floor.transform.SetParent(door.transform, false);
                     floor.transform.localPosition = new Vector3(0f, -k_OutsideFloorThickness * 0.5f, -outsideCenter);
                     floor.transform.localScale = new Vector3(builder.DoorWidth + 1f, k_OutsideFloorThickness, builder.OutsideDepth);
-                    floor.GetComponent<MeshRenderer>().sharedMaterial = builder.WallMaterial;
+                    floor.GetComponent<MeshRenderer>().sharedMaterial = builder.PlinthMaterial;
                 }
 
                 var spawn = new GameObject("SpawnPoint");
@@ -101,15 +117,58 @@ namespace RuneArena.Arena.Editor
                 door.AddComponent<ArenaGate>().Setup(gate.transform, spawn.transform);
             }
 
-            BuildPillars(builder, root, wallLayer);
+            BuildPillars(builder, root, wallLayer, prefix);
+            BuildScenery(builder, root, prefix);
 
             EditorUtility.SetDirty(root.gameObject);
             UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(root.gameObject.scene);
         }
 
+        // Disc under the whole arena, out to the outside of the wall. Its UVs go from 0 to 1 across it,
+        // which is what the floor layout texture expects.
+        static void BuildFloor(ColosseumBuilder builder, Transform root, int layer, string prefix)
+        {
+            float radius = builder.Radius;
+            var m = new MeshBuilder();
+            int rings = Mathf.CeilToInt(radius / 2f);
+            for (int ring = 0; ring < rings; ring++)
+            {
+                float r0 = radius * ring / rings, r1 = radius * (ring + 1) / rings;
+                for (int i = 0; i < k_FloorSegments; i++)
+                {
+                    float a0 = 2f * Mathf.PI * i / k_FloorSegments, a1 = 2f * Mathf.PI * (i + 1) / k_FloorSegments;
+                    Vector3 p0 = FloorPoint(r0, a0), p1 = FloorPoint(r0, a1), p2 = FloorPoint(r1, a1), p3 = FloorPoint(r1, a0);
+                    m.Quad(0, p0, p1, p2, p3, Vector3.up, FloorUv(p0, radius), FloorUv(p1, radius), FloorUv(p2, radius), FloorUv(p3, radius));
+                }
+            }
+
+            var floor = new GameObject("Floor");
+            Undo.RegisterCreatedObjectUndo(floor, "Build Colosseum");
+            floor.transform.SetParent(root, false);
+            floor.layer = layer;
+            floor.isStatic = true;
+            Mesh mesh = SaveMesh(m.ToMesh(), $"{prefix} Floor.asset");
+            floor.AddComponent<MeshFilter>().sharedMesh = mesh;
+            floor.AddComponent<MeshRenderer>().sharedMaterial = builder.FloorMaterial;
+            floor.AddComponent<MeshCollider>().sharedMesh = mesh;
+
+            ArenaMaterials.SetupFloor(builder, $"{prefix} Floor Layout.png");
+        }
+
+        static Vector3 FloorPoint(float r, float angle)
+        {
+            return new Vector3(Mathf.Sin(angle) * r, 0f, Mathf.Cos(angle) * r);
+        }
+
+        static Vector2 FloorUv(Vector3 p, float radius)
+        {
+            return new Vector2(p.x / (2f * radius) + 0.5f, p.z / (2f * radius) + 0.5f);
+        }
+
         // Round pillars with a wider base and cap. They give cover: in the Wall layer, they stop enemy shots
-        // and spells, and the NavMesh goes around them.
-        static void BuildPillars(ColosseumBuilder builder, Transform root, int layer)
+        // and spells, and the NavMesh goes around them. The colliders are simple cylinders; what's seen is
+        // a fluted column of the same size.
+        static void BuildPillars(ColosseumBuilder builder, Transform root, int layer, string prefix)
         {
             if (builder.PillarCount == 0)
                 return;
@@ -121,6 +180,7 @@ namespace RuneArena.Arena.Editor
             float w = builder.PillarWidth;
             float h = builder.PillarHeight;
             float trim = Mathf.Min(0.3f, h * 0.15f);
+            Mesh column = SaveMesh(ColumnMesh.Build(w * 0.5f, h, trim), $"{prefix} Column.asset");
 
             for (int i = 0; i < builder.PillarCount; i++)
             {
@@ -132,14 +192,21 @@ namespace RuneArena.Arena.Editor
                 pillar.transform.localPosition = outward * builder.PillarDistance;
                 pillar.transform.localRotation = Quaternion.LookRotation(-outward);
 
-                PillarPart(pillar.transform, "Base", new Vector3(w * 1.3f, trim, w * 1.3f), trim * 0.5f, layer, builder.WallMaterial);
-                PillarPart(pillar.transform, "Shaft", new Vector3(w, h - 2f * trim, w), h * 0.5f, layer, builder.WallMaterial);
-                PillarPart(pillar.transform, "Cap", new Vector3(w * 1.3f, trim, w * 1.3f), h - trim * 0.5f, layer, builder.WallMaterial);
+                PillarPart(pillar.transform, "Base", new Vector3(w * 1.3f, trim, w * 1.3f), trim * 0.5f, layer);
+                PillarPart(pillar.transform, "Shaft", new Vector3(w, h - 2f * trim, w), h * 0.5f, layer);
+                PillarPart(pillar.transform, "Cap", new Vector3(w * 1.3f, trim, w * 1.3f), h - trim * 0.5f, layer);
+
+                var visual = new GameObject("Column");
+                visual.transform.SetParent(pillar.transform, false);
+                visual.layer = layer;
+                visual.isStatic = true;
+                visual.AddComponent<MeshFilter>().sharedMesh = column;
+                visual.AddComponent<MeshRenderer>().sharedMaterial = builder.TrimMaterial;
             }
         }
 
-        // size is diameter, height, diameter.
-        static void PillarPart(Transform parent, string name, Vector3 size, float y, int layer, Material material)
+        // Collider only. size is diameter, height, diameter.
+        static void PillarPart(Transform parent, string name, Vector3 size, float y, int layer)
         {
             GameObject part = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
             part.name = name;
@@ -149,11 +216,49 @@ namespace RuneArena.Arena.Editor
             part.transform.localPosition = new Vector3(0f, y, 0f);
             // The built-in cylinder is 2 units tall.
             part.transform.localScale = new Vector3(size.x, size.y * 0.5f, size.z);
-            part.GetComponent<MeshRenderer>().sharedMaterial = material;
+            Mesh shape = part.GetComponent<MeshFilter>().sharedMesh;
+            Object.DestroyImmediate(part.GetComponent<MeshRenderer>());
+            Object.DestroyImmediate(part.GetComponent<MeshFilter>());
 
             // Its default capsule collider rounds off the flat top and bottom.
             Object.DestroyImmediate(part.GetComponent<Collider>());
-            part.AddComponent<MeshCollider>().convex = true;
+            var collider = part.AddComponent<MeshCollider>();
+            collider.sharedMesh = shape;
+            collider.convex = true;
+        }
+
+        // Everything that is only there to be looked at: no colliders, and kept out of the NavMesh.
+        // In slices around the arena, each one a separate object.
+        static void BuildScenery(ColosseumBuilder builder, Transform root, string prefix)
+        {
+            var scenery = new GameObject("Scenery");
+            Undo.RegisterCreatedObjectUndo(scenery, "Build Colosseum");
+            scenery.transform.SetParent(root, false);
+            scenery.isStatic = true;
+            scenery.AddComponent<NavMeshModifier>().ignoreFromBuild = true;
+
+            var materials = new Material[ColosseumDecor.SubmeshCount];
+            materials[ColosseumDecor.Stone] = builder.WallMaterial;
+            materials[ColosseumDecor.Trim] = builder.TrimMaterial;
+            materials[ColosseumDecor.Plinth] = builder.PlinthMaterial;
+            materials[ColosseumDecor.Seats] = builder.SeatMaterial;
+            materials[ColosseumDecor.Dark] = builder.DarkMaterial;
+            materials[ColosseumDecor.Wood] = builder.WoodMaterial;
+            materials[ColosseumDecor.Banner] = builder.BannerMaterial;
+            materials[ColosseumDecor.Shade] = builder.TunnelMaterial;
+
+            // Older builds kept it all in one mesh.
+            AssetDatabase.DeleteAsset($"{prefix} Scenery.asset");
+
+            List<MeshBuilder> slices = ColosseumDecor.Build(builder).SplitByAngle(k_ScenerySlices, builder.DoorAngle);
+            for (int i = 0; i < slices.Count; i++)
+            {
+                var slice = new GameObject($"Slice {i}");
+                slice.transform.SetParent(scenery.transform, false);
+                slice.isStatic = true;
+                slice.AddComponent<MeshFilter>().sharedMesh = SaveMesh(slices[i].ToMesh(), $"{prefix} Scenery {i}.asset");
+                slice.AddComponent<MeshRenderer>().sharedMaterials = materials;
+            }
         }
 
         static Mesh SaveMesh(Mesh built, string path)
@@ -169,10 +274,13 @@ namespace RuneArena.Arena.Editor
 
             // Overwrite in place so existing references keep working.
             mesh.Clear();
+            mesh.indexFormat = built.indexFormat;
             mesh.SetVertices(built.vertices);
             mesh.SetNormals(built.normals);
             mesh.SetUVs(0, built.uv);
-            mesh.SetTriangles(built.triangles, 0);
+            mesh.subMeshCount = built.subMeshCount;
+            for (int i = 0; i < built.subMeshCount; i++)
+                mesh.SetTriangles(built.GetTriangles(i), i);
             mesh.RecalculateTangents();
             mesh.RecalculateBounds();
             EditorUtility.SetDirty(mesh);
@@ -181,220 +289,13 @@ namespace RuneArena.Arena.Editor
             return mesh;
         }
 
-        static Material FindOrCreateMaterial(string name, Color color)
-        {
-            string path = $"{k_MaterialsFolder}/{name}.mat";
-            var material = AssetDatabase.LoadAssetAtPath<Material>(path);
-            if (material != null)
-                return material;
-
-            EnsureFolder(k_MaterialsFolder);
-            material = new Material(Shader.Find("Universal Render Pipeline/Lit")) { color = color };
-            AssetDatabase.CreateAsset(material, path);
-            return material;
-        }
-
-        static void EnsureFolder(string folder)
+        public static void EnsureFolder(string folder)
         {
             if (AssetDatabase.IsValidFolder(folder))
                 return;
             string parent = Path.GetDirectoryName(folder).Replace('\\', '/');
             EnsureFolder(parent);
             AssetDatabase.CreateFolder(parent, Path.GetFileName(folder));
-        }
-    }
-
-    // Ring wall with arched openings cut through it. The wall is split into one section per door
-    // (or a single section without doors), and each section into columns along the wall.
-    static class ColosseumMesh
-    {
-        readonly struct Column
-        {
-            public readonly float U;
-            public readonly float Bottom;
-
-            public Column(float u, float bottom)
-            {
-                U = u;
-                Bottom = bottom;
-            }
-        }
-
-        static readonly List<Vector3> s_Vertices = new List<Vector3>();
-        static readonly List<Vector3> s_Normals = new List<Vector3>();
-        static readonly List<Vector2> s_Uvs = new List<Vector2>();
-        static readonly List<int> s_Triangles = new List<int>();
-
-        public static Mesh Build(ColosseumBuilder b)
-        {
-            s_Vertices.Clear();
-            s_Normals.Clear();
-            s_Uvs.Clear();
-            s_Triangles.Clear();
-
-            float outer = b.Radius;
-            float inner = b.Radius - b.Thickness;
-            float middle = (outer + inner) * 0.5f;
-            int sections = Mathf.Max(b.DoorCount, 1);
-            float sectionLength = 2f * Mathf.PI * middle / sections;
-            float maxColumn = 2f * Mathf.PI * middle / b.Segments;
-            float start = b.DoorAngle * Mathf.Deg2Rad * middle;
-
-            for (int s = 0; s < sections; s++)
-            {
-                float center = start + s * sectionLength;
-                List<Column> columns = SectionColumns(b, sectionLength, maxColumn);
-
-                for (int c = 0; c < columns.Count - 1; c++)
-                {
-                    Column c0 = columns[c];
-                    Column c1 = columns[c + 1];
-                    if (Mathf.Approximately(c0.U, c1.U))
-                        continue;
-
-                    float u0 = center + c0.U;
-                    float u1 = center + c1.U;
-                    Face(inner, u0, c0.Bottom, u1, c1.Bottom, b.Height, middle, -1f);
-                    Face(outer, u0, c0.Bottom, u1, c1.Bottom, b.Height, middle, 1f);
-                    Top(inner, outer, u0, u1, b.Height, middle);
-                    if (c0.Bottom > 0f || c1.Bottom > 0f)
-                        Intrados(inner, outer, center, c0, c1, b, middle);
-                }
-
-                if (b.DoorCount > 0)
-                {
-                    float half = b.DoorWidth * 0.5f;
-                    float spring = b.DoorHeight - half;
-                    Jamb(inner, outer, center - half, spring, middle, 1f);
-                    Jamb(inner, outer, center + half, spring, middle, -1f);
-                }
-            }
-
-            var mesh = new Mesh();
-            mesh.SetVertices(s_Vertices);
-            mesh.SetNormals(s_Normals);
-            mesh.SetUVs(0, s_Uvs);
-            mesh.SetTriangles(s_Triangles, 0);
-            mesh.RecalculateTangents();
-            mesh.RecalculateBounds();
-            return mesh;
-        }
-
-        // Column boundaries across one section, centered on its door: plain wall, the arch, plain wall.
-        static List<Column> SectionColumns(ColosseumBuilder b, float sectionLength, float maxColumn)
-        {
-            var columns = new List<Column>();
-            float halfSection = sectionLength * 0.5f;
-
-            if (b.DoorCount == 0)
-            {
-                int n = Mathf.CeilToInt(sectionLength / maxColumn);
-                for (int i = 0; i <= n; i++)
-                    columns.Add(new Column(-halfSection + sectionLength * i / n, 0f));
-                return columns;
-            }
-
-            float half = b.DoorWidth * 0.5f;
-            float spring = b.DoorHeight - half;
-            float side = halfSection - half;
-            int sideColumns = Mathf.Max(1, Mathf.CeilToInt(side / maxColumn));
-
-            for (int i = 0; i <= sideColumns; i++)
-                columns.Add(new Column(-halfSection + side * i / sideColumns, 0f));
-
-            for (int k = 0; k <= b.ArchSegments; k++)
-            {
-                float a = Mathf.PI * k / b.ArchSegments;
-                columns.Add(new Column(-half * Mathf.Cos(a), spring + half * Mathf.Sin(a)));
-            }
-
-            for (int i = 0; i <= sideColumns; i++)
-                columns.Add(new Column(half + side * i / sideColumns, 0f));
-
-            return columns;
-        }
-
-        static Vector3 Point(float radius, float u, float y, float middle)
-        {
-            float angle = u / middle;
-            return new Vector3(Mathf.Sin(angle) * radius, y, Mathf.Cos(angle) * radius);
-        }
-
-        static Vector3 Radial(float u, float middle)
-        {
-            float angle = u / middle;
-            return new Vector3(Mathf.Sin(angle), 0f, Mathf.Cos(angle));
-        }
-
-        static Vector3 Tangent(float u, float middle)
-        {
-            float angle = u / middle;
-            return new Vector3(Mathf.Cos(angle), 0f, -Mathf.Sin(angle));
-        }
-
-        static void Face(float radius, float u0, float b0, float u1, float b1, float top, float middle, float side)
-        {
-            Vector3 n0 = Radial(u0, middle) * side;
-            Vector3 n1 = Radial(u1, middle) * side;
-            Quad(Point(radius, u0, b0, middle), Point(radius, u1, b1, middle),
-                 Point(radius, u1, top, middle), Point(radius, u0, top, middle),
-                 n0, n1, n1, n0,
-                 new Vector2(u0, b0), new Vector2(u1, b1), new Vector2(u1, top), new Vector2(u0, top));
-        }
-
-        static void Top(float inner, float outer, float u0, float u1, float top, float middle)
-        {
-            Quad(Point(inner, u0, top, middle), Point(outer, u0, top, middle),
-                 Point(outer, u1, top, middle), Point(inner, u1, top, middle),
-                 Vector3.up, Vector3.up, Vector3.up, Vector3.up,
-                 new Vector2(u0, inner), new Vector2(u0, outer), new Vector2(u1, outer), new Vector2(u1, inner));
-        }
-
-        // Underside of the arch. Normals point at the arch center.
-        static void Intrados(float inner, float outer, float center, Column c0, Column c1, ColosseumBuilder b, float middle)
-        {
-            float spring = b.DoorHeight - b.DoorWidth * 0.5f;
-            float u0 = center + c0.U;
-            float u1 = center + c1.U;
-            Vector3 n0 = (Tangent(u0, middle) * -c0.U + Vector3.up * (spring - c0.Bottom)).normalized;
-            Vector3 n1 = (Tangent(u1, middle) * -c1.U + Vector3.up * (spring - c1.Bottom)).normalized;
-            Quad(Point(inner, u0, c0.Bottom, middle), Point(outer, u0, c0.Bottom, middle),
-                 Point(outer, u1, c1.Bottom, middle), Point(inner, u1, c1.Bottom, middle),
-                 n0, n0, n1, n1,
-                 new Vector2(u0, inner), new Vector2(u0, outer), new Vector2(u1, outer), new Vector2(u1, inner));
-        }
-
-        // Straight side of the opening, below the arch. side = +1 faces along +u (into the opening from the left).
-        static void Jamb(float inner, float outer, float u, float spring, float middle, float side)
-        {
-            Vector3 n = Tangent(u, middle) * side;
-            Quad(Point(inner, u, 0f, middle), Point(outer, u, 0f, middle),
-                 Point(outer, u, spring, middle), Point(inner, u, spring, middle),
-                 n, n, n, n,
-                 new Vector2(inner, 0f), new Vector2(outer, 0f), new Vector2(outer, spring), new Vector2(inner, spring));
-        }
-
-        // Adds a quad and flips its winding if needed so the face points along its normals.
-        static void Quad(Vector3 a, Vector3 b, Vector3 c, Vector3 d,
-                         Vector3 na, Vector3 nb, Vector3 nc, Vector3 nd,
-                         Vector2 ua, Vector2 ub, Vector2 uc, Vector2 ud)
-        {
-            int i = s_Vertices.Count;
-            s_Vertices.Add(a); s_Vertices.Add(b); s_Vertices.Add(c); s_Vertices.Add(d);
-            s_Normals.Add(na); s_Normals.Add(nb); s_Normals.Add(nc); s_Normals.Add(nd);
-            s_Uvs.Add(ua); s_Uvs.Add(ub); s_Uvs.Add(uc); s_Uvs.Add(ud);
-
-            Vector3 face = Vector3.Cross(b - a, c - a) + Vector3.Cross(c - a, d - a);
-            if (Vector3.Dot(face, na + nb + nc + nd) >= 0f)
-            {
-                s_Triangles.Add(i); s_Triangles.Add(i + 1); s_Triangles.Add(i + 2);
-                s_Triangles.Add(i); s_Triangles.Add(i + 2); s_Triangles.Add(i + 3);
-            }
-            else
-            {
-                s_Triangles.Add(i); s_Triangles.Add(i + 2); s_Triangles.Add(i + 1);
-                s_Triangles.Add(i); s_Triangles.Add(i + 3); s_Triangles.Add(i + 2);
-            }
         }
     }
 }

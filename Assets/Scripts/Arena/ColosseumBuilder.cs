@@ -1,10 +1,23 @@
+using System;
 using UnityEngine;
 
 namespace RuneArena.Arena
 {
     // Parameters for the generated colosseum. Build it from the button in the Inspector.
+    // Only the arena wall, the gates, the pillars and the floor take part in the game; everything
+    // behind the wall (seats, arcade, banners) is scenery without colliders.
     public class ColosseumBuilder : MonoBehaviour
     {
+        [Serializable]
+        public struct StandTier
+        {
+            public int Steps;
+            [Tooltip("Depth of each row of seats.")]
+            public float Depth;
+            [Tooltip("Height of each row of seats.")]
+            public float Rise;
+        }
+
         [Header("Wall")]
         [Tooltip("Outer radius in meters.")]
         [SerializeField] float m_Radius = 15f;
@@ -35,9 +48,51 @@ namespace RuneArena.Arena
         [SerializeField] float m_PillarWidth = 1.2f;
         [SerializeField] float m_PillarHeight = 4f;
 
+        [Header("Stands")]
+        [SerializeField] bool m_BuildStands = true;
+        [Tooltip("Flat walk between the top of the arena wall and the first row of seats.")]
+        [SerializeField] float m_TerraceWidth = 2.5f;
+        [Tooltip("Groups of seats from the bottom up, each one behind a wall with entrances.")]
+        [SerializeField] StandTier[] m_Tiers =
+        {
+            new StandTier { Steps = 8, Depth = 0.8f, Rise = 0.45f },
+            new StandTier { Steps = 10, Depth = 0.8f, Rise = 0.5f },
+            new StandTier { Steps = 8, Depth = 0.75f, Rise = 0.55f },
+        };
+        [Tooltip("Walkway in front of the wall that separates two groups of seats.")]
+        [SerializeField] float m_WalkwayWidth = 1.6f;
+        [SerializeField] float m_TierWallHeight = 2.4f;
+        [Tooltip("Entrances in each of those walls.")]
+        [SerializeField] int m_Entrances = 16;
+
+        [Header("Arcade")]
+        [Tooltip("Open arches around the top, behind the last row of seats.")]
+        [SerializeField] int m_ArcadeArches = 80;
+        [SerializeField] float m_ArcadeHeight = 5.5f;
+        [Tooltip("Plain wall above the arches, with small windows.")]
+        [SerializeField] float m_AtticHeight = 5f;
+        [SerializeField] float m_MastHeight = 6f;
+
+        [Header("Decoration")]
+        [Tooltip("Banners hanging on the arena wall between two doors.")]
+        [SerializeField] int m_BannersPerSection = 3;
+
         [Header("Materials")]
+        [Tooltip("Arena wall, tier walls and arcade (travertine).")]
         [SerializeField] Material m_WallMaterial;
         [SerializeField] Material m_GateMaterial;
+        [Tooltip("Cornices, parapet, door frames and columns (marble).")]
+        [SerializeField] Material m_TrimMaterial;
+        [Tooltip("Plinth and the floor outside the doors (granite).")]
+        [SerializeField] Material m_PlinthMaterial;
+        [SerializeField] Material m_SeatMaterial;
+        [SerializeField] Material m_FloorMaterial;
+        [SerializeField] Material m_BannerMaterial;
+        [Tooltip("Inside of the entrances.")]
+        [SerializeField] Material m_DarkMaterial;
+        [SerializeField] Material m_WoodMaterial;
+        [Tooltip("Far part of the tunnels behind the doors (darkened travertine).")]
+        [SerializeField] Material m_TunnelMaterial;
 
         public float Radius => m_Radius;
         public float Thickness => m_Thickness;
@@ -54,8 +109,30 @@ namespace RuneArena.Arena
         public float PillarAngle => m_PillarAngle;
         public float PillarWidth => m_PillarWidth;
         public float PillarHeight => m_PillarHeight;
+        public bool BuildStands => m_BuildStands;
+        public float TerraceWidth => m_TerraceWidth;
+        public StandTier[] Tiers => m_Tiers;
+        public float WalkwayWidth => m_WalkwayWidth;
+        public float TierWallHeight => m_TierWallHeight;
+        public int Entrances => m_Entrances;
+        public int ArcadeArches => m_ArcadeArches;
+        public float ArcadeHeight => m_ArcadeHeight;
+        public float AtticHeight => m_AtticHeight;
+        public float MastHeight => m_MastHeight;
+        public int BannersPerSection => m_BannersPerSection;
         public Material WallMaterial { get => m_WallMaterial; set => m_WallMaterial = value; }
         public Material GateMaterial { get => m_GateMaterial; set => m_GateMaterial = value; }
+        public Material TrimMaterial { get => m_TrimMaterial; set => m_TrimMaterial = value; }
+        public Material PlinthMaterial { get => m_PlinthMaterial; set => m_PlinthMaterial = value; }
+        public Material SeatMaterial { get => m_SeatMaterial; set => m_SeatMaterial = value; }
+        public Material FloorMaterial { get => m_FloorMaterial; set => m_FloorMaterial = value; }
+        public Material BannerMaterial { get => m_BannerMaterial; set => m_BannerMaterial = value; }
+        public Material DarkMaterial { get => m_DarkMaterial; set => m_DarkMaterial = value; }
+        public Material WoodMaterial { get => m_WoodMaterial; set => m_WoodMaterial = value; }
+        public Material TunnelMaterial { get => m_TunnelMaterial; set => m_TunnelMaterial = value; }
+
+        // Radius of the inside face of the arena wall.
+        public float InnerRadius => m_Radius - m_Thickness;
 
         void OnValidate()
         {
@@ -77,6 +154,24 @@ namespace RuneArena.Arena
             m_PillarWidth = Mathf.Max(m_PillarWidth, 0.3f);
             m_PillarHeight = Mathf.Max(m_PillarHeight, 1f);
             m_PillarDistance = Mathf.Clamp(m_PillarDistance, 0f, m_Radius - m_Thickness - m_PillarWidth);
+
+            m_TerraceWidth = Mathf.Max(m_TerraceWidth, 0.5f);
+            m_WalkwayWidth = Mathf.Max(m_WalkwayWidth, 0.5f);
+            m_TierWallHeight = Mathf.Max(m_TierWallHeight, 1f);
+            m_Entrances = Mathf.Max(m_Entrances, 0);
+            m_ArcadeArches = Mathf.Max(m_ArcadeArches, 8);
+            m_ArcadeHeight = Mathf.Max(m_ArcadeHeight, 2f);
+            m_AtticHeight = Mathf.Max(m_AtticHeight, 1f);
+            m_BannersPerSection = Mathf.Max(m_BannersPerSection, 0);
+            if (m_Tiers != null)
+            {
+                for (int i = 0; i < m_Tiers.Length; i++)
+                {
+                    m_Tiers[i].Steps = Mathf.Max(m_Tiers[i].Steps, 1);
+                    m_Tiers[i].Depth = Mathf.Max(m_Tiers[i].Depth, 0.3f);
+                    m_Tiers[i].Rise = Mathf.Max(m_Tiers[i].Rise, 0.1f);
+                }
+            }
         }
     }
 }

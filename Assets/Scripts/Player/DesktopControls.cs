@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using RuneArena.Arena;
 using RuneArena.Strokes;
 using Unity.XR.CoreUtils;
 using UnityEngine;
@@ -6,7 +7,7 @@ using UnityEngine.InputSystem;
 
 namespace RuneArena.Player
 {
-    // Editor only: walk the player with WASD and launch with F, aiming with the mouse.
+    // Editor only: walk the player with WASD and launch with F, aiming with the mouse. L switches the time of day.
     // Takes WASD/QE away from the XR Interaction Simulator, which otherwise moves the selected device with them.
     public class DesktopControls : MonoBehaviour
     {
@@ -56,6 +57,13 @@ namespace RuneArena.Player
 
             if (Keyboard.current.fKey.wasPressedThisFrame && m_Caster != null && Mouse.current != null)
                 m_Caster.Launch(m_Origin.Camera.ScreenPointToRay(Mouse.current.position.ReadValue()));
+
+            if (Keyboard.current.lKey.wasPressedThisFrame)
+            {
+                var lighting = FindAnyObjectByType<ArenaLighting>();
+                if (lighting != null)
+                    lighting.Next();
+            }
         }
 #endif
 
