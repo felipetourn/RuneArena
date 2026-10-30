@@ -147,7 +147,7 @@ namespace RuneArena.Waves
                 bool newStage = index % m_Waves.Count == 0;
                 CurrentStage = index / m_Waves.Count + 1;
                 WaveSet.Wave wave = m_Waves.Get(index, out float multiplier);
-                BuildQueue(wave, multiplier);
+                BuildQueue(wave, multiplier, CurrentStage);
 
                 Announce(newStage ? $"Etapa {CurrentStage} - Oleada {CurrentWave}" : $"Oleada {CurrentWave}", m_AnnounceTime);
                 WaveStarted?.Invoke(CurrentWave);
@@ -177,12 +177,12 @@ namespace RuneArena.Waves
 
         bool PlayerDead => m_Player != null && m_Player.IsDead;
 
-        void BuildQueue(WaveSet.Wave wave, float multiplier)
+        void BuildQueue(WaveSet.Wave wave, float multiplier, int stage)
         {
             m_Queue.Clear();
             foreach (WaveSet.Group group in wave.groups)
             {
-                if (group.prefab == null)
+                if (group.prefab == null || !group.InStage(stage))
                     continue;
                 int count = Mathf.CeilToInt(group.count * multiplier);
                 for (int i = 0; i < count; i++)
@@ -200,7 +200,7 @@ namespace RuneArena.Waves
             int front = 0;
             for (int i = 0; i < m_Queue.Count; i++)
             {
-                if (m_Queue[i] is BossEnemy)
+                if (m_Queue[i].IsBoss)
                 {
                     (m_Queue[front], m_Queue[i]) = (m_Queue[i], m_Queue[front]);
                     front++;
@@ -211,7 +211,7 @@ namespace RuneArena.Waves
         IEnumerator Spawn(Enemy prefab)
         {
             // Bosses come through the first door, the one in front of the player's start.
-            bool boss = prefab is BossEnemy;
+            bool boss = prefab.IsBoss;
             ArenaGate gate = boss ? m_Gates[0] : m_Gates[m_NextGate];
             if (!boss)
                 m_NextGate = (m_NextGate + 1) % m_Gates.Length;

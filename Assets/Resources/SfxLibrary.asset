@@ -16,7 +16,7 @@ MonoBehaviour:
   RuneFail: {fileID: 0}
   RuneLaunch: {fileID: 0}
   DrawHum: {fileID: 0}
-  FireLaunch: {fileID: 0}
+  FireLaunch: {fileID: 8300000, guid: 92186372dcb437345a85b28f8b604273, type: 3}
   FireExplode: {fileID: 0}
   LightningStrike: {fileID: 0}
   WaveSplash: {fileID: 0}

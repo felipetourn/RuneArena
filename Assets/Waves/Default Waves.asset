@@ -16,41 +16,75 @@ MonoBehaviour:
   - groups:
     - prefab: {fileID: 3049992508773306487, guid: 79135dfe4a7024a45a193a9ecf7c1ed1, type: 3}
       count: 3
+      fromStage: 1
+      everyStages: 1
     spawnInterval: 2.5
   - groups:
     - prefab: {fileID: 3049992508773306487, guid: 79135dfe4a7024a45a193a9ecf7c1ed1, type: 3}
       count: 3
+      fromStage: 1
+      everyStages: 1
     - prefab: {fileID: 6590407306134893953, guid: 9f8f254b2c040674e80277fc2281ed40, type: 3}
       count: 2
+      fromStage: 1
+      everyStages: 1
     spawnInterval: 2.5
   - groups:
     - prefab: {fileID: 3049992508773306487, guid: 79135dfe4a7024a45a193a9ecf7c1ed1, type: 3}
       count: 3
+      fromStage: 1
+      everyStages: 1
     - prefab: {fileID: 6590407306134893953, guid: 9f8f254b2c040674e80277fc2281ed40, type: 3}
       count: 2
+      fromStage: 1
+      everyStages: 1
     - prefab: {fileID: 2767822460036861272, guid: 6167eb4da0189ff4abb9bd91e6dbf552, type: 3}
       count: 2
+      fromStage: 1
+      everyStages: 1
     - prefab: {fileID: 1865375237447399707, guid: cbb9a76fb0fe799408b2ba23176bd864, type: 3}
       count: 1
+      fromStage: 1
+      everyStages: 1
     spawnInterval: 2
   - groups:
     - prefab: {fileID: 3049992508773306487, guid: 79135dfe4a7024a45a193a9ecf7c1ed1, type: 3}
       count: 5
+      fromStage: 1
+      everyStages: 1
     - prefab: {fileID: 6590407306134893953, guid: 9f8f254b2c040674e80277fc2281ed40, type: 3}
       count: 3
+      fromStage: 1
+      everyStages: 1
     - prefab: {fileID: 2767822460036861272, guid: 6167eb4da0189ff4abb9bd91e6dbf552, type: 3}
       count: 2
+      fromStage: 1
+      everyStages: 1
     - prefab: {fileID: 1865375237447399707, guid: cbb9a76fb0fe799408b2ba23176bd864, type: 3}
       count: 1
+      fromStage: 1
+      everyStages: 1
     spawnInterval: 2
   - groups:
     - prefab: {fileID: 1705323821864058233, guid: 391d9ebb92f6ac741bf7e835147844da, type: 3}
       count: 1
+      fromStage: 1
+      everyStages: 2
+    - prefab: {fileID: 2767822460036861272, guid: 95eec9ccf7483634dbadf3384f4b41be, type: 3}
+      count: 1
+      fromStage: 2
+      everyStages: 2
     - prefab: {fileID: 3049992508773306487, guid: 79135dfe4a7024a45a193a9ecf7c1ed1, type: 3}
       count: 3
+      fromStage: 1
+      everyStages: 1
     - prefab: {fileID: 6590407306134893953, guid: 9f8f254b2c040674e80277fc2281ed40, type: 3}
       count: 2
+      fromStage: 1
+      everyStages: 1
     - prefab: {fileID: 1865375237447399707, guid: cbb9a76fb0fe799408b2ba23176bd864, type: 3}
       count: 1
+      fromStage: 1
+      everyStages: 1
     spawnInterval: 3
   m_LoopGrowth: 0.3

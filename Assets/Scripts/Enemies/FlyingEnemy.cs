@@ -145,6 +145,8 @@ namespace RuneArena.Enemies
             m_State = state;
             m_StateUntil = Time.time + duration;
             Telegraphing = state == State.WindUp || state == State.Dive;
+            if (state == State.WindUp)
+                BeginAttack(duration);
         }
 
         Vector3 OrbitPoint(Vector3 head)
@@ -231,6 +233,26 @@ namespace RuneArena.Enemies
         protected override void ApplyKnockback(Vector3 offset)
         {
             Move(offset);
+        }
+
+        protected override void OnDied()
+        {
+            m_Velocity *= 0.3f;
+        }
+
+        // Falls out of the air and levels out, instead of shrinking where it was hit.
+        protected override void DeadTick(float deltaTime)
+        {
+            m_Velocity += Physics.gravity * deltaTime;
+            Vector3 p = transform.position + m_Velocity * deltaTime;
+            if (p.y <= ArenaCenter.y)
+            {
+                p.y = ArenaCenter.y;
+                m_Velocity = Vector3.zero;
+            }
+            transform.position = p;
+            var level = Quaternion.Euler(0f, transform.eulerAngles.y, 0f);
+            transform.rotation = Quaternion.RotateTowards(transform.rotation, level, 180f * deltaTime);
         }
 
         protected override void Interrupt()

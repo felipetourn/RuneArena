@@ -13,6 +13,16 @@ namespace RuneArena.Waves
         {
             public Enemy prefab;
             public int count = 1;
+            [Tooltip("First stage it shows up in.")]
+            public int fromStage = 1;
+            [Tooltip("From then on, once every this many stages: 1 is every stage, 2 every other one.")]
+            public int everyStages = 1;
+
+            public bool InStage(int stage)
+            {
+                int first = Mathf.Max(fromStage, 1);
+                return stage >= first && (stage - first) % Mathf.Max(everyStages, 1) == 0;
+            }
         }
 
         [Serializable]

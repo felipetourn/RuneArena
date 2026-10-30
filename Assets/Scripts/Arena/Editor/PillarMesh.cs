@@ -256,6 +256,10 @@ namespace RuneArena.Arena.Editor
             m.Quad(submesh, t - x - z, t + x - z, t + x + z, t - x + z, Vector3.up,
                    new Vector2(-sizeX * 0.5f, -sizeZ * 0.5f), new Vector2(sizeX * 0.5f, -sizeZ * 0.5f),
                    new Vector2(sizeX * 0.5f, sizeZ * 0.5f), new Vector2(-sizeX * 0.5f, sizeZ * 0.5f));
+            // The underside too: it shows from the floor wherever a box overhangs the one below.
+            m.Quad(submesh, b - x + z, b + x + z, b + x - z, b - x - z, Vector3.down,
+                   new Vector2(-sizeX * 0.5f, sizeZ * 0.5f), new Vector2(sizeX * 0.5f, sizeZ * 0.5f),
+                   new Vector2(sizeX * 0.5f, -sizeZ * 0.5f), new Vector2(-sizeX * 0.5f, -sizeZ * 0.5f));
         }
 
         // One side of a box: offset goes from the center to the face, along runs across it.

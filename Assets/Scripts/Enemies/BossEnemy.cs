@@ -33,6 +33,8 @@ namespace RuneArena.Enemies
         static readonly Collider[] s_Hits = new Collider[8];
         static Material s_Material;
 
+        public override bool IsBoss => true;
+
         [Header("Pattern")]
         [Tooltip("Seconds walking towards the player between two moves.")]
         [SerializeField] float m_Recover = 1.5f;

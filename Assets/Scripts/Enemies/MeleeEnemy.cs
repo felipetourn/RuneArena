@@ -41,7 +41,7 @@ namespace RuneArena.Enemies
                 if (Time.time >= m_ReadyAt)
                 {
                     m_HitAt = Time.time + m_WindUp;
-                    Telegraphing = true;
+                    BeginAttack(m_WindUp);
                 }
                 return;
             }

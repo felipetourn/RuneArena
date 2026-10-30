@@ -149,7 +149,7 @@ namespace RuneArena.Game
 
                 Upgrade upgrade = offer[i];
                 button.GetComponentInChildren<TMP_Text>().text =
-                    $"<b>{upgrade.Title}</b>  <size=70%>{Upgrades.TierName(upgrade.Tier)}</size>\n<size=70%>{upgrade.Description}</size>";
+                    $"<b>{upgrade.Title}</b>\n<size=70%>{upgrade.Description}</size>";
                 button.GetComponent<Image>().color = k_TierColors[(int)upgrade.Tier];
                 button.onClick.AddListener(() => picked(upgrade));
             }

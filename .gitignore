@@ -70,3 +70,6 @@ ml/data/parity_cs.txt
 /[Aa]ssets/XR/Temp/
 /[Aa]ssets/XR/Temp.meta
 /[Aa]ssets/Resources/PerformanceTestRun*
+
+# Sketchfab downloads that tools/models turns into the enemy models
+tools/models/source/

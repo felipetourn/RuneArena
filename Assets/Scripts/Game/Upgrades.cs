@@ -230,17 +230,6 @@ namespace RuneArena.Game
 
         static string Pct(float fraction) => $"{Mathf.RoundToInt(fraction * 100f)}%";
 
-        public static string TierName(UpgradeTier tier)
-        {
-            switch (tier)
-            {
-                case UpgradeTier.Silver: return "Plata";
-                case UpgradeTier.Gold: return "Oro";
-                case UpgradeTier.Diamond: return "Diamante";
-                default: return "Bronce";
-            }
-        }
-
         static string SpellName(string label)
         {
             switch (label)

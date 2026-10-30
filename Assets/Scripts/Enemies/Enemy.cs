@@ -34,6 +34,7 @@ namespace RuneArena.Enemies
     public abstract class Enemy : MonoBehaviour
     {
         static readonly int k_BaseColor = Shader.PropertyToID("_BaseColor");
+        static readonly int k_EmissionColor = Shader.PropertyToID("_EmissionColor");
         static readonly int k_StatusCount = Enum.GetValues(typeof(EnemyStatus)).Length;
 
         [SerializeField] float m_MaxHealth = 100f;
@@ -54,6 +55,8 @@ namespace RuneArena.Enemies
         [SerializeField] bool m_AlwaysShowBar;
         [Tooltip("Shown over the bar. Empty for regular enemies.")]
         [SerializeField] string m_DisplayName;
+        [Tooltip("Opens its wave and comes in alone through the main gate, announced.")]
+        [SerializeField] bool m_Boss;
 
         [Header("Feedback")]
         [SerializeField] Color m_TelegraphColor = new Color(1f, 0.9f, 0.3f);
@@ -64,6 +67,12 @@ namespace RuneArena.Enemies
         [SerializeField] Color m_EntangledTint = new Color(0.3f, 0.75f, 0.3f);
         [SerializeField] float m_FlashTime = 0.1f;
         [SerializeField] float m_DeathTime = 0.3f;
+        [Tooltip("Last part of the death time, in which it shrinks away. What comes before is for a death animation. 0 doesn't shrink.")]
+        [SerializeField] float m_ShrinkTime = 0.3f;
+        [Tooltip("Color multiplier of the hit flash. Above 1 for textured bodies, where white changes nothing.")]
+        [SerializeField] float m_FlashBrightness = 1f;
+        [Tooltip("How much the wind-up lights up a body whose material has emission. 0 leaves it to the color.")]
+        [SerializeField] float m_TelegraphGlow;
 
         static readonly List<Enemy> s_All = new List<Enemy>();
 
@@ -75,6 +84,8 @@ namespace RuneArena.Enemies
         // Armor worn down by a hit that couldn't break it.
         public event Action<Enemy, float> ArmorHit;
         public event Action<Enemy> ArmorBroken;
+        // An attack starts winding up, and lands this many seconds later.
+        public event Action<Enemy, float> AttackStarted;
         // Amount actually taken and what kind of hit it was.
         public event Action<Enemy, float, DamageKind> Damaged;
 
@@ -85,6 +96,7 @@ namespace RuneArena.Enemies
         public float BarScale => m_BarScale;
         public bool AlwaysShowBar => m_AlwaysShowBar;
         public string DisplayName => m_DisplayName;
+        public virtual bool IsBoss => m_Boss;
 
         public ArmorType Armor { get; private set; }
         public float ArmorPoints { get; private set; }
@@ -108,11 +120,13 @@ namespace RuneArena.Enemies
         protected float ArenaRadius => m_ArenaRadius;
         // Attacks multiply their damage by this. Set by the difficulty.
         protected float DamageMultiplier => m_DamageScale;
-        protected bool Telegraphing { get; set; }
+        public bool Telegraphing { get; protected set; }
 
         readonly float[] m_StatusUntil = new float[k_StatusCount];
         MaterialPropertyBlock m_Block;
         Color m_Color;
+        Color m_Emission;
+        bool m_Glows;
         Vector3 m_Knockback;
         float m_Slow;
         float m_StunImmuneUntil;
@@ -135,6 +149,9 @@ namespace RuneArena.Enemies
                 m_Body = GetComponentInChildren<Renderer>();
             m_Block = new MaterialPropertyBlock();
             m_Color = m_Body.sharedMaterial.color;
+            m_Glows = m_TelegraphGlow > 0f && m_Body.sharedMaterial.IsKeywordEnabled("_EMISSION");
+            if (m_Glows)
+                m_Emission = m_Body.sharedMaterial.GetColor(k_EmissionColor);
             if (GetComponent<EnemyHealthBar>() == null)
                 gameObject.AddComponent<EnemyHealthBar>();
         }
@@ -155,8 +172,13 @@ namespace RuneArena.Enemies
         {
             if (IsDead)
             {
-                float t = (Time.time - m_DiedAt) / m_DeathTime;
-                transform.localScale = Vector3.one * Mathf.Max(1f - t, 0f);
+                float shrink = Mathf.Min(m_ShrinkTime, m_DeathTime);
+                if (shrink > 0f)
+                {
+                    float t = (Time.time - m_DiedAt - (m_DeathTime - shrink)) / shrink;
+                    transform.localScale = Vector3.one * Mathf.Clamp01(1f - t);
+                }
+                DeadTick(Time.deltaTime);
                 return;
             }
 
@@ -242,6 +264,18 @@ namespace RuneArena.Enemies
 
         protected virtual void OnDied()
         {
+        }
+
+        // Every frame while dying, for things like falling out of the air.
+        protected virtual void DeadTick(float deltaTime)
+        {
+        }
+
+        // Starts the wind-up of an attack that lands after windUp seconds.
+        protected void BeginAttack(float windUp)
+        {
+            Telegraphing = true;
+            AttackStarted?.Invoke(this, windUp);
         }
 
         // source is the label of the rune whose spell did it, so the right one can break armor.
@@ -427,10 +461,15 @@ namespace RuneArena.Enemies
             if (Telegraphing)
                 color = Color.Lerp(color, m_TelegraphColor, 0.5f + 0.5f * Mathf.Sin(Time.time * 25f));
             if (Time.time < m_FlashUntil)
-                color = Color.white;
+                color = Color.white * m_FlashBrightness;
 
             m_Body.GetPropertyBlock(m_Block);
             m_Block.SetColor(k_BaseColor, color);
+            if (m_Glows)
+            {
+                float glow = Telegraphing ? m_TelegraphGlow * (0.5f + 0.5f * Mathf.Sin(Time.time * 25f)) : 0f;
+                m_Block.SetColor(k_EmissionColor, m_Emission + m_TelegraphColor * glow);
+            }
             m_Body.SetPropertyBlock(m_Block);
         }
 
