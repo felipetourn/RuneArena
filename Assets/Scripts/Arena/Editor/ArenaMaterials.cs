@@ -33,6 +33,8 @@ namespace RuneArena.Arena.Editor
             b.DarkMaterial = Plain(b.DarkMaterial, "Arena Dark", new Color(0.05f, 0.045f, 0.04f), 0f);
             b.WoodMaterial = Plain(b.WoodMaterial, "Arena Wood", new Color(0.33f, 0.23f, 0.16f), 0.15f);
             b.TunnelMaterial = Stone(b.TunnelMaterial, "Arena Tunnel", "Travertine", k_TravertineTile, new Color(0.3f, 0.28f, 0.25f));
+            b.BronzeMaterial = Plain(b.BronzeMaterial, "Arena Bronze", new Color(0.62f, 0.42f, 0.22f), 0.55f, 1f);
+            b.GlowMaterial = Glowing(b.GlowMaterial, "Arena Rune Glow", new Color(0.35f, 0.85f, 1f) * 2.5f);
             AssetDatabase.SaveAssets();
         }
 
@@ -101,13 +103,28 @@ namespace RuneArena.Arena.Editor
             return material;
         }
 
-        static Material Plain(Material material, string name, Color color, float smoothness)
+        static Material Plain(Material material, string name, Color color, float smoothness, float metallic = 0f)
         {
-            if (material != null)
-                return material;
+            if (material != null || Exists(name))
+                return material != null ? material : FindOrCreate(null, name);
             material = FindOrCreate(null, name);
             material.SetColor("_BaseColor", color);
             material.SetFloat("_Smoothness", smoothness);
+            material.SetFloat("_Metallic", metallic);
+            EditorUtility.SetDirty(material);
+            return material;
+        }
+
+        // Lit by itself: the base color hardly matters, the emission is what shows.
+        static Material Glowing(Material material, string name, Color emission)
+        {
+            if (material != null || Exists(name))
+                return material != null ? material : FindOrCreate(null, name);
+            material = FindOrCreate(null, name);
+            material.SetColor("_BaseColor", new Color(0.1f, 0.2f, 0.25f));
+            material.SetColor("_EmissionColor", emission);
+            material.EnableKeyword("_EMISSION");
+            material.globalIlluminationFlags = MaterialGlobalIlluminationFlags.None;
             EditorUtility.SetDirty(material);
             return material;
         }
@@ -125,6 +142,21 @@ namespace RuneArena.Arena.Editor
         static Texture2D Load(string name)
         {
             return AssetDatabase.LoadAssetAtPath<Texture2D>($"{TextureFolder}/{name}.png");
+        }
+
+        // Materials for what the player holds: the wand and the bracer.
+        public static void Props(out Material wood, out Material bronze, out Material leather, out Material glow)
+        {
+            wood = Plain(null, "Arena Wood", new Color(0.33f, 0.23f, 0.16f), 0.15f);
+            bronze = Plain(null, "Arena Bronze", new Color(0.62f, 0.42f, 0.22f), 0.55f, 1f);
+            leather = Plain(null, "Arena Leather", new Color(0.24f, 0.14f, 0.08f), 0.3f);
+            glow = Glowing(null, "Arena Rune Glow", new Color(0.35f, 0.85f, 1f) * 2.5f);
+            AssetDatabase.SaveAssets();
+        }
+
+        static bool Exists(string name)
+        {
+            return AssetDatabase.LoadAssetAtPath<Material>($"{k_MaterialFolder}/{name}.mat") != null;
         }
 
         static Material FindOrCreate(Material material, string name)

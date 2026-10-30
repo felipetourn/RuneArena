@@ -8,6 +8,15 @@ namespace RuneArena.Arena
     // behind the wall (seats, arcade, banners) is scenery without colliders.
     public class ColosseumBuilder : MonoBehaviour
     {
+        public enum PillarStyle
+        {
+            Column,
+            Broken,
+            Brazier,
+            Stele,
+            Blocks,
+        }
+
         [Serializable]
         public struct StandTier
         {
@@ -47,6 +56,8 @@ namespace RuneArena.Arena
         [Tooltip("Diameter of the shaft. Base and cap are a bit wider.")]
         [SerializeField] float m_PillarWidth = 1.2f;
         [SerializeField] float m_PillarHeight = 4f;
+        [Tooltip("Look of each pillar, in order; repeats if there are more pillars than styles.")]
+        [SerializeField] PillarStyle[] m_PillarStyles = { PillarStyle.Broken, PillarStyle.Brazier, PillarStyle.Stele, PillarStyle.Blocks };
 
         [Header("Stands")]
         [SerializeField] bool m_BuildStands = true;
@@ -93,6 +104,9 @@ namespace RuneArena.Arena
         [SerializeField] Material m_WoodMaterial;
         [Tooltip("Far part of the tunnels behind the doors (darkened travertine).")]
         [SerializeField] Material m_TunnelMaterial;
+        [SerializeField] Material m_BronzeMaterial;
+        [Tooltip("The runes carved on the stele.")]
+        [SerializeField] Material m_GlowMaterial;
 
         public float Radius => m_Radius;
         public float Thickness => m_Thickness;
@@ -109,6 +123,7 @@ namespace RuneArena.Arena
         public float PillarAngle => m_PillarAngle;
         public float PillarWidth => m_PillarWidth;
         public float PillarHeight => m_PillarHeight;
+        public PillarStyle[] PillarStyles => m_PillarStyles;
         public bool BuildStands => m_BuildStands;
         public float TerraceWidth => m_TerraceWidth;
         public StandTier[] Tiers => m_Tiers;
@@ -130,6 +145,8 @@ namespace RuneArena.Arena
         public Material DarkMaterial { get => m_DarkMaterial; set => m_DarkMaterial = value; }
         public Material WoodMaterial { get => m_WoodMaterial; set => m_WoodMaterial = value; }
         public Material TunnelMaterial { get => m_TunnelMaterial; set => m_TunnelMaterial = value; }
+        public Material BronzeMaterial { get => m_BronzeMaterial; set => m_BronzeMaterial = value; }
+        public Material GlowMaterial { get => m_GlowMaterial; set => m_GlowMaterial = value; }
 
         // Radius of the inside face of the arena wall.
         public float InnerRadius => m_Radius - m_Thickness;

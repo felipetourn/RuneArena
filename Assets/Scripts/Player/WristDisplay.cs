@@ -18,6 +18,8 @@ namespace RuneArena.Player
         [SerializeField] Vector3 m_LocalRotation = new Vector3(45f, 0f, 0f);
         [SerializeField] bool m_PinToViewInEditor = true;
         [SerializeField] Vector3 m_ViewPosition = new Vector3(-0.13f, -0.09f, 0.4f);
+        [Tooltip("Hidden while the bars are pinned to the view, like the bracer they normally sit on.")]
+        [SerializeField] GameObject m_HideWhenPinned;
 
         [Header("Colors")]
         [SerializeField] Color m_Background = new Color(0.1f, 0.1f, 0.1f);
@@ -50,6 +52,9 @@ namespace RuneArena.Player
             {
                 root.SetParent(m_Health.Head, false);
                 root.localPosition = m_ViewPosition;
+                // The simulated controller floats in front of the face, and the bracer with it would cover the bars.
+                if (m_HideWhenPinned != null)
+                    m_HideWhenPinned.SetActive(false);
             }
             else
             {

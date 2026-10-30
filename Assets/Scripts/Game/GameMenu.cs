@@ -85,6 +85,24 @@ namespace RuneArena.Game
             }
         }
 
+        // Keeps facing the player while open, so it reads right from wherever they walk; if they walk
+        // well away from it, it comes back in front of them.
+        void LateUpdate()
+        {
+            if (m_Head == null || !m_Canvas.gameObject.activeInHierarchy)
+                return;
+
+            Transform t = m_Canvas.transform;
+            Vector3 toMenu = Vector3.ProjectOnPlane(t.position - m_Head.position, Vector3.up);
+            if (toMenu.magnitude > m_Distance * 2f)
+            {
+                PlaceInFront();
+                return;
+            }
+            if (toMenu.sqrMagnitude > 1e-4f)
+                t.rotation = Quaternion.LookRotation(toMenu);
+        }
+
         public void ShowStart()
         {
             Show(m_StartPanel);

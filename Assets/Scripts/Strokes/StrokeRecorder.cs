@@ -58,6 +58,7 @@ namespace RuneArena.Strokes
         public Material LineMaterial => m_LineMaterial;
         public bool IsDrawing => m_Drawing;
         public bool IsSaving => m_SaveStrokes;
+        public Color LineColor { get; private set; } = Color.white;
 
         readonly List<Vector4> m_Points = new List<Vector4>(k_MaxPoints);
         readonly StringBuilder m_Json = new StringBuilder(16 * 1024);
@@ -321,6 +322,7 @@ namespace RuneArena.Strokes
 
         public void SetLineColor(Color color)
         {
+            LineColor = color;
             m_Line.GetPropertyBlock(m_LineBlock);
             m_LineBlock.SetColor("_BaseColor", color);
             m_Line.SetPropertyBlock(m_LineBlock);

@@ -165,9 +165,8 @@ namespace RuneArena.Arena.Editor
             return new Vector2(p.x / (2f * radius) + 0.5f, p.z / (2f * radius) + 0.5f);
         }
 
-        // Round pillars with a wider base and cap. They give cover: in the Wall layer, they stop enemy shots
-        // and spells, and the NavMesh goes around them. The colliders are simple cylinders; what's seen is
-        // a fluted column of the same size.
+        // Pillars give cover: in the Wall layer, they stop enemy shots and spells, and the NavMesh goes
+        // around them. Each one has its own style; the collider is the convex hull of what's seen.
         static void BuildPillars(ColosseumBuilder builder, Transform root, int layer, string prefix)
         {
             if (builder.PillarCount == 0)
@@ -177,13 +176,29 @@ namespace RuneArena.Arena.Editor
             Undo.RegisterCreatedObjectUndo(pillars, "Build Colosseum");
             pillars.transform.SetParent(root, false);
 
-            float w = builder.PillarWidth;
-            float h = builder.PillarHeight;
-            float trim = Mathf.Min(0.3f, h * 0.15f);
-            Mesh column = SaveMesh(ColumnMesh.Build(w * 0.5f, h, trim), $"{prefix} Column.asset");
+            // Older builds had one column mesh for all of them.
+            AssetDatabase.DeleteAsset($"{prefix} Column.asset");
 
+            var materials = new Material[PillarMesh.SubmeshCount];
+            materials[PillarMesh.Stone] = builder.WallMaterial;
+            materials[PillarMesh.Plinth] = builder.PlinthMaterial;
+            materials[PillarMesh.Trim] = builder.TrimMaterial;
+            materials[PillarMesh.Bronze] = builder.BronzeMaterial;
+            materials[PillarMesh.Glow] = builder.GlowMaterial;
+
+            ColosseumBuilder.PillarStyle[] styles = builder.PillarStyles;
+            var meshes = new Dictionary<ColosseumBuilder.PillarStyle, Mesh>();
             for (int i = 0; i < builder.PillarCount; i++)
             {
+                ColosseumBuilder.PillarStyle style = styles != null && styles.Length > 0
+                    ? styles[i % styles.Length]
+                    : ColosseumBuilder.PillarStyle.Column;
+                if (!meshes.TryGetValue(style, out Mesh mesh))
+                {
+                    mesh = SaveMesh(PillarMesh.Build(style, builder.PillarWidth, builder.PillarHeight), $"{prefix} Pillar {style}.asset");
+                    meshes[style] = mesh;
+                }
+
                 float angle = (builder.PillarAngle + i * 360f / builder.PillarCount) * Mathf.Deg2Rad;
                 var outward = new Vector3(Mathf.Sin(angle), 0f, Mathf.Cos(angle));
 
@@ -191,40 +206,14 @@ namespace RuneArena.Arena.Editor
                 pillar.transform.SetParent(pillars.transform, false);
                 pillar.transform.localPosition = outward * builder.PillarDistance;
                 pillar.transform.localRotation = Quaternion.LookRotation(-outward);
-
-                PillarPart(pillar.transform, "Base", new Vector3(w * 1.3f, trim, w * 1.3f), trim * 0.5f, layer);
-                PillarPart(pillar.transform, "Shaft", new Vector3(w, h - 2f * trim, w), h * 0.5f, layer);
-                PillarPart(pillar.transform, "Cap", new Vector3(w * 1.3f, trim, w * 1.3f), h - trim * 0.5f, layer);
-
-                var visual = new GameObject("Column");
-                visual.transform.SetParent(pillar.transform, false);
-                visual.layer = layer;
-                visual.isStatic = true;
-                visual.AddComponent<MeshFilter>().sharedMesh = column;
-                visual.AddComponent<MeshRenderer>().sharedMaterial = builder.TrimMaterial;
+                pillar.layer = layer;
+                pillar.isStatic = true;
+                pillar.AddComponent<MeshFilter>().sharedMesh = mesh;
+                pillar.AddComponent<MeshRenderer>().sharedMaterials = materials;
+                var collider = pillar.AddComponent<MeshCollider>();
+                collider.sharedMesh = mesh;
+                collider.convex = true;
             }
-        }
-
-        // Collider only. size is diameter, height, diameter.
-        static void PillarPart(Transform parent, string name, Vector3 size, float y, int layer)
-        {
-            GameObject part = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-            part.name = name;
-            part.layer = layer;
-            part.isStatic = true;
-            part.transform.SetParent(parent, false);
-            part.transform.localPosition = new Vector3(0f, y, 0f);
-            // The built-in cylinder is 2 units tall.
-            part.transform.localScale = new Vector3(size.x, size.y * 0.5f, size.z);
-            Mesh shape = part.GetComponent<MeshFilter>().sharedMesh;
-            Object.DestroyImmediate(part.GetComponent<MeshRenderer>());
-            Object.DestroyImmediate(part.GetComponent<MeshFilter>());
-
-            // Its default capsule collider rounds off the flat top and bottom.
-            Object.DestroyImmediate(part.GetComponent<Collider>());
-            var collider = part.AddComponent<MeshCollider>();
-            collider.sharedMesh = shape;
-            collider.convex = true;
         }
 
         // Everything that is only there to be looked at: no colliders, and kept out of the NavMesh.

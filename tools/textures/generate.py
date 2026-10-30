@@ -5,6 +5,7 @@ made (ColosseumBuilderEditor), so if you change it here change it there too:
   sand 3 m, travertine 3 m (5 courses of 0.6 m), marble 2 m (slabs of 1 m), granite 1.5 m.
 
 The sun angles of the two skies are the ones in ArenaLighting's presets.
+The particle sprites go to a Fx folder next to the arena textures.
 """
 import argparse
 import time
@@ -12,7 +13,7 @@ from pathlib import Path
 
 import numpy as np
 
-from arena import props, sky, stone
+from arena import fx, props, sky, stone
 from arena.image import normal_from_height, save_albedo, save_normal
 
 
@@ -43,6 +44,7 @@ def main():
         ("Gate", lambda: gate(out, rng)),
         ("Banner", lambda: banner(out, rng)),
         ("Sky", lambda: skies(out, args.sky_width)),
+        ("Fx", lambda: effects(out.parent / "Fx", rng)),
     ]
     for name, job in jobs:
         if not wanted(name):
@@ -62,6 +64,13 @@ def banner(out, rng):
     color, alpha, height = props.banner(512, 1536, rng)
     save_albedo(out / "Banner_Albedo.png", color, alpha=alpha)
     save_normal(out / "Banner_Normal.png", normal_from_height(height, 0.4))
+
+
+def effects(out, rng):
+    for name, (color, alpha) in (("Fx_Glow", fx.glow(128)), ("Fx_Spark", fx.spark(128)),
+                                 ("Fx_Puff", fx.puff(128, rng)), ("Fx_Ring", fx.ring(256)),
+                                 ("Fx_Line", fx.line(64, 16))):
+        save_albedo(out / f"{name}.png", color, alpha=alpha)
 
 
 def skies(out, width):

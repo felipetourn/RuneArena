@@ -1,9 +1,10 @@
+using RuneArena.Arena;
 using UnityEngine;
 
 namespace RuneArena.Enemies
 {
     // Circles the player in the air, then dives at the head after a wind-up and climbs back.
-    // Doesn't use the NavMesh, so earth walls don't stop it.
+    // Doesn't use the NavMesh, so earth walls don't stop it; it steers around the arena's pillars.
     public class FlyingEnemy : Enemy
     {
         enum State
@@ -36,6 +37,12 @@ namespace RuneArena.Enemies
         [SerializeField] float m_Cooldown = 6f;
         [SerializeField] float m_RecoverTime = 1f;
 
+        [Header("Pillars")]
+        [Tooltip("Extra room it keeps from a pillar, besides the pillar's own size.")]
+        [SerializeField] float m_PillarMargin = 0.5f;
+        [Tooltip("Distance past that room at which it starts turning away.")]
+        [SerializeField] float m_AvoidDistance = 2.5f;
+
         State m_State;
         float m_StateUntil;
         float m_ReadyAt;
@@ -45,6 +52,9 @@ namespace RuneArena.Enemies
         float m_ArenaLimit = float.PositiveInfinity;
         bool m_Entered;
         float m_EnteredAt;
+        Vector3[] m_Pillars = new Vector3[0];
+        float m_PillarRadius;
+        float m_PillarTop;
 
         protected override void Start()
         {
@@ -54,6 +64,21 @@ namespace RuneArena.Enemies
 
             if (ArenaRadius > 0f)
                 m_ArenaLimit = ArenaRadius - 1f;
+
+            var arena = FindAnyObjectByType<ColosseumBuilder>();
+            if (arena != null && arena.PillarCount > 0)
+            {
+                m_Pillars = new Vector3[arena.PillarCount];
+                for (int i = 0; i < m_Pillars.Length; i++)
+                {
+                    float angle = (arena.PillarAngle + i * 360f / arena.PillarCount) * Mathf.Deg2Rad;
+                    var local = new Vector3(Mathf.Sin(angle), 0f, Mathf.Cos(angle)) * arena.PillarDistance;
+                    m_Pillars[i] = arena.transform.TransformPoint(local);
+                }
+                // Square bases reach further out at the corners than the shaft's width.
+                m_PillarRadius = arena.PillarWidth * 0.9f + m_PillarMargin;
+                m_PillarTop = arena.transform.position.y + arena.PillarHeight + 0.5f;
+            }
         }
 
         protected override void Tick(float deltaTime)
@@ -138,7 +163,34 @@ namespace RuneArena.Enemies
         void Steer(Vector3 target, float speed, float deltaTime)
         {
             Vector3 desired = Vector3.ClampMagnitude(target - transform.position, speed);
+            desired = Vector3.ClampMagnitude(desired + AvoidPillars(desired, speed), speed);
             m_Velocity = Vector3.MoveTowards(m_Velocity, desired, m_Acceleration * deltaTime);
+        }
+
+        // Pushes away from nearby pillars and around them, toward whichever side it was already heading.
+        Vector3 AvoidPillars(Vector3 desired, float speed)
+        {
+            Vector3 push = Vector3.zero;
+            Vector3 position = transform.position;
+            if (position.y > m_PillarTop)
+                return push;
+
+            foreach (Vector3 pillar in m_Pillars)
+            {
+                Vector3 away = position - pillar;
+                away.y = 0f;
+                float gap = away.magnitude - m_PillarRadius;
+                if (gap > m_AvoidDistance || away.sqrMagnitude < 1e-6f)
+                    continue;
+
+                away.Normalize();
+                float strength = 1f - Mathf.Clamp01(gap / m_AvoidDistance);
+                Vector3 around = Vector3.Cross(Vector3.up, away);
+                if (Vector3.Dot(around, desired) < 0f)
+                    around = -around;
+                push += (away + around) * (speed * strength);
+            }
+            return push;
         }
 
         void Move(Vector3 offset)
@@ -158,6 +210,20 @@ namespace RuneArena.Enemies
             {
                 flat = flat.normalized * m_ArenaLimit;
                 p = new Vector3(ArenaCenter.x + flat.x, p.y, ArenaCenter.z + flat.z);
+            }
+
+            // Never inside a pillar, whatever moved it: steering, a dive or a push.
+            if (p.y <= m_PillarTop)
+            {
+                foreach (Vector3 pillar in m_Pillars)
+                {
+                    Vector3 away = p - pillar;
+                    away.y = 0f;
+                    if (away.sqrMagnitude >= m_PillarRadius * m_PillarRadius || away.sqrMagnitude < 1e-6f)
+                        continue;
+                    away = away.normalized * m_PillarRadius;
+                    p = new Vector3(pillar.x + away.x, p.y, pillar.z + away.z);
+                }
             }
             transform.position = p;
         }

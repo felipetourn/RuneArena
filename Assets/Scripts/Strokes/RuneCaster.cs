@@ -30,6 +30,10 @@ namespace RuneArena.Strokes
 
         // Label, start position and direction, in world space.
         public event Action<string, Vector3, Vector3> RuneLaunched;
+        // A recognized rune is ready to launch.
+        public event Action<string> RuneCharged;
+        // The rune was rejected, couldn't be cast, or was held too long. Fired before its line fades.
+        public event Action RuneDiscarded;
 
         public bool HasChargedRune => m_Charged != null && !m_Recorder.IsDrawing;
 
@@ -119,6 +123,7 @@ namespace RuneArena.Strokes
             m_PushCount = 0;
             m_PrevTip = TipInOrigin();
             m_Recorder.SetLineColor(ColorFor(label));
+            RuneCharged?.Invoke(label);
         }
 
         void OnStrokeStarted(StrokeRecorder recorder)
@@ -165,6 +170,7 @@ namespace RuneArena.Strokes
         {
             m_Charged = null;
             m_Recorder.SetLineColor(color);
+            RuneDiscarded?.Invoke();
             m_Fade = StartCoroutine(FadeOut());
         }
 
