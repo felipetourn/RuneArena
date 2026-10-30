@@ -1,3 +1,4 @@
+using RuneArena.Effects;
 using UnityEngine;
 
 namespace RuneArena.Spells
@@ -41,9 +42,12 @@ namespace RuneArena.Spells
             if (Physics.Raycast(cast.Aim, out RaycastHit hit, m_Range, EnemyMask | FloorMask | WallMask, QueryTriggerInteraction.Ignore))
                 target = hit.point;
 
-            GameObject go = CreateVisual(PrimitiveType.Sphere, "Fireball", cast.Material, m_Color);
+            FxLibrary fx = Fx.Library;
+            GameObject go = CreateVisual(PrimitiveType.Sphere, "Fireball", SpellFx.Surface(fx != null ? fx.FireCore : null, cast.Material), m_Color);
             go.transform.position = cast.Origin;
-            go.transform.localScale = Vector3.one * (m_Radius * 2f);
+            // With effects the flames around it make up the rest of its size.
+            go.transform.localScale = Vector3.one * (m_Radius * (fx != null ? 1.1f : 2f));
+            SpellFx.FireballTrail(go.transform, m_Radius);
             go.AddComponent<FireballProjectile>().Launch(this, (target - cast.Origin).normalized, cast.Material, cast.Power,
                 HasPerk(SpellPerks.BigExplosion) ? 2f : 1f);
         }

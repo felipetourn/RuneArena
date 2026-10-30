@@ -53,6 +53,8 @@ namespace RuneArena.Effects
                     s_Loaded = true;
                     if (s_Library == null)
                         Debug.LogWarning("Fx: no FxLibrary in Resources. Run RuneArena > Create Effects.");
+                    else if (!s_Library.IsComplete)
+                        Debug.LogWarning("Fx: the FxLibrary is missing some materials. Run RuneArena > Create Effects again.");
                 }
                 return s_Library;
             }
@@ -114,6 +116,13 @@ namespace RuneArena.Effects
             ps.transform.SetParent(null, true);
             ps.Stop(true, ParticleSystemStopBehavior.StopEmitting);
             Object.Destroy(ps.gameObject, ps.main.startLifetime.constantMax + 0.1f);
+        }
+
+        // Releases every trail attached anywhere under go, so destroying go doesn't cut them off.
+        public static void ReleaseAll(GameObject go)
+        {
+            foreach (ParticleSystem ps in go.GetComponentsInChildren<ParticleSystem>())
+                Release(ps);
         }
 
         static ParticleSystem Create(string name, in FxBurst b, bool looping)

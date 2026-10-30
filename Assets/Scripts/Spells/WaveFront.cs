@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using RuneArena.Effects;
 using RuneArena.Enemies;
 using UnityEngine;
 
@@ -59,7 +60,10 @@ namespace RuneArena.Spells
             var front = new Vector3(0.5f, halfExtents.y, halfExtents.z);
             bool blocked = Physics.CheckBox(center, front, m_Rotation, m_WallMask, QueryTriggerInteraction.Ignore);
             if (blocked || t >= 1f)
+            {
+                Fx.ReleaseAll(gameObject);
                 Destroy(gameObject);
+            }
         }
 
         Vector3 Place(float t)

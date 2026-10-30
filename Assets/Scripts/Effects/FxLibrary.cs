@@ -19,5 +19,23 @@ namespace RuneArena.Effects
         public Material Ring;
         [Tooltip("Additive glow across a line renderer.")]
         public Material Line;
+
+        [Header("Spell surfaces")]
+        [Tooltip("Glowing core of the fireball.")]
+        public Material FireCore;
+        [Tooltip("Packed earth for the earth walls.")]
+        public Material Earth;
+        [Tooltip("Mat of leaves for the ivy patch.")]
+        public Material Ivy;
+        [Tooltip("Shiny blue ice for the shards.")]
+        public Material Ice;
+        [Tooltip("See-through painted water for the wave.")]
+        public Material Water;
+        public Material Vine;
+        public Material Thorn;
+
+        // False for a library made by an older version of Create Effects, missing the newer materials.
+        public bool IsComplete => FireCore != null && Earth != null && Ivy != null && Ice != null
+                                  && Water != null && Vine != null && Thorn != null;
     }
 }

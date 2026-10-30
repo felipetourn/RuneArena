@@ -3708,7 +3708,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::RuneArena.Spells.IceSpell
   m_Color: {r: 0.6, g: 0.9, b: 1, a: 1}
   m_ManaCost: 20
-  m_StartsLocked: 1
+  m_StartsLocked: 0
   m_Speed: 16
   m_Radius: 0.25
   m_Range: 40
@@ -3729,7 +3729,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::RuneArena.Spells.IvySpell
   m_Color: {r: 0.25, g: 0.7, b: 0.25, a: 1}
   m_ManaCost: 25
-  m_StartsLocked: 1
+  m_StartsLocked: 0
   m_Range: 30
   m_Radius: 3
   m_Duration: 6

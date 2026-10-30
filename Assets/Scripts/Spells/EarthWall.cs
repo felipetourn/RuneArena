@@ -72,6 +72,7 @@ namespace RuneArena.Spells
                 return;
             m_BrokenAt = Time.time;
             m_HeightAtBreak = CurrentUp();
+            SpellFx.Debris(transform.position, transform.localScale.x, transform.localScale.y);
             GetComponent<Collider>().enabled = false;
             Destroy(GetComponent<NavMeshObstacle>());
         }

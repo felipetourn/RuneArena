@@ -1,3 +1,4 @@
+using RuneArena.Effects;
 using UnityEngine;
 
 namespace RuneArena.Spells
@@ -59,6 +60,13 @@ namespace RuneArena.Spells
 
             direction.Normalize();
             GameObject go = CreateVisual(PrimitiveType.Cube, "Wave", cast.Material, m_Color);
+            // With effects the wave is a curling water mesh; the box only says where it hits.
+            if (Fx.Library != null)
+            {
+                go.GetComponent<Renderer>().enabled = false;
+                SpellFx.WaveBody(go.transform);
+                SpellFx.WaveSpray(go.transform, m_Color);
+            }
             go.AddComponent<WaveFront>().Launch(this, start + direction * m_StartOffset, direction, cast.Power);
         }
     }

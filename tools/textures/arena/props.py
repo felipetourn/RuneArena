@@ -97,3 +97,48 @@ def banner(width, height, rng):
     color = color * (1 + 0.04 * weave[..., None])
     relief = folds * 6 + weave * 0.3 + emblem * 0.6
     return np.clip(color, 0, 1), alpha, relief
+
+
+def ivy(size, rng, count=260):
+    """A mat of ivy leaves seen from above, tiling, with the gaps cut out.
+    Returns (color, alpha, height)."""
+    color = np.zeros((size, size, 3))
+    alpha = np.zeros((size, size))
+    height = np.zeros((size, size))
+    greens = [rgb(52, 92, 36), rgb(70, 118, 44), rgb(40, 76, 32), rgb(88, 128, 52)]
+
+    for _ in range(count):
+        cx, cy = rng.uniform(0, size, 2)
+        s = rng.uniform(0.035, 0.07) * size
+        turn = rng.uniform(0, 2 * np.pi)
+        r = int(s * 1.3) + 2
+        xs = (np.arange(-r, r + 1) + int(cx)) % size
+        ys = (np.arange(-r, r + 1) + int(cy)) % size
+        gx, gy = np.meshgrid(np.arange(-r, r + 1) + (int(cx) - cx), np.arange(-r, r + 1) + (int(cy) - cy))
+        a = np.arctan2(gy, gx) - turn
+        dist = np.hypot(gx, gy)
+        # Five rounded lobes, the classic ivy outline.
+        outline = s * (0.62 + 0.38 * np.abs(np.cos(2.5 * a)))
+        inside = dist < outline
+        if not inside.any():
+            continue
+        dome = np.sqrt(np.clip(1 - (dist / np.maximum(outline, 1e-3)) ** 2, 0, 1))
+        vein = np.exp(-(np.abs(np.sin(5 * a / 2 * 2)) * dist / (0.06 * s)) ** 2) * (dist < outline * 0.9)
+        base = greens[rng.integers(len(greens))] * rng.uniform(0.85, 1.15)
+        leaf = base * (0.75 + 0.35 * dome)[..., None]
+        leaf = lerp(leaf, base * 1.45, vein * 0.6)
+        lift = rng.uniform(0.0, 1.0)
+
+        block = np.ix_(ys, xs)
+        top = inside & (dome + lift > height[block])
+        sub_color = color[block]
+        sub_color[top] = leaf[top]
+        color[block] = sub_color
+        sub_h = height[block]
+        sub_h[top] = (dome + lift)[top]
+        height[block] = sub_h
+        sub_a = alpha[block]
+        sub_a[inside] = 1.0
+        alpha[block] = sub_a
+
+    return np.clip(color, 0, 1), alpha, height * 3.0

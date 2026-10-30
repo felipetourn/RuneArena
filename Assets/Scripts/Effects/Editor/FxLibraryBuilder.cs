@@ -33,6 +33,15 @@ namespace RuneArena.Effects.Editor
             library.Flame = Particles("Fx Flame", "Fx_Puff", true);
             library.Ring = Particles("Fx Ring", "Fx_Ring", true);
             library.Line = Particles("Fx Line", "Fx_Line", true);
+            library.FireCore = Lit("Fx Fire Core", null, new Color(1f, 0.55f, 0.15f), 0.2f, new Color(1f, 0.5f, 0.12f) * 3f, false);
+            library.Earth = Lit("Fx Earth", "Assets/Textures/Arena/Earth", Color.white, 0f, Color.black, false);
+            library.Earth.SetTextureScale("_BaseMap", new Vector2(1.5f, 1f));
+            library.Ivy = Lit("Fx Ivy", k_Textures + "/Ivy", Color.white, 0.25f, Color.black, true);
+            library.Ivy.SetTextureScale("_BaseMap", Vector2.one * 2f);
+            library.Ice = Lit("Fx Ice", null, new Color(0.65f, 0.88f, 1f), 0.92f, new Color(0.2f, 0.45f, 0.6f), false);
+            library.Water = Particles("Fx Water", "Fx_Water", false);
+            library.Vine = Lit("Fx Vine", null, new Color(0.16f, 0.3f, 0.12f), 0.35f, Color.black, false);
+            library.Thorn = Lit("Fx Thorn", null, new Color(0.78f, 0.72f, 0.52f), 0.4f, Color.black, false);
             EditorUtility.SetDirty(library);
             AssetDatabase.SaveAssets();
 
@@ -67,6 +76,49 @@ namespace RuneArena.Effects.Editor
             material.SetOverrideTag("RenderType", "Transparent");
             material.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
             material.renderQueue = (int)RenderQueue.Transparent;
+            EditorUtility.SetDirty(material);
+            return material;
+        }
+
+        // Lit surface. texture is a path without the _Albedo/_Normal ending, or null for a plain color.
+        // A black emission leaves it off.
+        static Material Lit(string name, string texture, Color color, float smoothness, Color emission, bool cutout)
+        {
+            string path = $"{k_Materials}/{name}.mat";
+            var material = AssetDatabase.LoadAssetAtPath<Material>(path);
+            if (material == null)
+            {
+                material = new Material(Shader.Find("Universal Render Pipeline/Lit"));
+                AssetDatabase.CreateAsset(material, path);
+            }
+
+            material.SetColor("_BaseColor", color);
+            material.SetFloat("_Smoothness", smoothness);
+            if (texture != null)
+            {
+                material.SetTexture("_BaseMap", AssetDatabase.LoadAssetAtPath<Texture2D>(texture + "_Albedo.png"));
+                var normal = AssetDatabase.LoadAssetAtPath<Texture2D>(texture + "_Normal.png");
+                if (normal != null)
+                {
+                    material.SetTexture("_BumpMap", normal);
+                    material.EnableKeyword("_NORMALMAP");
+                }
+            }
+            if (emission.maxColorComponent > 0f)
+            {
+                material.SetColor("_EmissionColor", emission);
+                material.EnableKeyword("_EMISSION");
+                material.globalIlluminationFlags = MaterialGlobalIlluminationFlags.None;
+            }
+            if (cutout)
+            {
+                material.SetFloat("_AlphaClip", 1f);
+                material.SetFloat("_Cutoff", 0.5f);
+                material.SetFloat("_Cull", 0f);
+                material.EnableKeyword("_ALPHATEST_ON");
+                material.renderQueue = (int)RenderQueue.AlphaTest;
+                material.SetOverrideTag("RenderType", "TransparentCutout");
+            }
             EditorUtility.SetDirty(material);
             return material;
         }

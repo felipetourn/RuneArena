@@ -1,3 +1,4 @@
+using RuneArena.Effects;
 using UnityEngine;
 
 namespace RuneArena.Spells
@@ -35,10 +36,21 @@ namespace RuneArena.Spells
             if (Physics.Raycast(cast.Aim, out RaycastHit hit, m_Range, EnemyMask | FloorMask | WallMask, QueryTriggerInteraction.Ignore))
                 target = hit.point;
 
-            GameObject go = CreateVisual(PrimitiveType.Cube, "Ice Shard", cast.Material, m_Color);
+            FxLibrary fx = Fx.Library;
+            GameObject go = CreateVisual(PrimitiveType.Cube, "Ice Shard", SpellFx.Surface(fx != null ? fx.Ice : null, cast.Material), m_Color);
             Vector3 direction = (target - cast.Origin).normalized;
-            go.transform.SetPositionAndRotation(cast.Origin, Quaternion.LookRotation(direction));
-            go.transform.localScale = new Vector3(m_Radius, m_Radius, m_Radius * 3f);
+            // Turned on its long axis, so it reads as a crystal rather than a brick.
+            go.transform.SetPositionAndRotation(cast.Origin, Quaternion.LookRotation(direction) * Quaternion.Euler(0f, 0f, 45f));
+            SpellFx.FrostTrail(go.transform);
+            if (fx != null && fx.Ice != null)
+            {
+                go.GetComponent<MeshFilter>().sharedMesh = SpellMeshes.Icicle;
+                go.transform.localScale = Vector3.one * (m_Radius * 3.5f);
+            }
+            else
+            {
+                go.transform.localScale = new Vector3(m_Radius, m_Radius, m_Radius * 3f);
+            }
             go.AddComponent<IceProjectile>().Launch(this, direction, cast.Material, cast.Power);
         }
     }

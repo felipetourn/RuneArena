@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using RuneArena.Effects;
 using RuneArena.Enemies;
 using UnityEngine;
 
@@ -18,6 +19,8 @@ namespace RuneArena.Spells
         float m_Power;
         float m_EndAt;
         float m_BornAt;
+        // Thorny vines bursting out of it, when there are effects. A separate object: the patch itself is flattened.
+        Transform m_Roots;
         float m_NextTick;
         bool m_Burning;
 
@@ -33,6 +36,7 @@ namespace RuneArena.Spells
             m_BornAt = Time.time;
             m_EndAt = Time.time + spell.Duration;
             transform.position = ground + Vector3.up * k_Height;
+            CreateRoots();
             SetSize(0f);
         }
 
@@ -40,6 +44,33 @@ namespace RuneArena.Spells
         {
             float diameter = Mathf.Lerp(0.3f, m_Spell.Radius * 2f, t);
             transform.localScale = new Vector3(diameter, 0.01f, diameter);
+            if (m_Roots != null)
+            {
+                float spread = Mathf.Lerp(0.5f, 1f, t);
+                m_Roots.localScale = new Vector3(spread, Mathf.SmoothStep(0f, 1f, t), spread);
+            }
+        }
+
+        void CreateRoots()
+        {
+            FxLibrary fx = Fx.Library;
+            if (fx == null || fx.Vine == null || fx.Thorn == null)
+                return;
+            var go = new GameObject("Ivy Roots");
+            go.transform.SetPositionAndRotation(m_Center, Quaternion.Euler(0f, Random.Range(0f, 360f), 0f));
+            go.AddComponent<MeshFilter>().sharedMesh = SpellMeshes.Roots(m_Spell.Radius, Random.Range(0, int.MaxValue));
+            var renderer = go.AddComponent<MeshRenderer>();
+            renderer.sharedMaterials = new[] { fx.Vine, fx.Thorn };
+            m_Roots = go.transform;
+        }
+
+        void OnDestroy()
+        {
+            if (m_Roots == null)
+                return;
+            // Each patch has its own roots mesh.
+            Destroy(m_Roots.GetComponent<MeshFilter>().sharedMesh);
+            Destroy(m_Roots.gameObject);
         }
 
         void OnEnable()
@@ -59,6 +90,16 @@ namespace RuneArena.Spells
                 return;
             m_Burning = true;
             s_All.Remove(this);
+            SpellFx.BurnPatch(m_Center, m_Spell.Radius);
+            if (m_Roots != null)
+            {
+                // Charred, then gone with the patch.
+                var block = new MaterialPropertyBlock();
+                block.SetColor("_BaseColor", new Color(0.08f, 0.06f, 0.05f));
+                m_Roots.GetComponent<Renderer>().SetPropertyBlock(block);
+                Vector3 roots = m_Roots.localScale;
+                SpellVisual.Spawn(m_Roots.gameObject, roots, new Vector3(roots.x, 0.05f, roots.z), 0.4f);
+            }
             Vector3 size = transform.localScale;
             SpellVisual.Spawn(gameObject, size, new Vector3(0.1f, size.y, 0.1f), 0.25f);
         }

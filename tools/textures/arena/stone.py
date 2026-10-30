@@ -171,3 +171,34 @@ def granite(size, rng, slabs=1):
     height = face * 2.0 + 0.15 * spectral(shape, rng, beta=1.0, low=20)
     smoothness = 0.35 + 0.1 * (kind > 0.92) * edge
     return color, smoothness, height
+
+
+def earth(size, rng):
+    """Packed earth for the walls the earth rune raises: the arena's sand pressed into layers,
+    with stones and dry cracks. Darker and browner than the floor, but clearly the same ground."""
+    shape = (size, size)
+    yy = np.arange(size)[:, None] / size
+
+    # Layers of slightly different soil, wavy, a few per tile.
+    warp = spectral(shape, rng, beta=2.6, low=1, high=6)
+    layers = np.sin(2 * np.pi * (6 * yy + 0.12 * warp))
+    band = smoothstep(layers, -0.3, 0.6)
+    color = lerp(rgb(150, 118, 84), rgb(176, 142, 100), band)
+    color = color * (1 + 0.08 * spectral(shape, rng, beta=1.8, low=3, high=60)[..., None])
+    color = color * (1 + 0.05 * spectral(shape, rng, beta=0.5, low=80)[..., None])
+
+    # Stones stuck in it.
+    d1, _, index = cells(shape, 260, rng)
+    radius = rng.uniform(2.0, 9.0, 260)[index] * size / 1024
+    stone = smoothstep(radius - d1, 0.0, 1.5)
+    tint = lerp(rgb(150, 132, 108), rgb(104, 88, 70), rng.random(260)[index])
+    color = lerp(color, tint, stone)
+
+    # Dry cracks along cell edges, only where a noise lets them through.
+    c1, c2, _ = cells(shape, 40, rng)
+    crack = (1 - smoothstep(c2 - c1, 0.0, 2.5 * size / 512)) * smoothstep(spectral(shape, rng, beta=2.0, low=2, high=12), -0.2, 0.6)
+    color = color * (1 - 0.55 * crack[..., None])
+
+    height = 1.2 * band + 0.3 * spectral(shape, rng, beta=1.2, low=10) + stone * 2.0 - crack * 3.0
+    smoothness = 0.06 + 0.1 * stone
+    return color, smoothness, height

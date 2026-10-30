@@ -3,6 +3,7 @@
 Every stone texture tiles. The size each tile covers in the world is set where the materials are
 made (ColosseumBuilderEditor), so if you change it here change it there too:
   sand 3 m, travertine 3 m (5 courses of 0.6 m), marble 2 m (slabs of 1 m), granite 1.5 m.
+The earth (for the earth rune's walls) and the ivy are tiled by the effects' materials instead.
 
 The sun angles of the two skies are the ones in ArenaLighting's presets.
 The particle sprites go to a Fx folder next to the arena textures.
@@ -44,6 +45,8 @@ def main():
         ("Gate", lambda: gate(out, rng)),
         ("Banner", lambda: banner(out, rng)),
         ("Sky", lambda: skies(out, args.sky_width)),
+        ("Earth", lambda: stone_set("Earth", stone.earth(1024, rng), 0.5)),
+        ("Ivy", lambda: ivy(out.parent / "Fx", rng)),
         ("Fx", lambda: effects(out.parent / "Fx", rng)),
     ]
     for name, job in jobs:
@@ -66,10 +69,16 @@ def banner(out, rng):
     save_normal(out / "Banner_Normal.png", normal_from_height(height, 0.4))
 
 
+def ivy(out, rng):
+    color, alpha, height = props.ivy(512, rng)
+    save_albedo(out / "Ivy_Albedo.png", color, alpha=alpha)
+    save_normal(out / "Ivy_Normal.png", normal_from_height(height, 0.5))
+
+
 def effects(out, rng):
     for name, (color, alpha) in (("Fx_Glow", fx.glow(128)), ("Fx_Spark", fx.spark(128)),
                                  ("Fx_Puff", fx.puff(128, rng)), ("Fx_Ring", fx.ring(256)),
-                                 ("Fx_Line", fx.line(64, 16))):
+                                 ("Fx_Line", fx.line(64, 16)), ("Fx_Water", fx.water(256, 512, rng))):
         save_albedo(out / f"{name}.png", color, alpha=alpha)
 
 

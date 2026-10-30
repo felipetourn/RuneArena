@@ -294,7 +294,7 @@ namespace RuneArena.Arena.Editor
     {
         void OnPreprocessTexture()
         {
-            bool generated = assetPath.StartsWith(ArenaMaterials.TextureFolder + "/");
+            bool generated = assetPath.StartsWith(ArenaMaterials.TextureFolder + "/") || assetPath.StartsWith("Assets/Textures/Fx/");
             bool layout = assetPath.EndsWith("Floor Layout.png");
             if (!generated && !layout)
                 return;
@@ -341,7 +341,7 @@ namespace RuneArena.Arena.Editor
                 importer.alphaSource = TextureImporterAlphaSource.FromInput;
             }
 
-            if (name.StartsWith("Gate") || name.StartsWith("Banner"))
+            if (name.StartsWith("Gate") || name.StartsWith("Banner") || name.StartsWith("Ivy_"))
             {
                 importer.wrapMode = TextureWrapMode.Clamp;
                 importer.mipMapsPreserveCoverage = true;

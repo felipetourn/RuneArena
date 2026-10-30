@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using RuneArena.Effects;
 using RuneArena.Enemies;
 using UnityEngine;
 
@@ -61,8 +62,11 @@ namespace RuneArena.Spells
             if (wall != null)
                 Roots(wall, cast);
 
-            GameObject go = CreateVisual(PrimitiveType.Cylinder, "Ivy", cast.Material, m_Color);
+            FxLibrary fx = Fx.Library;
+            bool leafy = fx != null && fx.Ivy != null;
+            GameObject go = CreateVisual(PrimitiveType.Cylinder, "Ivy", leafy ? fx.Ivy : cast.Material, leafy ? Color.white : m_Color);
             go.AddComponent<IvyPatch>().Grow(this, ground, cast.Power);
+            SpellFx.Leaves(ground, Radius, m_Color);
         }
 
         EarthWall NearestWall(Vector3 point)

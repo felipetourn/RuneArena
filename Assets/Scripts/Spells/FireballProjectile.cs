@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using RuneArena.Effects;
 using RuneArena.Enemies;
 using UnityEngine;
 
@@ -88,9 +89,17 @@ namespace RuneArena.Spells
                     patch.Burn();
             }
 
-            GameObject flash = RuneSpell.CreateVisual(PrimitiveType.Sphere, "Fireball Explosion", m_Material, m_Spell.Color);
-            flash.transform.position = point;
-            SpellVisual.Spawn(flash, Vector3.one * m_Spell.Radius * 2f, Vector3.one * m_Spell.ExplosionRadius * m_ExplosionScale * 2f, 0.15f);
+            if (Fx.Library != null)
+            {
+                SpellFx.FireballExplosion(point, reach);
+            }
+            else
+            {
+                GameObject flash = RuneSpell.CreateVisual(PrimitiveType.Sphere, "Fireball Explosion", m_Material, m_Spell.Color);
+                flash.transform.position = point;
+                SpellVisual.Spawn(flash, Vector3.one * m_Spell.Radius * 2f, Vector3.one * reach * 2f, 0.15f);
+            }
+            Fx.ReleaseAll(gameObject);
             Destroy(gameObject);
         }
 

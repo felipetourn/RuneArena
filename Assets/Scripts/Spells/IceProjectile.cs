@@ -1,3 +1,4 @@
+using RuneArena.Effects;
 using RuneArena.Enemies;
 using UnityEngine;
 
@@ -62,9 +63,17 @@ namespace RuneArena.Spells
                 enemy.Damage(m_Spell.Damage * m_Power, kind, m_Spell.Label);
             }
 
-            GameObject flash = RuneSpell.CreateVisual(PrimitiveType.Sphere, "Ice Shatter", m_Material, m_Spell.Color);
-            flash.transform.position = transform.position;
-            SpellVisual.Spawn(flash, Vector3.one * 0.2f, Vector3.one * 0.9f, 0.12f);
+            if (Fx.Library != null)
+            {
+                SpellFx.Shatter(transform.position, m_Spell.Color);
+            }
+            else
+            {
+                GameObject flash = RuneSpell.CreateVisual(PrimitiveType.Sphere, "Ice Shatter", m_Material, m_Spell.Color);
+                flash.transform.position = transform.position;
+                SpellVisual.Spawn(flash, Vector3.one * 0.2f, Vector3.one * 0.9f, 0.12f);
+            }
+            Fx.ReleaseAll(gameObject);
             Destroy(gameObject);
         }
     }

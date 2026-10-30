@@ -1,3 +1,4 @@
+using RuneArena.Effects;
 using UnityEngine;
 
 namespace RuneArena.Spells
@@ -28,6 +29,7 @@ namespace RuneArena.Spells
             Vector3 forward = transform.forward;
             forward.y = 0f;
             m_Spell.RaiseWall(m_Ground, Quaternion.LookRotation(forward.normalized), m_Material, m_Duration);
+            Fx.ReleaseAll(gameObject);
             Destroy(gameObject);
         }
     }

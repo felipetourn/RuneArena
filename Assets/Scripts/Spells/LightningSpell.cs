@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using RuneArena.Effects;
 using RuneArena.Enemies;
 using UnityEngine;
 
@@ -88,10 +89,9 @@ namespace RuneArena.Spells
 
             var go = new GameObject("Chain Bolt");
             var line = go.AddComponent<LineRenderer>();
-            line.useWorldSpace = true;
-            line.widthMultiplier = m_BoltWidth;
-            Tint(line, cast.Material, m_Color);
+            SpellFx.StyleBolt(line, cast.Material, m_Color, m_BoltWidth);
             go.AddComponent<LightningBolt>().Strike(from.transform.position + Vector3.up, next.transform.position + Vector3.up, m_BoltTime);
+            SpellFx.LightningImpact(next.transform.position + Vector3.up, m_Color);
         }
 
         void Strike(Enemy enemy, float damage, float stun)
@@ -112,12 +112,15 @@ namespace RuneArena.Spells
         {
             var go = new GameObject("Lightning Bolt");
             var line = go.AddComponent<LineRenderer>();
-            line.useWorldSpace = true;
-            line.widthMultiplier = m_BoltWidth;
-            Tint(line, material, m_Color);
+            SpellFx.StyleBolt(line, material, m_Color, m_BoltWidth);
             go.AddComponent<LightningBolt>().Strike(point + Vector3.up * m_BoltHeight, point, m_BoltTime);
+            SpellFx.LightningImpact(point, m_Color);
 
-            if (ringRadius > 0f)
+            if (ringRadius > 0f && Fx.Library != null)
+            {
+                SpellFx.GroundRing(point, ringRadius * 2f, m_Color, m_BoltTime * 1.5f);
+            }
+            else if (ringRadius > 0f)
             {
                 GameObject ring = CreateVisual(PrimitiveType.Cylinder, "Lightning Ring", material, m_Color);
                 ring.transform.position = point + Vector3.up * 0.02f;

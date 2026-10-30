@@ -1,3 +1,4 @@
+using RuneArena.Effects;
 using UnityEngine;
 
 namespace RuneArena.Spells
@@ -46,9 +47,11 @@ namespace RuneArena.Spells
             if (facing.sqrMagnitude < 0.01f)
                 return;
 
-            GameObject seed = CreateVisual(PrimitiveType.Cube, "Earth Seed", cast.Material, m_Color);
+            Material earth = Earth(cast.Material, out Color tint);
+            GameObject seed = CreateVisual(PrimitiveType.Cube, "Earth Seed", earth, tint);
             seed.transform.SetPositionAndRotation(cast.Origin, Quaternion.LookRotation(facing.normalized));
             seed.transform.localScale = Vector3.one * 0.3f;
+            SpellFx.SeedTrail(seed.transform);
             seed.AddComponent<EarthSeed>().Launch(this, hit.point, cast.Material, m_Duration * cast.Power);
         }
 
@@ -57,8 +60,18 @@ namespace RuneArena.Spells
             GameObject go = GameObject.CreatePrimitive(PrimitiveType.Cube);
             go.name = "Earth Wall";
             go.layer = LayerMask.NameToLayer("Wall");
-            Tint(go.GetComponent<Renderer>(), material, m_Color);
+            Tint(go.GetComponent<Renderer>(), Earth(material, out Color tint), tint);
             go.AddComponent<EarthWall>().Raise(this, ground, rotation, duration);
+            SpellFx.Dust(ground, Width);
+        }
+
+        // The packed earth texture when there is one; otherwise the plain material in the spell's color.
+        Material Earth(Material fallback, out Color tint)
+        {
+            FxLibrary fx = Fx.Library;
+            bool textured = fx != null && fx.Earth != null;
+            tint = textured ? Color.white : m_Color;
+            return textured ? fx.Earth : fallback;
         }
 
         public float TravelSpeed => m_TravelSpeed;
