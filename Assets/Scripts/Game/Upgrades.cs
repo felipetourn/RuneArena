@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using RuneArena.Player;
 using RuneArena.Spells;
+using RuneArena.Waves;
 using UnityEngine;
 
 namespace RuneArena.Game
@@ -64,6 +65,7 @@ namespace RuneArena.Game
         PlayerHealth m_PlayerHealth;
         PlayerMana m_PlayerMana;
         PlayerMovement m_Movement;
+        ThreatIndicators m_Threats;
 
         public float SkipMana => m_SkipMana;
 
@@ -74,6 +76,8 @@ namespace RuneArena.Game
             m_PlayerMana = FindAnyObjectByType<PlayerMana>();
             m_Movement = FindAnyObjectByType<PlayerMovement>();
         }
+
+        ThreatIndicators Threats => m_Threats != null ? m_Threats : m_Threats = FindAnyObjectByType<ThreatIndicators>();
 
         public float Odds(UpgradeTier tier) => m_Odds[(int)tier];
 
@@ -193,6 +197,9 @@ namespace RuneArena.Game
                 Add("mana", tier, "Reserva", $"+{mana:0} de maná máxima.", () => m_PlayerMana.AddMax(mana));
                 Add("regen", tier, "Flujo", $"La maná se regenera {Pct(regen)} más rápido.", () => m_PlayerMana.AddRegen(regen));
             }
+            // An unlock like a new rune, so gold. Only normal has to earn it: easy starts with it, hard never gets it.
+            if (tier == UpgradeTier.Gold && GameSession.Difficulty == Difficulty.Normal && Threats != null && !Threats.Active)
+                Add("sense", tier, "Sexto sentido", "Unas marcas rojas en el borde de la vista te avisan de los enemigos que no estás mirando.", () => Threats.Active = true);
             if (m_Movement != null)
             {
                 float speed = k_Speed[t];

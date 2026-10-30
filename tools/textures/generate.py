@@ -63,10 +63,35 @@ def gate(out, rng):
     save_normal(out / "Gate_Normal.png", normal_from_height(height, 0.6))
 
 
+def circle(n, radius=1.0):
+    return [(radius * np.cos(a), radius * np.sin(a)) for a in np.linspace(0, 2 * np.pi, n + 1)]
+
+
+def spiral(n=48):
+    # 1.5 turns from the center out, like spiral() in ml/runes/shapes.py.
+    last = 3 * np.pi
+    return [((0.15 + t / last) * np.cos(t), (0.15 + t / last) * np.sin(t)) for t in np.linspace(0, last, n)]
+
+
+# One banner per rune, in the color of its spell (see the spells' Color in the Arena scene), with the
+# rune as the player draws it. Light cloths get a dark emblem instead of gold.
+GOLD = (212, 168, 72)
+BANNERS = {
+    "circle": ((150, 42, 16), GOLD, [circle(32)]),
+    "lightning": ((196, 160, 32), (62, 40, 14), [[(-1, 1), (1, 1), (-1, -1), (1, -1)]]),
+    "triangle": ((24, 70, 150), GOLD, [[(0, 0.95), (1.1, -0.95), (-1.1, -0.95), (0, 0.95)]]),
+    "square": ((96, 62, 30), GOLD, [[(-1, 1), (1, 1), (1, -1), (-1, -1), (-1, 1)]]),
+    "spiral": ((34, 96, 40), GOLD, [spiral()]),
+    "v": ((118, 182, 212), (26, 46, 82), [[(-1, 1), (0, -1), (1, 1)]]),
+}
+
+
 def banner(out, rng):
-    color, alpha, height = props.banner(512, 1536, rng)
-    save_albedo(out / "Banner_Albedo.png", color, alpha=alpha)
-    save_normal(out / "Banner_Normal.png", normal_from_height(height, 0.4))
+    from arena.image import rgb
+    for label, (cloth, emblem, glyph) in BANNERS.items():
+        color, alpha, height = props.banner(512, 1536, rng, rgb(*cloth), rgb(*emblem), glyph)
+        save_albedo(out / f"Banner_{label}_Albedo.png", color, alpha=alpha)
+        save_normal(out / f"Banner_{label}_Normal.png", normal_from_height(height, 0.4))
 
 
 def ivy(out, rng):

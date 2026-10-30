@@ -1,4 +1,5 @@
 using RuneArena.Arena;
+using RuneArena.Player;
 using UnityEngine;
 
 namespace RuneArena.Enemies
@@ -7,6 +8,12 @@ namespace RuneArena.Enemies
     // Doesn't use the NavMesh, so earth walls don't stop it; it steers around the arena's pillars.
     public class FlyingEnemy : Enemy
     {
+        // The player's body for the dive: head to hips, this thick.
+        const float k_TorsoLength = 0.8f;
+        const float k_PlayerRadius = 0.3f;
+
+        static readonly Collider[] s_Touching = new Collider[16];
+
         enum State
         {
             Enter,
@@ -14,6 +21,8 @@ namespace RuneArena.Enemies
             WindUp,
             Dive,
             Recover,
+            // One of a subclass's own attacks, hovering in place.
+            Special,
         }
 
         [Header("Flight")]
@@ -53,14 +62,19 @@ namespace RuneArena.Enemies
         bool m_Entered;
         float m_EnteredAt;
         Vector3[] m_Pillars = new Vector3[0];
+        SphereCollider m_Collider;
         float m_PillarRadius;
         float m_PillarTop;
 
         public bool IsDiving => m_State == State.Dive;
 
+        // Middle of the body: the collider's center, which sits above the pivot.
+        protected Vector3 Body => m_Collider != null ? transform.TransformPoint(m_Collider.center) : transform.position;
+
         protected override void Start()
         {
             base.Start();
+            m_Collider = GetComponent<SphereCollider>();
             m_OrbitDirection = Random.value < 0.5f ? -1f : 1f;
             m_ReadyAt = Time.time + Random.Range(1f, m_Cooldown);
 
@@ -99,7 +113,22 @@ namespace RuneArena.Enemies
                 case State.Orbit:
                     Steer(OrbitPoint(head), m_Speed * SpeedMultiplier, deltaTime);
                     if (Time.time >= m_ReadyAt)
-                        Enter(State.WindUp, m_WindUp);
+                    {
+                        if (StartSpecial(head))
+                            m_State = State.Special;
+                        else
+                            Enter(State.WindUp, m_WindUp);
+                    }
+                    break;
+
+                case State.Special:
+                    m_Velocity = Vector3.MoveTowards(m_Velocity, Vector3.zero, m_Acceleration * deltaTime);
+                    if (!SpecialTick(head, deltaTime))
+                    {
+                        Telegraphing = false;
+                        m_State = State.Orbit;
+                        m_ReadyAt = Time.time + m_Cooldown;
+                    }
                     break;
 
                 case State.WindUp:
@@ -111,14 +140,17 @@ namespace RuneArena.Enemies
                     }
                     break;
 
+                // Measured from the body, not the pivot under it, so what hits is what the player sees coming.
+                // The whole stretch it covers this frame counts, so a fast dive can't skip over the player.
                 case State.Dive:
-                    m_Velocity = (m_DiveTarget - transform.position).normalized * (m_DiveSpeed * SpeedMultiplier);
-                    if ((transform.position - head).sqrMagnitude <= m_HitRadius * m_HitRadius)
+                    Vector3 body = Body;
+                    m_Velocity = (m_DiveTarget - body).normalized * (m_DiveSpeed * SpeedMultiplier);
+                    if (TouchesPlayer(body, body + m_Velocity * deltaTime, head))
                     {
                         Player.Damage(m_Damage * DamageMultiplier);
                         Enter(State.Recover, m_RecoverTime);
                     }
-                    else if ((transform.position - m_DiveTarget).sqrMagnitude < 0.25f || Time.time >= m_StateUntil)
+                    else if ((body - m_DiveTarget).sqrMagnitude < 0.25f || Time.time >= m_StateUntil)
                     {
                         Enter(State.Recover, m_RecoverTime);
                     }
@@ -137,7 +169,7 @@ namespace RuneArena.Enemies
             }
 
             Move(m_Velocity * deltaTime);
-            Vector3 look = m_State == State.WindUp || m_State == State.Dive ? head - transform.position : m_Velocity;
+            Vector3 look = m_State == State.WindUp || m_State == State.Dive || m_State == State.Special ? head - transform.position : m_Velocity;
             if (look.sqrMagnitude > 1e-4f)
                 transform.rotation = Quaternion.RotateTowards(transform.rotation, Quaternion.LookRotation(look), 360f * deltaTime);
         }
@@ -237,6 +269,63 @@ namespace RuneArena.Enemies
             Move(offset);
         }
 
+        // The player is their head and torso, and also whatever collider the rig has: its character
+        // controller can be away from the head (leaning, the device simulator), and it is what a dive that
+        // shoves the player aside touches.
+        bool TouchesPlayer(Vector3 from, Vector3 to, Vector3 head)
+        {
+            Vector3 hips = head + Vector3.down * k_TorsoLength;
+            if (SegmentDistance(from, to, head, hips) <= m_HitRadius + k_PlayerRadius)
+                return true;
+            int count = Physics.OverlapCapsuleNonAlloc(from, to, m_HitRadius, s_Touching, ~0, QueryTriggerInteraction.Ignore);
+            for (int i = 0; i < count; i++)
+            {
+                if (s_Touching[i].GetComponentInParent<PlayerHealth>() == Player)
+                    return true;
+            }
+            return false;
+        }
+
+        // Closest distance between the segments a0-a1 and b0-b1.
+        static float SegmentDistance(Vector3 a0, Vector3 a1, Vector3 b0, Vector3 b1)
+        {
+            Vector3 d1 = a1 - a0, d2 = b1 - b0, r = a0 - b0;
+            float a = d1.sqrMagnitude, e = d2.sqrMagnitude, f = Vector3.Dot(d2, r);
+            float s, t;
+            if (a < 1e-8f)
+            {
+                s = 0f;
+                t = e > 1e-8f ? Mathf.Clamp01(f / e) : 0f;
+            }
+            else
+            {
+                float c = Vector3.Dot(d1, r);
+                if (e < 1e-8f)
+                {
+                    t = 0f;
+                    s = Mathf.Clamp01(-c / a);
+                }
+                else
+                {
+                    float b = Vector3.Dot(d1, d2);
+                    float denominator = a * e - b * b;
+                    s = denominator > 1e-8f ? Mathf.Clamp01((b * f - c * e) / denominator) : 0f;
+                    t = (b * s + f) / e;
+                    if (t < 0f)
+                    {
+                        t = 0f;
+                        s = Mathf.Clamp01(-c / a);
+                    }
+                    else if (t > 1f)
+                    {
+                        t = 1f;
+                        s = Mathf.Clamp01((b - c) / a);
+                    }
+                }
+            }
+            return Vector3.Distance(a0 + d1 * s, b0 + d2 * t);
+        }
+
         protected override void OnDied()
         {
             m_Velocity *= 0.3f;
@@ -257,10 +346,24 @@ namespace RuneArena.Enemies
             transform.rotation = Quaternion.RotateTowards(transform.rotation, level, 180f * deltaTime);
         }
 
+        // For subclasses with attacks of their own. Called when an attack is due: return true to do one
+        // instead of the dive. It then hovers facing the player, calling SpecialTick every frame until that
+        // returns false.
+        protected virtual bool StartSpecial(Vector3 head) => false;
+
+        protected virtual bool SpecialTick(Vector3 head, float deltaTime) => false;
+
+        // A stun or a freeze stopped it halfway.
+        protected virtual void CancelSpecial()
+        {
+        }
+
         protected override void Interrupt()
         {
             base.Interrupt();
-            if (m_State == State.WindUp || m_State == State.Dive)
+            if (m_State == State.Special)
+                CancelSpecial();
+            if (m_State == State.WindUp || m_State == State.Dive || m_State == State.Special)
             {
                 m_State = State.Recover;
                 m_StateUntil = Time.time + m_RecoverTime;

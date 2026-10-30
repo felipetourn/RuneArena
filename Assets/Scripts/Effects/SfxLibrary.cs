@@ -24,5 +24,9 @@ namespace RuneArena.Effects
         public AudioClip IvyGrow;
         public AudioClip IceLaunch;
         public AudioClip IceShatter;
+
+        [Header("Enemies")]
+        [Tooltip("The boss laughing, when it gets angry and when it raises skeletons.")]
+        public AudioClip BossLaugh;
     }
 }

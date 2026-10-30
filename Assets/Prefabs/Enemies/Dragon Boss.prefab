@@ -32,7 +32,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 297666970904241442}
+  - {fileID: 1173167604323214965}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!135 &3738247774198710368
@@ -65,11 +65,11 @@ MonoBehaviour:
   m_GameObject: {fileID: 8701015001572496539}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 16a23a716b4b5094296276f2900b7116, type: 3}
+  m_Script: {fileID: 11500000, guid: c27efd3db4b4bfc4f8a43157df4bd07b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RuneArena.Enemies.FlyingEnemy
   m_MaxHealth: 450
-  m_Body: {fileID: 1516165607342907291}
+  m_Body: {fileID: 102715990758251724}
   m_KnockbackDrag: 6
   m_StunImmunity: 1
   m_StunResistance: 0.5
@@ -86,7 +86,7 @@ MonoBehaviour:
   m_FrozenColor: {r: 0.65, g: 0.9, b: 1, a: 1}
   m_EntangledTint: {r: 0.3, g: 0.75, b: 0.3, a: 1}
   m_FlashTime: 0.1
-  m_DeathTime: 4.5
+  m_DeathTime: 3
   m_ShrinkTime: 0
   m_FlashBrightness: 2.5
   m_TelegraphGlow: 1.5
@@ -98,12 +98,26 @@ MonoBehaviour:
   m_ClimbDelay: 0.5
   m_Damage: 30
   m_DiveSpeed: 7
-  m_HitRadius: 2
+  m_HitRadius: 2.2
   m_WindUp: 1.5
   m_Cooldown: 5
   m_RecoverTime: 1
   m_PillarMargin: 2.5
   m_AvoidDistance: 2.5
+  m_Projectile: {fileID: 4781129896438912589, guid: ccb8977195fe6a04eb92684f2fc6c8e3, type: 3}
+  m_SpitCount: 3
+  m_SpitWindUp: 1
+  m_SpitGap: 0.35
+  m_SpitSpeed: 9
+  m_SpitDamage: 12
+  m_SpitSpread: 4
+  m_RainCount: 6
+  m_RainWindUp: 1.5
+  m_RainWarning: 1.8
+  m_RainRadius: 1.6
+  m_RainDamage: 20
+  m_RainSpread: 7
+  m_RainColor: {r: 1, g: 0.35, b: 0.1, a: 1}
 --- !u!114 &1354505590688178607
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -116,7 +130,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a94ca29ed4ada8e4bae943f6f4e6a9c7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RuneArena.Enemies.EnemyAnimator
-  m_Animator: {fileID: 5963234697677963096}
+  m_Animator: {fileID: 5091250577272454159}
   m_Controller: {fileID: 9100000, guid: 4915fc01ab440a34ca5758bf89868ab0, type: 2}
   m_Fade: 0.15
   m_Idle: Fly
@@ -132,10 +146,15 @@ MonoBehaviour:
   m_AttackLength: 2.2
   m_HitLength: 0.4
   m_SlowedPace: 0.6
-  m_SinkDelay: 3.2
-  m_SinkTime: 1.1999999
+  m_DeathStart: 2.4
+  m_SinkDelay: 1.6
+  m_SinkTime: 1.3
   m_SinkDepth: 2
---- !u!1001 &264375324909781705
+  m_EmergeDepth: 1.9
+  m_MoveLoop: {fileID: 0}
+  m_StillVolume: 0.15
+  m_MovingVolume: 0.6
+--- !u!1001 &1715120238503330206
 PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
@@ -528,18 +547,18 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 4508b519bcbcdd448904a7dd96607dd4, type: 3}
---- !u!4 &297666970904241442 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 4508b519bcbcdd448904a7dd96607dd4, type: 3}
-  m_PrefabInstance: {fileID: 264375324909781705}
-  m_PrefabAsset: {fileID: 0}
---- !u!137 &1516165607342907291 stripped
+--- !u!137 &102715990758251724 stripped
 SkinnedMeshRenderer:
   m_CorrespondingSourceObject: {fileID: 1630794972795428178, guid: 4508b519bcbcdd448904a7dd96607dd4, type: 3}
-  m_PrefabInstance: {fileID: 264375324909781705}
+  m_PrefabInstance: {fileID: 1715120238503330206}
   m_PrefabAsset: {fileID: 0}
---- !u!95 &5963234697677963096 stripped
+--- !u!4 &1173167604323214965 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 4508b519bcbcdd448904a7dd96607dd4, type: 3}
+  m_PrefabInstance: {fileID: 1715120238503330206}
+  m_PrefabAsset: {fileID: 0}
+--- !u!95 &5091250577272454159 stripped
 Animator:
   m_CorrespondingSourceObject: {fileID: 5866666021909216657, guid: 4508b519bcbcdd448904a7dd96607dd4, type: 3}
-  m_PrefabInstance: {fileID: 264375324909781705}
+  m_PrefabInstance: {fileID: 1715120238503330206}
   m_PrefabAsset: {fileID: 0}

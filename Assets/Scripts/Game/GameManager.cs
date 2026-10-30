@@ -79,6 +79,8 @@ namespace RuneArena.Game
             m_Mana = FindAnyObjectByType<PlayerMana>();
             m_Recorder = FindAnyObjectByType<StrokeRecorder>(FindObjectsInactive.Include);
             m_Caster = FindAnyObjectByType<RuneCaster>(FindObjectsInactive.Include);
+            if (m_Health != null && m_Health.GetComponent<ThreatIndicators>() == null)
+                m_Health.gameObject.AddComponent<ThreatIndicators>();
 
             if (m_Spawner != null)
             {
@@ -130,6 +132,10 @@ namespace RuneArena.Game
                 m_Spawner.Difficulty = difficulty;
             if (m_Mana != null)
                 m_Mana.SetDifficulty(difficulty);
+            // Easy shows the enemies the player isn't looking at from the start; normal has to earn it.
+            var threats = FindAnyObjectByType<ThreatIndicators>();
+            if (threats != null)
+                threats.Active = difficulty == Difficulty.Easy;
 
             Enter(GameState.Playing);
             if (m_Spawner != null)

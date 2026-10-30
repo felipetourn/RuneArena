@@ -32,7 +32,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 4853841277737424778}
+  - {fileID: 3420698871569411170}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!135 &3738247774198710368
@@ -69,7 +69,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RuneArena.Enemies.FlyingEnemy
   m_MaxHealth: 100
-  m_Body: {fileID: 5942298440575839539}
+  m_Body: {fileID: 4491150537209861851}
   m_KnockbackDrag: 6
   m_StunImmunity: 1
   m_StunResistance: 0
@@ -86,7 +86,7 @@ MonoBehaviour:
   m_FrozenColor: {r: 0.65, g: 0.9, b: 1, a: 1}
   m_EntangledTint: {r: 0.3, g: 0.75, b: 0.3, a: 1}
   m_FlashTime: 0.1
-  m_DeathTime: 3.6
+  m_DeathTime: 2.4
   m_ShrinkTime: 0
   m_FlashBrightness: 2.5
   m_TelegraphGlow: 1.5
@@ -98,7 +98,7 @@ MonoBehaviour:
   m_ClimbDelay: 0.5
   m_Damage: 10
   m_DiveSpeed: 6
-  m_HitRadius: 0.6
+  m_HitRadius: 0.9
   m_WindUp: 1.2
   m_Cooldown: 6
   m_RecoverTime: 1
@@ -116,7 +116,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a94ca29ed4ada8e4bae943f6f4e6a9c7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RuneArena.Enemies.EnemyAnimator
-  m_Animator: {fileID: 1566234764801150448}
+  m_Animator: {fileID: 8762016221354047000}
   m_Controller: {fileID: 9100000, guid: 4915fc01ab440a34ca5758bf89868ab0, type: 2}
   m_Fade: 0.15
   m_Idle: Fly
@@ -132,10 +132,15 @@ MonoBehaviour:
   m_AttackLength: 1.8
   m_HitLength: 0.4
   m_SlowedPace: 0.6
-  m_SinkDelay: 2.5
-  m_SinkTime: 0.9999999
+  m_DeathStart: 2.4
+  m_SinkDelay: 1.2
+  m_SinkTime: 1.1
   m_SinkDepth: 0.92
---- !u!1001 &4960424244373074017
+  m_EmergeDepth: 1.9
+  m_MoveLoop: {fileID: 0}
+  m_StillVolume: 0.15
+  m_MovingVolume: 0.6
+--- !u!1001 &2950555935036410761
 PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
@@ -528,18 +533,18 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 4508b519bcbcdd448904a7dd96607dd4, type: 3}
---- !u!95 &1566234764801150448 stripped
-Animator:
-  m_CorrespondingSourceObject: {fileID: 5866666021909216657, guid: 4508b519bcbcdd448904a7dd96607dd4, type: 3}
-  m_PrefabInstance: {fileID: 4960424244373074017}
-  m_PrefabAsset: {fileID: 0}
---- !u!4 &4853841277737424778 stripped
+--- !u!4 &3420698871569411170 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 4508b519bcbcdd448904a7dd96607dd4, type: 3}
-  m_PrefabInstance: {fileID: 4960424244373074017}
+  m_PrefabInstance: {fileID: 2950555935036410761}
   m_PrefabAsset: {fileID: 0}
---- !u!137 &5942298440575839539 stripped
+--- !u!137 &4491150537209861851 stripped
 SkinnedMeshRenderer:
   m_CorrespondingSourceObject: {fileID: 1630794972795428178, guid: 4508b519bcbcdd448904a7dd96607dd4, type: 3}
-  m_PrefabInstance: {fileID: 4960424244373074017}
+  m_PrefabInstance: {fileID: 2950555935036410761}
+  m_PrefabAsset: {fileID: 0}
+--- !u!95 &8762016221354047000 stripped
+Animator:
+  m_CorrespondingSourceObject: {fileID: 5866666021909216657, guid: 4508b519bcbcdd448904a7dd96607dd4, type: 3}
+  m_PrefabInstance: {fileID: 2950555935036410761}
   m_PrefabAsset: {fileID: 0}

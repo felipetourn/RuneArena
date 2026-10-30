@@ -73,3 +73,6 @@ ml/data/parity_cs.txt
 
 # Sketchfab downloads that tools/models turns into the enemy models
 tools/models/source/
+
+# Downloaded sounds the clips in Assets/Audio/Sfx were cut from
+tools/audio/source/

@@ -428,5 +428,29 @@ namespace RuneArena.Spells
                 Growth = FxGrowth.Expand,
             });
         }
+
+        // Where a summoned enemy climbs out of the floor: a glowing ring, dust and sparks rising for
+        // as long as it takes.
+        public static void Summoning(Vector3 ground, Color color, float duration)
+        {
+            GroundRing(ground, 2.2f, color, duration);
+            Dust(ground, 1.2f, false);
+            FxLight.Flash(ground + Vector3.up * 0.5f, color, 4f, 2f, duration);
+            if (Lib == null)
+                return;
+            Fx.Burst(ground + Vector3.up * 0.3f, new FxBurst
+            {
+                Material = Lib.Glow,
+                Color = color,
+                Count = 18,
+                Size = 0.18f,
+                Speed = 2.5f,
+                Lifetime = duration,
+                Gravity = -0.3f,
+                Radius = 0.5f,
+                Drag = 1f,
+                Growth = FxGrowth.Shrink,
+            });
+        }
     }
 }

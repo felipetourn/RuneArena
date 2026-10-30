@@ -90,6 +90,7 @@ namespace RuneArena.Waves
         }
 
         readonly List<Enemy> m_Queue = new List<Enemy>();
+        readonly List<Enemy> m_Bosses = new List<Enemy>();
         readonly List<ArmorType> m_ArmorTypes = new List<ArmorType>();
         readonly HashSet<ArmorType> m_SeenArmor = new HashSet<ArmorType>();
 
@@ -167,6 +168,19 @@ namespace RuneArena.Waves
                     yield return null;
                 }
 
+                // The boss comes once the rest of its wave is down.
+                if (m_Bosses.Count > 0)
+                {
+                    foreach (Enemy prefab in m_Bosses)
+                        yield return Spawn(prefab);
+                    while (Alive > 0)
+                    {
+                        if (PlayerDead)
+                            yield break;
+                        yield return null;
+                    }
+                }
+
                 Announce($"Oleada {CurrentWave} superada", m_AnnounceTime);
                 WaveCleared?.Invoke(CurrentWave);
                 while (HoldBeforeNextWave)
@@ -180,10 +194,18 @@ namespace RuneArena.Waves
         void BuildQueue(WaveSet.Wave wave, float multiplier, int stage)
         {
             m_Queue.Clear();
+            m_Bosses.Clear();
             foreach (WaveSet.Group group in wave.groups)
             {
                 if (group.prefab == null || !group.InStage(stage))
                     continue;
+                // Bosses don't grow with the loops: one is one.
+                if (group.prefab.IsBoss)
+                {
+                    for (int i = 0; i < group.count; i++)
+                        m_Bosses.Add(group.prefab);
+                    continue;
+                }
                 int count = Mathf.CeilToInt(group.count * multiplier);
                 for (int i = 0; i < count; i++)
                     m_Queue.Add(group.prefab);
@@ -195,17 +217,6 @@ namespace RuneArena.Waves
                 int j = UnityEngine.Random.Range(0, i + 1);
                 (m_Queue[i], m_Queue[j]) = (m_Queue[j], m_Queue[i]);
             }
-
-            // Bosses open the wave.
-            int front = 0;
-            for (int i = 0; i < m_Queue.Count; i++)
-            {
-                if (m_Queue[i].IsBoss)
-                {
-                    (m_Queue[front], m_Queue[i]) = (m_Queue[i], m_Queue[front]);
-                    front++;
-                }
-            }
         }
 
         IEnumerator Spawn(Enemy prefab)
@@ -215,8 +226,6 @@ namespace RuneArena.Waves
             ArenaGate gate = boss ? m_Gates[0] : m_Gates[m_NextGate];
             if (!boss)
                 m_NextGate = (m_NextGate + 1) % m_Gates.Length;
-            else
-                Announce("¡Llega el jefe!", m_AnnounceTime);
             Transform point = gate.SpawnPoint;
 
             gate.Open(m_GateHold);

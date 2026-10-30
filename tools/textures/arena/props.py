@@ -50,8 +50,9 @@ def portcullis(size, rng, columns=9, rows=6):
     return color, alpha, height, smoothness
 
 
-def banner(width, height, rng):
-    """Hanging cloth: crimson with a gold border and a rune in a ring, cut into a swallowtail at the bottom.
+def banner(width, height, rng, cloth=rgb(128, 18, 24), emblem=rgb(212, 168, 72), glyph=None):
+    """Hanging cloth with a border and a rune in a ring, cut into a swallowtail at the bottom. glyph is a
+    list of polylines in -1..1, like the runes the player draws; the lightning one by default.
     Returns (color, alpha, height)."""
     shape = (height, width)
     yy, xx = (np.mgrid[0:height, 0:width] + 0.5)
@@ -67,8 +68,7 @@ def banner(width, height, rng):
     folds *= 0.6 + 0.4 * (1 - v)
     weave = (np.sin(xx * 1.6) * np.sin(yy * 1.6)) * 0.5
 
-    cloth = rgb(128, 18, 24) * (1 + 0.08 * spectral(shape, rng, beta=2.0, low=2, high=20)[..., None])
-    gold = rgb(212, 168, 72)
+    cloth = cloth * (1 + 0.08 * spectral(shape, rng, beta=2.0, low=2, high=20)[..., None])
 
     # Swallowtail: a V notch in the bottom edge.
     cut = 0.22 - np.abs(u - 0.5) * 0.42
@@ -79,23 +79,26 @@ def banner(width, height, rng):
     border = np.minimum(np.minimum(border_x, (1 - v) * height), edge_bottom)
     band = (border > width * 0.04) & (border < width * 0.09)
 
-    # Emblem: a ring with the lightning rune inside, in the upper half.
+    # Emblem: a ring with the rune inside, in the upper half.
     cx, cy = 0.5, 0.64
     px, py = (u - cx), (v - cy) * aspect
     r = np.sqrt(px ** 2 + py ** 2)
     ring = np.abs(r - 0.3) < 0.025
-    zig = np.array([(-0.12, 0.2), (0.08, 0.04), (-0.08, -0.04), (0.12, -0.2)])
+    if glyph is None:
+        glyph = [[(-1, 1), (0.67, -0.33), (-0.67, -0.33), (1, -1)]]
     rune = np.zeros(shape, bool)
-    for (x0, y0), (x1, y1) in zip(zig[:-1], zig[1:]):
-        dx, dy = x1 - x0, y1 - y0
-        t = np.clip(((px - x0) * dx + (py - y0) * dy) / (dx * dx + dy * dy), 0, 1)
-        rune |= np.hypot(px - (x0 + t * dx), py - (y0 + t * dy)) < 0.03
-    emblem = band | ring | rune
+    for line in glyph:
+        points = np.array(line) * 0.17
+        for (x0, y0), (x1, y1) in zip(points[:-1], points[1:]):
+            dx, dy = x1 - x0, y1 - y0
+            t = np.clip(((px - x0) * dx + (py - y0) * dy) / max(dx * dx + dy * dy, 1e-9), 0, 1)
+            rune |= np.hypot(px - (x0 + t * dx), py - (y0 + t * dy)) < 0.03
+    trim = band | ring | rune
 
     shade = 1 + 0.25 * folds[..., None]
-    color = lerp(cloth, gold, emblem) * shade
+    color = lerp(cloth, emblem, trim) * shade
     color = color * (1 + 0.04 * weave[..., None])
-    relief = folds * 6 + weave * 0.3 + emblem * 0.6
+    relief = folds * 6 + weave * 0.3 + trim * 0.6
     return np.clip(color, 0, 1), alpha, relief
 
 

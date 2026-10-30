@@ -248,6 +248,28 @@ namespace RuneArena.Arena.Editor
                 slice.AddComponent<MeshFilter>().sharedMesh = SaveMesh(slices[i].ToMesh(), $"{prefix} Scenery {i}.asset");
                 slice.AddComponent<MeshRenderer>().sharedMaterials = materials;
             }
+
+            BuildBanners(builder, root, prefix);
+        }
+
+        // A child per rune, which RuneBanners shows once the player can cast that rune.
+        static void BuildBanners(ColosseumBuilder builder, Transform root, string prefix)
+        {
+            var banners = new GameObject("Banners");
+            Undo.RegisterCreatedObjectUndo(banners, "Build Colosseum");
+            banners.transform.SetParent(root, false);
+            banners.AddComponent<RuneBanners>();
+
+            string[] labels = RuneBanners.Labels;
+            MeshBuilder[] cloths = ColosseumDecor.BannerCloths(builder, labels.Length);
+            for (int i = 0; i < labels.Length; i++)
+            {
+                var banner = new GameObject(RuneBanners.Prefix + labels[i]);
+                banner.transform.SetParent(banners.transform, false);
+                banner.AddComponent<MeshFilter>().sharedMesh = SaveMesh(cloths[i].ToMesh(), $"{prefix} Banner {labels[i]}.asset");
+                var renderer = banner.AddComponent<MeshRenderer>();
+                renderer.sharedMaterial = ArenaMaterials.Banner(labels[i]);
+            }
         }
 
         static Mesh SaveMesh(Mesh built, string path)

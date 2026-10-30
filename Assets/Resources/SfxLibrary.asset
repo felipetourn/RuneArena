@@ -25,3 +25,4 @@ MonoBehaviour:
   IvyGrow: {fileID: 0}
   IceLaunch: {fileID: 0}
   IceShatter: {fileID: 0}
+  BossLaugh: {fileID: 8300000, guid: 61cacb3d96580fd49b05f532416d970d, type: 3}

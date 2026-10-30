@@ -77,6 +77,12 @@ namespace RuneArena.Arena.Editor
             return material;
         }
 
+        // The banner of one rune, from its Banner_<label> textures.
+        public static Material Banner(string label)
+        {
+            return Cutout(null, $"Arena Banner {label}", $"Banner_{label}", 0.15f, true);
+        }
+
         // Alpha-tested: the gaps in the gate and the cut at the bottom of the banners.
         static Material Cutout(Material material, string name, string texture, float smoothness, bool twoSided)
         {

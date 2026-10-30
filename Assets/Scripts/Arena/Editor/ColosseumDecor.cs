@@ -146,25 +146,40 @@ namespace RuneArena.Arena.Editor
             }
         }
 
+        // Only the rods: the cloths are built apart by BannerCloths, so each rune's can be shown on its own.
         static void Banners(MeshBuilder m, ColosseumBuilder b)
         {
             if (b.BannersPerSection == 0)
                 return;
-            float ri = b.InnerRadius;
             float top = b.Height - k_CorniceHeight - 0.04f;
-            float r = ri - 0.13f;
+            float r = b.InnerRadius - 0.13f;
+            foreach (float angle in SectionAngles(b, b.BannersPerSection + 1, 1f))
+                Box(m, Wood, angle, r + 0.01f, top - 0.03f, top + 0.05f, k_BannerWidth + 0.2f, 0.06f, true);
+        }
+
+        // The banner cloths, one mesh per kind: going around the arena they take turns, so each kind
+        // ends up spread out evenly.
+        public static MeshBuilder[] BannerCloths(ColosseumBuilder b, int kinds)
+        {
+            var cloths = new MeshBuilder[kinds];
+            for (int i = 0; i < kinds; i++)
+                cloths[i] = new MeshBuilder();
+            if (b.BannersPerSection == 0)
+                return cloths;
+
+            float top = b.Height - k_CorniceHeight - 0.04f;
+            float r = b.InnerRadius - 0.13f;
+            int k = 0;
             foreach (float angle in SectionAngles(b, b.BannersPerSection + 1, 1f))
             {
                 Vector3 c = P(r, angle, 0f);
                 Vector3 side = Along(angle) * (k_BannerWidth * 0.5f);
                 Vector3 up = Vector3.up;
                 Vector3 bottom = c + up * (top - k_BannerHeight);
-                Vector3 n = -Out(angle);
-                m.Quad(Banner, bottom - side, bottom + side, c + side + up * top, c - side + up * top, n,
-                       new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(1f, 1f), new Vector2(0f, 1f));
-                // The rod it hangs from.
-                Box(m, Wood, angle, r + 0.01f, top - 0.03f, top + 0.05f, k_BannerWidth + 0.2f, 0.06f, true);
+                cloths[k++ % kinds].Quad(0, bottom - side, bottom + side, c + side + up * top, c - side + up * top, -Out(angle),
+                                         new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(1f, 1f), new Vector2(0f, 1f));
             }
+            return cloths;
         }
 
         // Passage behind each door, under the seats, so the open gate shows a dark tunnel instead of the sky.

@@ -25,7 +25,7 @@ namespace RuneArena.Enemies.Editor
         {
             Melee();
             Flying();
-            DragonBoss();
+            BuildDragonBoss();
             AssetDatabase.SaveAssets();
             Debug.Log("Enemy models set up in the melee, flying and dragon boss prefabs");
         }
@@ -46,6 +46,10 @@ namespace RuneArena.Enemies.Editor
             // The sword comes down 0.38 s into the attack. The death is made from the big hit, up to where it lies.
             SetAnimator(root, animator, "Idle", "Walk", "Attack", "Hit", "Hit", "Death", 0.5f, 0.38f, 1.38f);
             SetDeath(root, 3f, 1.8f, 0.6f);
+            // Bones and armor rattling, louder as it walks.
+            var sound = new SerializedObject(root.GetComponent<EnemyAnimator>());
+            sound.FindProperty("m_MoveLoop").objectReferenceValue = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/Sfx/Skeleton_Rattle.ogg");
+            sound.ApplyModifiedPropertiesWithoutUndo();
             PrefabUtility.SaveAsPrefabAsset(root, path);
             PrefabUtility.UnloadPrefabContents(root);
         }
@@ -69,15 +73,22 @@ namespace RuneArena.Enemies.Editor
             var lunge = new SerializedObject(root.GetComponent<EnemyAnimator>());
             lunge.FindProperty("m_Lunge").stringValue = "Dive";
             lunge.ApplyModifiedPropertiesWithoutUndo();
-            // Its death clip takes a couple of seconds to end up lying down.
-            SetDeath(root, 3.6f, 2.5f, 0.8f * k_DragonScale);
+            // Dead in the air, it falls lying down: its death clip from where it lies on the floor.
+            SetDeath(root, 2.4f, 1.2f, 0.8f * k_DragonScale);
+            var dead = new SerializedObject(root.GetComponent<EnemyAnimator>());
+            dead.FindProperty("m_DeathStart").floatValue = 2.4f;
+            dead.ApplyModifiedPropertiesWithoutUndo();
+            // Hits measured from the middle of the body; its head and wings reach about this far.
+            var flying = new SerializedObject(root.GetComponent<Enemy>());
+            flying.FindProperty("m_HitRadius").floatValue = 0.9f;
+            flying.ApplyModifiedPropertiesWithoutUndo();
             PrefabUtility.SaveAsPrefabAsset(root, path);
             PrefabUtility.UnloadPrefabContents(root);
         }
 
         // The flying enemy, much bigger, closing the even stages (see Create Default Waves). Made once from the flying prefab; after that
         // only its body and the values below are reset, so any other tuning done on it stays.
-        static void DragonBoss()
+        static void BuildDragonBoss()
         {
             string source = $"{k_PrefabFolder}/Flying Enemy.prefab";
             string path = $"{k_PrefabFolder}/Dragon Boss.prefab";
@@ -89,7 +100,19 @@ namespace RuneArena.Enemies.Editor
             Animator animator = SwapBody(root, "Dragon", AssetDatabase.LoadAssetAtPath<Material>($"{k_MaterialFolder}/Enemy Dragon.mat"), "Fly", k_BossScale);
             SetCollider(root, k_BossScale);
 
+            // The flying enemy's script swapped for the boss's, which adds its own attacks: the tuning stays.
+            if (!(root.GetComponent<Enemy>() is RuneArena.Enemies.DragonBoss))
+            {
+                string[] found = AssetDatabase.FindAssets("DragonBoss t:MonoScript");
+                var script = AssetDatabase.LoadAssetAtPath<MonoScript>(AssetDatabase.GUIDToAssetPath(found[0]));
+                var swap = new SerializedObject(root.GetComponent<Enemy>());
+                swap.FindProperty("m_Script").objectReferenceValue = script;
+                swap.ApplyModifiedPropertiesWithoutUndo();
+            }
+
             var enemy = new SerializedObject(root.GetComponent<Enemy>());
+            var projectile = AssetDatabase.LoadAssetAtPath<GameObject>($"{k_PrefabFolder}/Enemy Projectile.prefab");
+            enemy.FindProperty("m_Projectile").objectReferenceValue = projectile != null ? projectile.GetComponent<EnemyProjectile>() : null;
             enemy.FindProperty("m_MaxHealth").floatValue = 450f;
             enemy.FindProperty("m_StunResistance").floatValue = 0.5f;
             enemy.FindProperty("m_KnockbackResistance").floatValue = 0.8f;
@@ -106,7 +129,7 @@ namespace RuneArena.Enemies.Editor
             enemy.FindProperty("m_EntryHeight").floatValue = 2f;
             enemy.FindProperty("m_Damage").floatValue = 30f;
             enemy.FindProperty("m_DiveSpeed").floatValue = 7f;
-            enemy.FindProperty("m_HitRadius").floatValue = 2f;
+            enemy.FindProperty("m_HitRadius").floatValue = 2.2f;
             enemy.FindProperty("m_WindUp").floatValue = 1.5f;
             enemy.FindProperty("m_Cooldown").floatValue = 5f;
             enemy.FindProperty("m_PillarMargin").floatValue = 2.5f;
@@ -117,8 +140,9 @@ namespace RuneArena.Enemies.Editor
             animation.FindProperty("m_Controller").objectReferenceValue = animator.runtimeAnimatorController;
             animation.FindProperty("m_AttackImpact").floatValue = 2.2f;
             animation.FindProperty("m_AttackLength").floatValue = 2.2f;
+            animation.FindProperty("m_DeathStart").floatValue = 2.4f;
             animation.ApplyModifiedPropertiesWithoutUndo();
-            SetDeath(root, 4.5f, 3.2f, 0.8f * k_BossScale);
+            SetDeath(root, 3f, 1.6f, 0.8f * k_BossScale);
             PrefabUtility.SaveAsPrefabAsset(root, path);
             PrefabUtility.UnloadPrefabContents(root);
         }

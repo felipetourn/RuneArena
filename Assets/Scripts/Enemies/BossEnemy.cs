@@ -1,3 +1,4 @@
+using RuneArena.Effects;
 using RuneArena.Spells;
 using RuneArena.Strokes;
 using RuneArena.Waves;
@@ -78,6 +79,9 @@ namespace RuneArena.Enemies
         [SerializeField] Enemy m_Minion;
         [SerializeField] int m_MinionCount = 2;
         [SerializeField] float m_SummonWindUp = 1f;
+        [Tooltip("Seconds the skeletons take to climb out of the floor, during which they can't move or attack.")]
+        [SerializeField] float m_EmergeTime = 1.5f;
+        [SerializeField] Color m_SummonColor = new Color(0.55f, 0.25f, 1f);
 
         State m_State;
         Move m_Move;
@@ -112,8 +116,7 @@ namespace RuneArena.Enemies
             {
                 m_WasAngry = true;
                 m_Step = 0;
-                if (m_Spawner != null)
-                    m_Spawner.Announce("¡El jefe se enfurece!", 2.5f);
+                Laugh();
             }
 
             switch (m_State)
@@ -179,7 +182,10 @@ namespace RuneArena.Enemies
                     if (m_Minion == null)
                         End();
                     else
+                    {
                         Telegraph(m_SummonWindUp);
+                        Laugh();
+                    }
                     break;
             }
         }
@@ -298,12 +304,18 @@ namespace RuneArena.Enemies
                 Vector3 spot = transform.position + new Vector3(offset.x, 0f, offset.y);
                 if (!NavMesh.SamplePosition(spot, out NavMeshHit hit, 2f, NavMesh.AllAreas))
                     continue;
-                if (m_Spawner != null)
-                    m_Spawner.SpawnExtra(m_Minion, hit.position, transform.rotation);
-                else
-                    Instantiate(m_Minion, hit.position, transform.rotation);
+                Enemy minion = m_Spawner != null
+                    ? m_Spawner.SpawnExtra(m_Minion, hit.position, transform.rotation)
+                    : Instantiate(m_Minion, hit.position, transform.rotation);
+                minion.Emerge(m_EmergeTime);
+                SpellFx.Summoning(hit.position, m_SummonColor, m_EmergeTime);
             }
             Flash(1.5f, m_SlamColor);
+        }
+
+        void Laugh()
+        {
+            Sfx.Play(Sfx.Library != null ? Sfx.Library.BossLaugh : null, transform.position + Vector3.up * 2f, 1f, 0.03f);
         }
 
         void ShowStrip()

@@ -86,6 +86,8 @@ namespace RuneArena.Enemies
         public event Action<Enemy> ArmorBroken;
         // An attack starts winding up, and lands this many seconds later.
         public event Action<Enemy, float> AttackStarted;
+        // Coming up out of the floor for this many seconds.
+        public event Action<Enemy, float> Emerging;
         // Amount actually taken and what kind of hit it was.
         public event Action<Enemy, float, DamageKind> Damaged;
 
@@ -109,6 +111,8 @@ namespace RuneArena.Enemies
         public bool IsInsideArena => m_ArenaRadius <= 0f || FlatDistance(transform.position, m_ArenaCenter) < m_ArenaRadius;
         // Stays true once it is well past the doorway. From then on it can't leave: not walking, not pushed.
         public bool HasEntered { get; private set; }
+        // Still coming up out of the floor: it can't move or attack yet.
+        public bool IsEmerging => Time.time < m_EmergeUntil;
 
         // 1 normally, lower while slowed. Movement code multiplies its speed by this.
         public float SpeedMultiplier => HasStatus(EnemyStatus.Rooted) ? 0f : (HasStatus(EnemyStatus.Slowed) ? 1f - m_Slow : 1f) * m_SpeedScale;
@@ -141,6 +145,7 @@ namespace RuneArena.Enemies
         const float k_WallMargin = 1f;
         float m_FlashUntil;
         float m_DiedAt;
+        float m_EmergeUntil;
 
         protected virtual void Awake()
         {
@@ -194,7 +199,7 @@ namespace RuneArena.Enemies
                     m_Knockback = Vector3.zero;
             }
 
-            if (Player != null && !Player.IsDead && !HasStatus(EnemyStatus.Stunned) && !HasStatus(EnemyStatus.Frozen))
+            if (Player != null && !Player.IsDead && !HasStatus(EnemyStatus.Stunned) && !HasStatus(EnemyStatus.Frozen) && !IsEmerging)
                 Tick(dt);
 
             UpdateColor();
@@ -362,6 +367,13 @@ namespace RuneArena.Enemies
 
             m_StatusUntil[i] = Mathf.Max(m_StatusUntil[i], Time.time + duration);
             return true;
+        }
+
+        // Call right after spawning, for enemies that rise out of the floor instead of walking in.
+        public void Emerge(float duration)
+        {
+            m_EmergeUntil = Time.time + duration;
+            Emerging?.Invoke(this, duration);
         }
 
         // Removes it without dying: no death event, no drops. For clearing the arena.

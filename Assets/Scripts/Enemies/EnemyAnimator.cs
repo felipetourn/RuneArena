@@ -1,3 +1,4 @@
+using RuneArena.Effects;
 using UnityEngine;
 
 namespace RuneArena.Enemies
@@ -37,10 +38,20 @@ namespace RuneArena.Enemies
         [SerializeField] float m_SlowedPace = 0.6f;
 
         [Header("Death")]
+        [Tooltip("Seconds into the death clip it starts from. For one that dies in the air, to fall already lying down.")]
+        [SerializeField] float m_DeathStart;
         [Tooltip("Seconds lying there after dying before it starts sinking into the floor.")]
         [SerializeField] float m_SinkDelay = 1.5f;
         [SerializeField] float m_SinkTime = 1f;
         [SerializeField] float m_SinkDepth = 0.6f;
+        [Tooltip("How far under the floor it starts when it climbs out of it: about its height.")]
+        [SerializeField] float m_EmergeDepth = 1.9f;
+
+        [Header("Sound")]
+        [Tooltip("Loops while it is alive, louder while it moves. Starts at a random point, so a crowd doesn't sound in step.")]
+        [SerializeField] AudioClip m_MoveLoop;
+        [SerializeField] float m_StillVolume = 0.15f;
+        [SerializeField] float m_MovingVolume = 0.6f;
 
         Enemy m_Enemy;
         string m_Current;
@@ -52,6 +63,9 @@ namespace RuneArena.Enemies
         float m_Speed;
         float m_DiedAt = -1f;
         float m_BodyHeight;
+        float m_EmergeAt;
+        float m_EmergeTime;
+        AudioSource m_Loop;
         bool m_Reported;
 
         void Awake()
@@ -60,6 +74,8 @@ namespace RuneArena.Enemies
             if (m_Animator == null)
                 m_Animator = GetComponentInChildren<Animator>();
             m_LastPosition = transform.position;
+            if (m_Animator != null)
+                m_BodyHeight = m_Animator.transform.localPosition.y;
             if (m_Animator != null && m_Controller != null)
                 m_Animator.runtimeAnimatorController = m_Controller;
             if (m_Animator == null || m_Animator.runtimeAnimatorController == null)
@@ -74,6 +90,14 @@ namespace RuneArena.Enemies
             m_Enemy.AttackStarted += OnAttackStarted;
             m_Enemy.Damaged += OnDamaged;
             m_Enemy.ArmorHit += OnArmorHit;
+            m_Enemy.Emerging += OnEmerging;
+        }
+
+        void Start()
+        {
+            m_Loop = Sfx.Loop(m_MoveLoop, transform);
+            if (m_Loop != null)
+                m_Loop.time = Random.Range(0f, m_MoveLoop.length);
         }
 
         void OnDisable()
@@ -81,6 +105,7 @@ namespace RuneArena.Enemies
             m_Enemy.AttackStarted -= OnAttackStarted;
             m_Enemy.Damaged -= OnDamaged;
             m_Enemy.ArmorHit -= OnArmorHit;
+            m_Enemy.Emerging -= OnEmerging;
         }
 
         void Update()
@@ -93,17 +118,40 @@ namespace RuneArena.Enemies
                 m_Speed = Mathf.Lerp(m_Speed, moved.magnitude / dt, 1f - Mathf.Exp(-10f * dt));
             }
             m_LastPosition = transform.position;
+            if (m_Loop != null)
+            {
+                float target = m_Enemy.IsDead ? 0f : Mathf.Lerp(m_StillVolume, m_MovingVolume, Mathf.Clamp01(m_Speed));
+                m_Loop.volume = Mathf.MoveTowards(m_Loop.volume, target, dt * 2f);
+            }
 
             if (m_Enemy.IsDead)
             {
                 if (m_DiedAt < 0f)
                 {
                     m_DiedAt = Time.time;
-                    m_BodyHeight = m_Animator.transform.localPosition.y;
+                    if (m_DeathStart > 0f && Ready())
+                    {
+                        m_Animator.speed = 1f;
+                        m_Animator.CrossFadeInFixedTime(m_Death, m_Fade, 0, m_DeathStart);
+                        m_Current = m_Death;
+                    }
                 }
                 Play(m_Death, 1f);
                 Sink();
                 return;
+            }
+            // Climbing out of the floor, fast at first and slowing down as it gets out.
+            if (m_Enemy.IsEmerging)
+            {
+                float t = 1f - Mathf.Clamp01((Time.time - m_EmergeAt) / m_EmergeTime);
+                SetBodyDepth(m_EmergeDepth * t * t);
+                Play(m_Idle, 1f);
+                return;
+            }
+            if (m_EmergeTime > 0f)
+            {
+                SetBodyDepth(0f);
+                m_EmergeTime = 0f;
             }
             // A frozen enemy is a statue: the pose it was in, held.
             if (m_Enemy.HasStatus(EnemyStatus.Frozen))
@@ -182,9 +230,21 @@ namespace RuneArena.Enemies
         void Sink()
         {
             float t = Mathf.Clamp01((Time.time - m_DiedAt - m_SinkDelay) / m_SinkTime);
+            SetBodyDepth(m_SinkDepth * t * t);
+        }
+
+        void SetBodyDepth(float depth)
+        {
             Vector3 p = m_Animator.transform.localPosition;
-            p.y = m_BodyHeight - m_SinkDepth * t * t;
+            p.y = m_BodyHeight - depth;
             m_Animator.transform.localPosition = p;
+        }
+
+        void OnEmerging(Enemy enemy, float duration)
+        {
+            m_EmergeAt = Time.time;
+            m_EmergeTime = Mathf.Max(duration, 0.01f);
+            SetBodyDepth(m_EmergeDepth);
         }
 
         // Reports, once, an Animator that lost its controller after waking up.
