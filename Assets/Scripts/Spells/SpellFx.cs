@@ -431,23 +431,24 @@ namespace RuneArena.Spells
 
         // Where a summoned enemy climbs out of the floor: a glowing ring, dust and sparks rising for
         // as long as it takes.
-        public static void Summoning(Vector3 ground, Color color, float duration)
+        // size scales it all: 1 for a skeleton, more for a boss.
+        public static void Summoning(Vector3 ground, Color color, float duration, float size = 1f)
         {
-            GroundRing(ground, 2.2f, color, duration);
-            Dust(ground, 1.2f, false);
-            FxLight.Flash(ground + Vector3.up * 0.5f, color, 4f, 2f, duration);
+            GroundRing(ground, 2.2f * size, color, duration);
+            Dust(ground, 1.2f * size, false);
+            FxLight.Flash(ground + Vector3.up * 0.5f * size, color, 4f * size, 2f, duration);
             if (Lib == null)
                 return;
             Fx.Burst(ground + Vector3.up * 0.3f, new FxBurst
             {
                 Material = Lib.Glow,
                 Color = color,
-                Count = 18,
-                Size = 0.18f,
-                Speed = 2.5f,
+                Count = Mathf.RoundToInt(18 * size),
+                Size = 0.18f * Mathf.Sqrt(size),
+                Speed = 2.5f * Mathf.Sqrt(size),
                 Lifetime = duration,
                 Gravity = -0.3f,
-                Radius = 0.5f,
+                Radius = 0.5f * size,
                 Drag = 1f,
                 Growth = FxGrowth.Shrink,
             });

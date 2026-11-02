@@ -55,8 +55,10 @@ namespace RuneArena.Enemies
         [SerializeField] bool m_AlwaysShowBar;
         [Tooltip("Shown over the bar. Empty for regular enemies.")]
         [SerializeField] string m_DisplayName;
-        [Tooltip("Opens its wave and comes in alone through the main gate, announced.")]
+        [Tooltip("Comes once the rest of its wave is down.")]
         [SerializeField] bool m_Boss;
+        [Tooltip("Seconds of its entrance. Above 0 it appears in the arena in front of the player instead of coming through a gate, and can't be hurt until it is done.")]
+        [SerializeField] float m_EntranceTime;
 
         [Header("Feedback")]
         [SerializeField] Color m_TelegraphColor = new Color(1f, 0.9f, 0.3f);
@@ -88,6 +90,8 @@ namespace RuneArena.Enemies
         public event Action<Enemy, float> AttackStarted;
         // Coming up out of the floor for this many seconds.
         public event Action<Enemy, float> Emerging;
+        // A clip the enemy wants played for this many seconds, over anything but its death.
+        public event Action<Enemy, string, float> Acting;
         // Amount actually taken and what kind of hit it was.
         public event Action<Enemy, float, DamageKind> Damaged;
 
@@ -99,6 +103,9 @@ namespace RuneArena.Enemies
         public bool AlwaysShowBar => m_AlwaysShowBar;
         public string DisplayName => m_DisplayName;
         public virtual bool IsBoss => m_Boss;
+        public float EntranceTime => m_EntranceTime;
+        // Which attack the last wind-up was, for enemies with several: their animator plays a clip for each.
+        public string AttackName { get; private set; }
 
         public ArmorType Armor { get; private set; }
         public float ArmorPoints { get; private set; }
@@ -113,6 +120,9 @@ namespace RuneArena.Enemies
         public bool HasEntered { get; private set; }
         // Still coming up out of the floor: it can't move or attack yet.
         public bool IsEmerging => Time.time < m_EmergeUntil;
+        // Can't be hurt, like the stage 3 boss while it is a heap of bones.
+        protected bool Invulnerable { get; set; }
+        protected Renderer BodyRenderer => m_Body;
 
         // 1 normally, lower while slowed. Movement code multiplies its speed by this.
         public float SpeedMultiplier => HasStatus(EnemyStatus.Rooted) ? 0f : (HasStatus(EnemyStatus.Slowed) ? 1f - m_Slow : 1f) * m_SpeedScale;
@@ -276,17 +286,23 @@ namespace RuneArena.Enemies
         {
         }
 
+        protected void PlayAction(string state, float seconds)
+        {
+            Acting?.Invoke(this, state, seconds);
+        }
+
         // Starts the wind-up of an attack that lands after windUp seconds.
-        protected void BeginAttack(float windUp)
+        protected void BeginAttack(float windUp, string name = null)
         {
             Telegraphing = true;
+            AttackName = name;
             AttackStarted?.Invoke(this, windUp);
         }
 
         // source is the label of the rune whose spell did it, so the right one can break armor.
         public void Damage(float amount, DamageKind kind = DamageKind.Normal, string source = null)
         {
-            if (IsDead || !IsInsideArena)
+            if (IsDead || !IsInsideArena || IsEmerging || Invulnerable)
                 return;
 
             // Health is untouched until the armor is gone. The hit that breaks it doesn't carry over:

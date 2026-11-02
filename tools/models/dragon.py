@@ -83,7 +83,10 @@ for k in fly.keyframe_points:
         p[1] -= fly_z - ground_z
 
 make_dive(arm, acts["attack_5"])
-common.keep_actions({"attack_5": "Fly", "dive": "Dive", "hurtsmall": "Hit", "dead": "Death"})
+# The boss's entrance: the end of its spawn clip, where it rears up and roars with its wings out. The
+# first half has it walking in.
+common.cut(acts["born"], 4.0, 7.9, "entrance_GLTF_created_0")
+common.keep_actions({"attack_5": "Fly", "dive": "Dive", "hurtsmall": "Hit", "dead": "Death", "entrance": "Entrance"})
 # About 2.2 m wide.
 common.flatten(arm, [mesh], 0.8, "Dragon")
 while len(mesh.data.uv_layers) > 1:

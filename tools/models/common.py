@@ -13,6 +13,58 @@ def load(path):
     return arm
 
 
+def load_fbx(path):
+    bpy.ops.wm.read_factory_settings(use_empty=True)
+    bpy.ops.import_scene.fbx(filepath=path, ignore_leaf_bones=True)
+    return next(o for o in bpy.data.objects if o.type == 'ARMATURE')
+
+
+def rename_clips(clips):
+    """clips maps the end of each wanted take's name (FBX takes come as "Armature|Take|BaseLayer") to its
+    clip name in Unity. The rest are dropped."""
+    for a in list(bpy.data.actions):
+        take = a.name.split("|")[1] if "|" in a.name else a.name
+        key = next((k for k in clips if take.endswith(k)), None)
+        if key is None:
+            bpy.data.actions.remove(a)
+        else:
+            a.name = clips[key]
+            a.use_fake_user = True
+
+
+def top(arm, meshes, action):
+    """Highest point of the meshes halfway through action, in world units."""
+    arm.animation_data.action = action
+    bpy.context.scene.frame_set(int(sum(action.frame_range) / 2))
+    dg = bpy.context.evaluated_depsgraph_get()
+    return max((o.evaluated_get(dg).matrix_world @ v.co).z for o in meshes for v in o.evaluated_get(dg).to_mesh().vertices)
+
+
+def cut(action, start, end, name, pingpong=False):
+    """A new action with the stretch of action between start and end seconds, moved to start at 0.
+    pingpong plays it forward and then back, for a loop out of a stretch that doesn't loop. Keys are
+    sampled every frame, which also keeps the cut edges exact."""
+    fps = bpy.context.scene.render.fps
+    first = round(start * fps + action.frame_range[0])
+    count = round((end - start) * fps) + 1
+    frames = list(range(count))
+    if pingpong:
+        frames += list(range(count, 2 * count - 1))
+    clip = bpy.data.actions.new(name)
+    for fc in action.fcurves:
+        values = [fc.evaluate(first + f) for f in range(count)]
+        if pingpong:
+            values += values[-2::-1]
+        out = clip.fcurves.new(fc.data_path, index=fc.array_index, action_group=fc.group.name if fc.group else "")
+        out.keyframe_points.add(len(frames))
+        co = [x for pair in zip(frames, values) for x in pair]
+        out.keyframe_points.foreach_set("co", co)
+        out.keyframe_points.foreach_set("interpolation", [1] * len(frames))
+        out.update()
+    clip.use_fake_user = True
+    return clip
+
+
 def select(objs):
     bpy.ops.object.select_all(action='DESELECT')
     for o in objs:

@@ -4,3 +4,7 @@
   and rescaled (tools/models/dragon.py).
 - Skeleton: "Skeleton - low tier enemy", Sketchfab. Decimated and its materials baked into one
   (tools/models/skeleton.py).
+- Tillagemon (stage 1 boss), Megademon (stage 3 boss): downloads of unknown origin; check their
+  licenses before publishing anything (tools/models/tillagemon.py, megademon.py).
+- Gideon (healer): Paragon character by Epic Games, released for Unreal Engine projects. Used here in a
+  non-commercial university project (tools/models/gideon.py).

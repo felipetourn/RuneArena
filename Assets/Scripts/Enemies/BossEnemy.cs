@@ -1,4 +1,3 @@
-using RuneArena.Effects;
 using RuneArena.Spells;
 using RuneArena.Strokes;
 using RuneArena.Waves;
@@ -19,6 +18,8 @@ namespace RuneArena.Enemies
             Slam,
             Volley,
             Summon,
+            // Its plain blows, between the moves of the cycle, at whoever comes close.
+            Strike,
         }
 
         enum State
@@ -44,6 +45,14 @@ namespace RuneArena.Enemies
         [Tooltip("Wind-ups and pauses are multiplied by this while angry.")]
         [SerializeField] float m_AngerTime = 0.7f;
 
+        [Header("Strikes")]
+        [Tooltip("Plain blows between moves, when the player is this close. Three different ones, in turn.")]
+        [SerializeField] float m_StrikeRange = 3.2f;
+        [SerializeField] float m_StrikeAngle = 120f;
+        [SerializeField] float m_StrikeWindUp = 0.7f;
+        [SerializeField] float m_StrikeDamage = 12f;
+        [SerializeField] float m_StrikeCooldown = 1.2f;
+
         [Header("Charge")]
         [SerializeField] float m_ChargeWindUp = 1.2f;
         [SerializeField] float m_ChargeSpeed = 12f;
@@ -61,6 +70,8 @@ namespace RuneArena.Enemies
         [SerializeField] float m_SlamWindUp = 1.5f;
         [Tooltip("Gives up getting close after this long and slams anyway.")]
         [SerializeField] float m_SlamApproach = 3f;
+        [Tooltip("Seconds it stays planted after the slam lands, while it pulls the pitchfork out of the floor.")]
+        [SerializeField] float m_SlamPlanted = 1.9f;
         [SerializeField] Color m_SlamColor = new Color(0.8f, 0.1f, 0.1f);
 
         [Header("Volley")]
@@ -88,6 +99,7 @@ namespace RuneArena.Enemies
         int m_Step;
         float m_Until;
         float m_RecoverUntil;
+        float m_PlantedUntil;
         bool m_WasAngry;
         WaveSpawner m_Spawner;
         GameObject m_Marker;
@@ -96,6 +108,9 @@ namespace RuneArena.Enemies
         float m_Charged;
         bool m_ChargeHit;
         int m_BurstsLeft;
+
+        int m_Strikes;
+        float m_StrikeReadyAt;
 
         bool Angry => Health <= MaxHealth * m_AngerHealth;
         float TimeScale => Angry ? m_AngerTime : 1f;
@@ -116,14 +131,25 @@ namespace RuneArena.Enemies
             {
                 m_WasAngry = true;
                 m_Step = 0;
-                Laugh();
             }
 
             switch (m_State)
             {
                 case State.Ready:
+                    if (Time.time < m_PlantedUntil)
+                    {
+                        Stop();
+                        return;
+                    }
                     if (Time.time < m_RecoverUntil)
                     {
+                        if (FlatDistance(transform.position, feet) <= m_StrikeRange && Time.time >= m_StrikeReadyAt)
+                        {
+                            m_Move = Move.Strike;
+                            m_Strikes++;
+                            Telegraph(m_StrikeWindUp, $"Strike{(m_Strikes - 1) % 3 + 1}");
+                            return;
+                        }
                         MoveTo(feet);
                         return;
                     }
@@ -184,17 +210,16 @@ namespace RuneArena.Enemies
                     else
                     {
                         Telegraph(m_SummonWindUp);
-                        Laugh();
                     }
                     break;
             }
         }
 
-        void Telegraph(float windUp)
+        void Telegraph(float windUp, string name = null)
         {
             m_State = State.Telegraph;
             m_Until = Time.time + windUp * TimeScale;
-            Telegraphing = true;
+            BeginAttack(windUp * TimeScale, name ?? m_Move.ToString());
         }
 
         void Act(Vector3 feet)
@@ -214,6 +239,7 @@ namespace RuneArena.Enemies
                         Player.Damage(m_SlamDamage * DamageMultiplier);
                     Flash(m_SlamRadius, m_SlamColor);
                     End();
+                    m_PlantedUntil = Time.time + m_SlamPlanted * TimeScale;
                     break;
 
                 case Move.Volley:
@@ -225,6 +251,17 @@ namespace RuneArena.Enemies
                 case Move.Summon:
                     Summon();
                     End();
+                    break;
+
+                case Move.Strike:
+                    Vector3 to = feet - transform.position;
+                    to.y = 0f;
+                    if (to.magnitude <= m_StrikeRange && Vector3.Angle(transform.forward, to) <= m_StrikeAngle * 0.5f)
+                        Player.Damage(m_StrikeDamage * DamageMultiplier);
+                    // Back to walking about; the cycle's next move still comes when it was due.
+                    m_State = State.Ready;
+                    Telegraphing = false;
+                    m_StrikeReadyAt = Time.time + m_StrikeCooldown * TimeScale;
                     break;
             }
         }
@@ -313,10 +350,6 @@ namespace RuneArena.Enemies
             Flash(1.5f, m_SlamColor);
         }
 
-        void Laugh()
-        {
-            Sfx.Play(Sfx.Library != null ? Sfx.Library.BossLaugh : null, transform.position + Vector3.up * 2f, 1f, 0.03f);
-        }
 
         void ShowStrip()
         {

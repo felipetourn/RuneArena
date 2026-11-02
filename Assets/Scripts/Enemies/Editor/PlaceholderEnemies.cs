@@ -105,7 +105,7 @@ namespace RuneArena.Enemies.Editor
             so.FindProperty("m_Minion").objectReferenceValue = minion;
             so.FindProperty("m_BarScale").floatValue = 2.5f;
             so.FindProperty("m_AlwaysShowBar").boolValue = true;
-            so.FindProperty("m_DisplayName").stringValue = "Jefe";
+            so.FindProperty("m_DisplayName").stringValue = "";
             so.ApplyModifiedPropertiesWithoutUndo();
             Save(root);
         }

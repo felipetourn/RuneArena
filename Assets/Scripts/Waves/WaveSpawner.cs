@@ -4,8 +4,10 @@ using System.Collections.Generic;
 using RuneArena.Arena;
 using RuneArena.Enemies;
 using RuneArena.Player;
+using RuneArena.Spells;
 using TMPro;
 using UnityEngine;
+using UnityEngine.AI;
 
 namespace RuneArena.Waves
 {
@@ -54,6 +56,9 @@ namespace RuneArena.Waves
         [SerializeField] float m_BreakTime = 5f;
         [Tooltip("Seconds a gate stays open after letting an enemy through, at least.")]
         [SerializeField] float m_GateHold = 2f;
+        [Tooltip("How far in front of the player a boss with an entrance appears.")]
+        [SerializeField] float m_EntranceDistance = 9f;
+        [SerializeField] Color m_EntranceColor = new Color(1f, 0.45f, 0.15f);
 
         [Header("Announcement")]
         [Tooltip("Text in the middle of the view. Created if left empty.")]
@@ -138,11 +143,12 @@ namespace RuneArena.Waves
                 Announce("");
         }
 
-        IEnumerator Run()
+        // first is the wave to start from, counting from 0 across stages.
+        IEnumerator Run(int first = 0)
         {
             yield return new WaitForSeconds(m_StartDelay);
 
-            for (int index = 0; ; index++)
+            for (int index = first; ; index++)
             {
                 CurrentWave = index + 1;
                 bool newStage = index % m_Waves.Count == 0;
@@ -221,6 +227,12 @@ namespace RuneArena.Waves
 
         IEnumerator Spawn(Enemy prefab)
         {
+            if (prefab.EntranceTime > 0f)
+            {
+                Appear(prefab);
+                yield break;
+            }
+
             // Bosses come through the first door, the one in front of the player's start.
             bool boss = prefab.IsBoss;
             ArenaGate gate = boss ? m_Gates[0] : m_Gates[m_NextGate];
@@ -235,6 +247,79 @@ namespace RuneArena.Waves
             Enemy enemy = Track(Instantiate(prefab, point.position, point.rotation));
             gate.LetThrough(enemy);
             gate.Open(m_GateHold);
+        }
+
+        // An entrance in the arena instead of a gate, facing the player: a boss in the middle of the arena,
+        // anything else in front of the player, kept off the wall.
+        void Appear(Enemy prefab)
+        {
+            Vector3 feet = m_Player.Feet;
+            Vector3 ahead = m_Player.Head.forward;
+            ahead.y = 0f;
+            ahead = ahead.sqrMagnitude > 1e-4f ? ahead.normalized : Vector3.forward;
+            Vector3 spot = feet + ahead * m_EntranceDistance;
+            if (prefab.IsBoss && m_Arena != null)
+                spot = m_Arena.transform.position;
+            if (m_Arena != null)
+            {
+                Vector3 center = m_Arena.transform.position;
+                Vector3 flat = spot - center;
+                flat.y = 0f;
+                float limit = m_Arena.Radius - m_Arena.Thickness - 4f;
+                if (flat.magnitude > limit)
+                    spot = center + flat.normalized * limit;
+                spot.y = center.y;
+            }
+            if (NavMesh.SamplePosition(spot, out NavMeshHit hit, 4f, NavMesh.AllAreas))
+                spot = hit.position;
+
+            Vector3 facing = feet - spot;
+            facing.y = 0f;
+            Enemy enemy = Track(Instantiate(prefab, spot, Quaternion.LookRotation(facing.sqrMagnitude > 1e-4f ? facing : -ahead)));
+            enemy.Emerge(prefab.EntranceTime);
+            SpellFx.Summoning(spot, m_EntranceColor, prefab.EntranceTime, 3f);
+
+        }
+
+        [ContextMenu("Test/Boss of stage 1")]
+        void TestBoss1() => TestBoss(1);
+
+        [ContextMenu("Test/Boss of stage 2")]
+        void TestBoss2() => TestBoss(2);
+
+        [ContextMenu("Test/Boss of stage 3")]
+        void TestBoss3() => TestBoss(3);
+
+        // In Play: clears the arena and brings that stage's boss in right away, entrance included. Once it
+        // is down the waves go on from the next stage.
+        void TestBoss(int stage)
+        {
+            if (!Application.isPlaying || m_Waves == null || m_Waves.Count == 0)
+                return;
+            StopAllCoroutines();
+            for (int i = Enemy.All.Count - 1; i >= 0; i--)
+                Enemy.All[i].Despawn();
+            Alive = 0;
+            StartCoroutine(Boss(stage));
+        }
+
+        IEnumerator Boss(int stage)
+        {
+            CurrentStage = stage;
+            CurrentWave = stage * m_Waves.Count;
+            WaveSet.Wave last = m_Waves.Get(m_Waves.Count - 1, out _);
+            foreach (WaveSet.Group group in last.groups)
+            {
+                if (group.prefab != null && group.prefab.IsBoss && group.InStage(stage))
+                    Appear(group.prefab);
+            }
+            while (Alive > 0)
+            {
+                if (PlayerDead)
+                    yield break;
+                yield return null;
+            }
+            yield return Run(stage * m_Waves.Count);
         }
 
         // For enemies that appear inside the arena mid-wave, like a boss's minions. They count for the wave.
@@ -256,7 +341,7 @@ namespace RuneArena.Waves
 
         void RollArmor(Enemy enemy)
         {
-            if (enemy is BossEnemy || enemy is FlyingEnemy)
+            if (enemy.IsBoss || enemy is FlyingEnemy)
                 return;
 
             m_ArmorTypes.Clear();

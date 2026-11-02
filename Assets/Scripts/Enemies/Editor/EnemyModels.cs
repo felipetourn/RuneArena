@@ -2,6 +2,7 @@ using System.IO;
 using UnityEditor;
 using UnityEditor.Animations;
 using UnityEngine;
+using UnityEngine.AI;
 using UnityEngine.Rendering;
 
 namespace RuneArena.Enemies.Editor
@@ -16,9 +17,10 @@ namespace RuneArena.Enemies.Editor
         const string k_PrefabFolder = "Assets/Prefabs/Enemies";
         const string k_MaterialFolder = "Assets/Materials/Enemies";
 
-        // Of the dragon export: about 2.5 m wide for the flying enemy, 5.5 m for the boss.
+        // Of the dragon export: about 2.5 m wide for the flying enemy, 5.5 m for the boss. Gideon comes 2 m tall.
         const float k_DragonScale = 1.15f;
         const float k_BossScale = 2.5f;
+        const float k_MageScale = 1.6f;
 
         [MenuItem("RuneArena/Create Enemy Models")]
         static void Create()
@@ -26,6 +28,9 @@ namespace RuneArena.Enemies.Editor
             Melee();
             Flying();
             BuildDragonBoss();
+            Tillagemon();
+            Demon();
+            Mage();
             AssetDatabase.SaveAssets();
             Debug.Log("Enemy models set up in the melee, flying and dragon boss prefabs");
         }
@@ -95,20 +100,14 @@ namespace RuneArena.Enemies.Editor
             if (AssetDatabase.LoadAssetAtPath<GameObject>(path) == null)
                 AssetDatabase.CopyAsset(source, path);
 
+            // The flying enemy's script swapped for the boss's, which adds its own attacks: the tuning stays.
+            SwapScript(path, "DragonBoss");
             GameObject root = PrefabUtility.LoadPrefabContents(path);
             root.name = "Dragon Boss";
             Animator animator = SwapBody(root, "Dragon", AssetDatabase.LoadAssetAtPath<Material>($"{k_MaterialFolder}/Enemy Dragon.mat"), "Fly", k_BossScale);
             SetCollider(root, k_BossScale);
 
-            // The flying enemy's script swapped for the boss's, which adds its own attacks: the tuning stays.
-            if (!(root.GetComponent<Enemy>() is RuneArena.Enemies.DragonBoss))
-            {
-                string[] found = AssetDatabase.FindAssets("DragonBoss t:MonoScript");
-                var script = AssetDatabase.LoadAssetAtPath<MonoScript>(AssetDatabase.GUIDToAssetPath(found[0]));
-                var swap = new SerializedObject(root.GetComponent<Enemy>());
-                swap.FindProperty("m_Script").objectReferenceValue = script;
-                swap.ApplyModifiedPropertiesWithoutUndo();
-            }
+
 
             var enemy = new SerializedObject(root.GetComponent<Enemy>());
             var projectile = AssetDatabase.LoadAssetAtPath<GameObject>($"{k_PrefabFolder}/Enemy Projectile.prefab");
@@ -118,7 +117,9 @@ namespace RuneArena.Enemies.Editor
             enemy.FindProperty("m_KnockbackResistance").floatValue = 0.8f;
             enemy.FindProperty("m_BarScale").floatValue = 2.5f;
             enemy.FindProperty("m_AlwaysShowBar").boolValue = true;
-            enemy.FindProperty("m_DisplayName").stringValue = "Dragón";
+            enemy.FindProperty("m_DisplayName").stringValue = "";
+            // It appears in the arena, rears up and roars, then takes off.
+            enemy.FindProperty("m_EntranceTime").floatValue = 3.9f;
             enemy.FindProperty("m_Boss").boolValue = true;
 
             // Slower and higher, with a wider circle. It pulls up from the dive further out, or its
@@ -141,6 +142,8 @@ namespace RuneArena.Enemies.Editor
             animation.FindProperty("m_AttackImpact").floatValue = 2.2f;
             animation.FindProperty("m_AttackLength").floatValue = 2.2f;
             animation.FindProperty("m_DeathStart").floatValue = 2.4f;
+            animation.FindProperty("m_Entrance").stringValue = "Entrance";
+            animation.FindProperty("m_EmergeDepth").floatValue = 0f;
             animation.ApplyModifiedPropertiesWithoutUndo();
             SetDeath(root, 3f, 1.6f, 0.8f * k_BossScale);
             PrefabUtility.SaveAsPrefabAsset(root, path);
@@ -162,6 +165,290 @@ namespace RuneArena.Enemies.Editor
             animation.ApplyModifiedPropertiesWithoutUndo();
         }
 
+        // The stage 1 boss: the ground boss with Tillagemon's body. It rises out of the floor in front of the
+        // player and brings its pitchfork down, which is also its slam.
+        static void Tillagemon()
+        {
+            Material[] materials =
+            {
+                Lit("Enemy Tillagemon A", "Tillagemon/Tillagemon_A", 0.2f, Color.black, false),
+                Lit("Enemy Tillagemon B", "Tillagemon/Tillagemon_B", 0.2f, Color.black, false),
+            };
+            string path = $"{k_PrefabFolder}/Boss Enemy.prefab";
+            GameObject root = PrefabUtility.LoadPrefabContents(path);
+            Animator animator = SwapBody(root, "Tillagemon", materials, "Idle");
+
+            // About 3.6 m tall.
+            var collider = root.GetComponent<CapsuleCollider>();
+            collider.center = new Vector3(0f, 1.6f, 0f);
+            collider.height = 3.2f;
+            collider.radius = 1.1f;
+            var agent = root.GetComponent<NavMeshAgent>();
+            agent.radius = 1.1f;
+            agent.height = 3.2f;
+            // What its walk clip covers, played at its own pace: any faster and the feet slide.
+            agent.speed = 1f;
+            // The shots come from the pitchfork's tips; the placeholder's sphere goes.
+            Transform muzzle = root.transform.Find("Muzzle");
+            if (muzzle != null)
+            {
+                Object.DestroyImmediate(muzzle.GetComponent<Renderer>());
+                muzzle.localPosition = new Vector3(0f, 2.4f, 1.8f);
+            }
+
+            var enemy = new SerializedObject(root.GetComponent<Enemy>());
+            enemy.FindProperty("m_DisplayName").stringValue = "";
+            enemy.FindProperty("m_FlashBrightness").floatValue = 2.5f;
+            enemy.FindProperty("m_TelegraphGlow").floatValue = 0.6f;
+            // Slowly out of the middle of the floor, then the pitchfork comes down, slower than its slam.
+            enemy.FindProperty("m_EntranceTime").floatValue = 7.6f;
+            enemy.FindProperty("m_Projectile").objectReferenceValue = Pitchfork();
+            enemy.ApplyModifiedPropertiesWithoutUndo();
+
+            SetAnimator(root, animator, "Idle", "Walk", "Slam", "Hit", "Stun", "Death", 1f, 0.8f, 2.7f);
+            var animation = new SerializedObject(root.GetComponent<EnemyAnimator>());
+            animation.FindProperty("m_Run").stringValue = "Run";
+            animation.FindProperty("m_RunAbove").floatValue = 4f;
+            animation.FindProperty("m_RunSpeed").floatValue = 9f;
+            SetAttacks(animation, ("Charge", "ChargeReady", 0.87f, 0.87f), ("Slam", "Slam", 0.8f, 2.7f),
+                       ("Volley", "Volley", 0.6f, 1.67f), ("Summon", "Summon", 1.4f, 4.27f),
+                       ("Strike1", "Strike1", 0.55f, 1.67f), ("Strike2", "Strike2", 0.47f, 1.67f), ("Strike3", "Strike3", 0.77f, 2f));
+            animation.FindProperty("m_Entrance").stringValue = "Slam";
+            animation.FindProperty("m_EmergeDepth").floatValue = 3.8f;
+            animation.FindProperty("m_RiseTime").floatValue = 4f;
+            animation.FindProperty("m_EntrancePace").floatValue = 0.75f;
+            animation.ApplyModifiedPropertiesWithoutUndo();
+            SetDeath(root, 4f, 2.8f, 1.4f);
+
+            PrefabUtility.SaveAsPrefabAsset(root, path);
+            PrefabUtility.UnloadPrefabContents(root);
+        }
+
+        // The stage 3 boss: the reaper. Made once from the melee enemy, with its script swapped for the
+        // boss's; after that only its body and the values below are reset.
+        static void Demon()
+        {
+            string source = $"{k_PrefabFolder}/Melee Enemy.prefab";
+            string path = $"{k_PrefabFolder}/Demon Boss.prefab";
+            if (AssetDatabase.LoadAssetAtPath<GameObject>(path) == null)
+                AssetDatabase.CopyAsset(source, path);
+
+            Material[] materials =
+            {
+                Lit("Enemy Megademon Armor", "Megademon/Megademon_Armor", 0.3f, Color.black, false),
+                Lit("Enemy Megademon Body", "Megademon/Megademon_Body", 0.2f, Color.black, false),
+                Lit("Enemy Megademon Blade", "Megademon/Megademon_Blade", 0.6f, Color.black, false),
+            };
+            SwapScript(path, "DemonBoss");
+            GameObject root = PrefabUtility.LoadPrefabContents(path);
+            root.name = "Demon Boss";
+            Animator animator = SwapBody(root, "Megademon", materials, "Idle");
+
+            var collider = root.GetComponent<CapsuleCollider>();
+            collider.center = new Vector3(0f, 1.4f, 0f);
+            collider.height = 2.8f;
+            collider.radius = 0.7f;
+            var agent = root.GetComponent<NavMeshAgent>();
+            agent.radius = 0.7f;
+            agent.height = 2.8f;
+
+            var enemy = new SerializedObject(root.GetComponent<Enemy>());
+            enemy.FindProperty("m_MaxHealth").floatValue = 700f;
+            enemy.FindProperty("m_StunResistance").floatValue = 0.6f;
+            enemy.FindProperty("m_KnockbackResistance").floatValue = 0.9f;
+            enemy.FindProperty("m_BarScale").floatValue = 2.5f;
+            enemy.FindProperty("m_AlwaysShowBar").boolValue = true;
+            enemy.FindProperty("m_DisplayName").stringValue = "";
+            enemy.FindProperty("m_FlashBrightness").floatValue = 2.5f;
+            enemy.FindProperty("m_TelegraphGlow").floatValue = 0.6f;
+            // It comes up out of a heap of bones.
+            enemy.FindProperty("m_EntranceTime").floatValue = 2.7f;
+            var minion = AssetDatabase.LoadAssetAtPath<GameObject>(source);
+            enemy.FindProperty("m_Minion").objectReferenceValue = minion != null ? minion.GetComponent<Enemy>() : null;
+            enemy.ApplyModifiedPropertiesWithoutUndo();
+
+            // It doesn't walk or flinch: it blinks, and the clips have neither.
+            SetAnimator(root, animator, "Idle", "Idle", "Combo", "Idle", "Idle", "Collapse", 0f, 0.8f, 2.3f);
+            var animation = new SerializedObject(root.GetComponent<EnemyAnimator>());
+            animation.FindProperty("m_HitLength").floatValue = 0f;
+            SetAttacks(animation, ("Combo", "Combo", 0.8f, 2.3f), ("Leap", "Leap", 2.15f, 3.3f),
+                       ("Whirl", "Whirl", 0.7f, 1.6f), ("Cleave", "Cleave", 1.25f, 1.7f));
+            animation.FindProperty("m_Entrance").stringValue = "Reform";
+            animation.FindProperty("m_EmergeDepth").floatValue = 0f;
+            animation.ApplyModifiedPropertiesWithoutUndo();
+            SetDeath(root, 4.5f, 3f, 1.5f);
+
+            PrefabUtility.SaveAsPrefabAsset(root, path);
+            PrefabUtility.UnloadPrefabContents(root);
+        }
+
+        // What the stage 1 boss throws in its volley: a pitchfork, flying tines first. Built from boxes and a
+        // cylinder, like the placeholders; the projectile script is the plain one.
+        static EnemyProjectile Pitchfork()
+        {
+            string path = $"{k_PrefabFolder}/Pitchfork Projectile.prefab";
+            var source = AssetDatabase.LoadAssetAtPath<GameObject>($"{k_PrefabFolder}/Enemy Projectile.prefab");
+            var root = new GameObject("Pitchfork Projectile");
+            var projectile = root.AddComponent<EnemyProjectile>();
+            if (source != null)
+                EditorUtility.CopySerialized(source.GetComponent<EnemyProjectile>(), projectile);
+            var so = new SerializedObject(projectile);
+            so.FindProperty("m_HitRadius").floatValue = 0.35f;
+            so.ApplyModifiedPropertiesWithoutUndo();
+
+            string[] found = AssetDatabase.FindAssets("Arena Wood t:Material");
+            Material wood = found.Length > 0 ? AssetDatabase.LoadAssetAtPath<Material>(AssetDatabase.GUIDToAssetPath(found[0])) : null;
+            Material iron = Plain("Enemy Pitchfork Iron", new Color(0.32f, 0.33f, 0.35f), 0.5f, 0.8f);
+
+            Part(root, PrimitiveType.Cylinder, "Handle", wood, new Vector3(0f, 0f, -0.3f), new Vector3(0.05f, 0.7f, 0.05f), true);
+            Part(root, PrimitiveType.Cube, "Crossbar", iron, new Vector3(0f, 0f, 0.42f), new Vector3(0.42f, 0.05f, 0.05f), false);
+            for (int i = -1; i <= 1; i++)
+                Part(root, PrimitiveType.Cube, "Tine", iron, new Vector3(i * 0.18f, 0f, 0.62f), new Vector3(0.035f, 0.035f, 0.4f), false);
+
+            GameObject prefab = PrefabUtility.SaveAsPrefabAsset(root, path);
+            Object.DestroyImmediate(root);
+            return prefab.GetComponent<EnemyProjectile>();
+        }
+
+        static void Part(GameObject root, PrimitiveType type, string name, Material material, Vector3 position, Vector3 scale, bool alongZ)
+        {
+            GameObject part = GameObject.CreatePrimitive(type);
+            Object.DestroyImmediate(part.GetComponent<Collider>());
+            part.name = name;
+            part.transform.SetParent(root.transform, false);
+            part.transform.localPosition = position;
+            // A cylinder stands along Y: laid down along the flight.
+            if (alongZ)
+                part.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
+            part.transform.localScale = scale;
+            if (material != null)
+                part.GetComponent<Renderer>().sharedMaterial = material;
+        }
+
+        static Material Plain(string name, Color color, float smoothness, float metallic)
+        {
+            EnsureFolder(k_MaterialFolder);
+            string path = $"{k_MaterialFolder}/{name}.mat";
+            var material = AssetDatabase.LoadAssetAtPath<Material>(path);
+            if (material == null)
+            {
+                material = new Material(Shader.Find("Universal Render Pipeline/Lit"));
+                AssetDatabase.CreateAsset(material, path);
+            }
+            material.color = color;
+            material.SetFloat("_Smoothness", smoothness);
+            material.SetFloat("_Metallic", metallic);
+            EditorUtility.SetDirty(material);
+            return material;
+        }
+
+        // The stage 2 boss: Gideon, the rift mage. Made once from the melee enemy, with its script swapped.
+        static void Mage()
+        {
+            string source = $"{k_PrefabFolder}/Melee Enemy.prefab";
+            string path = $"{k_PrefabFolder}/Mage Boss.prefab";
+            if (AssetDatabase.LoadAssetAtPath<GameObject>(path) == null)
+                AssetDatabase.CopyAsset(source, path);
+            SwapScript(path, "MageBoss");
+
+            Material material = Lit("Enemy Gideon", "Gideon", 0.25f, Color.white * 1.5f, true);
+            GameObject root = PrefabUtility.LoadPrefabContents(path);
+            root.name = "Mage Boss";
+            // About 3.2 m tall, over the player like the other bosses.
+            Animator animator = SwapBody(root, "Gideon", material, "Idle", k_MageScale);
+            var collider = root.GetComponent<CapsuleCollider>();
+            collider.center = new Vector3(0f, 1.6f, 0f);
+            collider.height = 3.2f;
+            collider.radius = 0.6f;
+            var agent = root.GetComponent<NavMeshAgent>();
+            agent.radius = 0.6f;
+            agent.height = 3.2f;
+            agent.speed = 3.5f;
+
+            var enemy = new SerializedObject(root.GetComponent<Enemy>());
+            enemy.FindProperty("m_MaxHealth").floatValue = 550f;
+            enemy.FindProperty("m_StunResistance").floatValue = 0.5f;
+            enemy.FindProperty("m_KnockbackResistance").floatValue = 0.8f;
+            enemy.FindProperty("m_BarScale").floatValue = 2f;
+            enemy.FindProperty("m_AlwaysShowBar").boolValue = true;
+            enemy.FindProperty("m_DisplayName").stringValue = "";
+            enemy.FindProperty("m_FlashBrightness").floatValue = 2.5f;
+            enemy.FindProperty("m_TelegraphGlow").floatValue = 1.5f;
+            // It drops out of a portal in the middle of the arena.
+            enemy.FindProperty("m_EntranceTime").floatValue = 3.4f;
+            enemy.FindProperty("m_Bolt").objectReferenceValue = Shot("Rift Bolt", 0.25f, new Color(0.5f, 0.3f, 1f), 0.3f);
+            enemy.FindProperty("m_Orb").objectReferenceValue = Shot("Rift Orb", 0.6f, new Color(0.6f, 0.35f, 1f), 0.6f);
+            enemy.FindProperty("m_Hands").vector3Value = new Vector3(0f, 1.4f, 0.6f) * k_MageScale;
+            enemy.ApplyModifiedPropertiesWithoutUndo();
+
+            // Its run covers about 3.5 m/s at its own size, more at this one.
+            SetAnimator(root, animator, "Idle", "Run", "Bolt1", "Hit", "Hit", "Death", 3.5f * k_MageScale, 0.35f, 1.2f);
+            var animation = new SerializedObject(root.GetComponent<EnemyAnimator>());
+            animation.FindProperty("m_MoveLoop").objectReferenceValue = null;
+            SetAttacks(animation, ("Bolt1", "Bolt1", 0.35f, 1.2f), ("Bolt2", "Bolt2", 0.35f, 1.2f), ("Bolt3", "Bolt3", 0.35f, 1.2f),
+                       ("Rift", "Rift", 0.6f, 1.84f), ("Orb", "Cast", 0.5f, 0.96f));
+            animation.FindProperty("m_Entrance").stringValue = "Entrance";
+            animation.FindProperty("m_EntrancePace").floatValue = 0.8f;
+            animation.FindProperty("m_EmergeDepth").floatValue = 0f;
+            animation.ApplyModifiedPropertiesWithoutUndo();
+            SetDeath(root, 3.5f, 2.4f, 1f);
+
+            PrefabUtility.SaveAsPrefabAsset(root, path);
+            PrefabUtility.UnloadPrefabContents(root);
+        }
+
+        // A glowing ball for a magic shot: the plain enemy projectile, with its own look and hit size.
+        static EnemyProjectile Shot(string name, float size, Color color, float hitRadius)
+        {
+            string path = $"{k_PrefabFolder}/{name}.prefab";
+            var source = AssetDatabase.LoadAssetAtPath<GameObject>($"{k_PrefabFolder}/Enemy Projectile.prefab");
+            GameObject root = Object.Instantiate(source);
+            root.name = name;
+            root.transform.localScale = Vector3.one * size;
+            Material glow = Plain($"Enemy {name}", color * 0.4f, 0.6f, 0f);
+            glow.SetColor("_EmissionColor", color * 2.5f);
+            glow.EnableKeyword("_EMISSION");
+            root.GetComponent<Renderer>().sharedMaterial = glow;
+            var so = new SerializedObject(root.GetComponent<EnemyProjectile>());
+            so.FindProperty("m_HitRadius").floatValue = hitRadius;
+            so.ApplyModifiedPropertiesWithoutUndo();
+            GameObject prefab = PrefabUtility.SaveAsPrefabAsset(root, path);
+            Object.DestroyImmediate(root);
+            return prefab.GetComponent<EnemyProjectile>();
+        }
+
+        // Points the prefab's enemy component at another script, keeping every value both share. Saved
+        // apart, so the prefab is loaded again with the new script's fields in it.
+        static void SwapScript(string path, string script)
+        {
+            GameObject root = PrefabUtility.LoadPrefabContents(path);
+            Enemy current = root.GetComponent<Enemy>();
+            if (current.GetType().Name != script)
+            {
+                string[] found = AssetDatabase.FindAssets($"{script} t:MonoScript");
+                var asset = AssetDatabase.LoadAssetAtPath<MonoScript>(AssetDatabase.GUIDToAssetPath(found[0]));
+                var swap = new SerializedObject(current);
+                swap.FindProperty("m_Script").objectReferenceValue = asset;
+                swap.ApplyModifiedPropertiesWithoutUndo();
+                PrefabUtility.SaveAsPrefabAsset(root, path);
+            }
+            PrefabUtility.UnloadPrefabContents(root);
+        }
+
+        static void SetAttacks(SerializedObject animation, params (string name, string state, float impact, float length)[] attacks)
+        {
+            SerializedProperty list = animation.FindProperty("m_Attacks");
+            list.arraySize = attacks.Length;
+            for (int i = 0; i < attacks.Length; i++)
+            {
+                SerializedProperty item = list.GetArrayElementAtIndex(i);
+                item.FindPropertyRelative("Name").stringValue = attacks[i].name;
+                item.FindPropertyRelative("State").stringValue = attacks[i].state;
+                item.FindPropertyRelative("Impact").floatValue = attacks[i].impact;
+                item.FindPropertyRelative("Length").floatValue = attacks[i].length;
+            }
+        }
+
         // Sized to the body: the export is about 2.2 m wide, with the body a bit above the pivot.
         static void SetCollider(GameObject root, float scale)
         {
@@ -173,6 +460,11 @@ namespace RuneArena.Enemies.Editor
         }
 
         static Animator SwapBody(GameObject root, string model, Material material, string firstState, float scale = 1f)
+        {
+            return SwapBody(root, model, new[] { material }, firstState, scale);
+        }
+
+        static Animator SwapBody(GameObject root, string model, Material[] materials, string firstState, float scale = 1f)
         {
             Transform old = root.transform.Find("Body");
             if (old != null)
@@ -189,7 +481,7 @@ namespace RuneArena.Enemies.Editor
                 t.gameObject.layer = root.layer;
 
             var renderer = body.GetComponentInChildren<SkinnedMeshRenderer>();
-            renderer.sharedMaterial = material;
+            renderer.sharedMaterials = materials;
             renderer.shadowCastingMode = ShadowCastingMode.On;
 
             var animator = body.GetComponent<Animator>();
@@ -262,7 +554,8 @@ namespace RuneArena.Enemies.Editor
                 AssetDatabase.CreateAsset(material, path);
             }
 
-            string folder = $"{k_ModelFolder}/{texture}/{texture}";
+            // "Model" for a model with one set of textures, "Model/Set" for one with several.
+            string folder = texture.Contains("/") ? $"{k_ModelFolder}/{texture}" : $"{k_ModelFolder}/{texture}/{texture}";
             material.color = Color.white;
             material.SetTexture("_BaseMap", AssetDatabase.LoadAssetAtPath<Texture2D>(folder + "_Albedo.png"));
             material.SetTexture("_BumpMap", AssetDatabase.LoadAssetAtPath<Texture2D>(folder + "_Normal.png"));
@@ -304,7 +597,7 @@ namespace RuneArena.Enemies.Editor
         const string k_Folder = "Assets/Models/Enemies/";
 
         // Clips that keep going until something else plays. The rest stop on their last pose.
-        static readonly string[] k_Loops = { "Idle", "Walk", "Fly" };
+        static readonly string[] k_Loops = { "Idle", "Walk", "Fly", "Run", "Stun" };
 
         bool IsModel => assetPath.StartsWith(k_Folder) && assetPath.EndsWith(".fbx");
 

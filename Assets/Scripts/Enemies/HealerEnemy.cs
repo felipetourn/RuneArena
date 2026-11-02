@@ -129,7 +129,7 @@ namespace RuneArena.Enemies
             Stop();
             m_Attacking = attack;
             m_ActAt = Time.time + windUp;
-            Telegraphing = true;
+            BeginAttack(windUp, attack ? "Zap" : "Heal");
         }
 
         void WindingUp(Vector3 feet, float deltaTime)

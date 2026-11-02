@@ -75,6 +75,12 @@ namespace RuneArena.Enemies
         {
             base.Start();
             m_Collider = GetComponent<SphereCollider>();
+            // Put down in the arena (a boss's entrance) instead of flying in through a door.
+            if (ArenaRadius > 0f && FlatDistance(transform.position, ArenaCenter) < ArenaRadius - 2f)
+            {
+                m_Entered = true;
+                m_State = State.Orbit;
+            }
             m_OrbitDirection = Random.value < 0.5f ? -1f : 1f;
             m_ReadyAt = Time.time + Random.Range(1f, m_Cooldown);
 

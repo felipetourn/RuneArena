@@ -76,3 +76,6 @@ tools/models/source/
 
 # Downloaded sounds the clips in Assets/Audio/Sfx were cut from
 tools/audio/source/
+
+# Candidate models before they go through tools/models
+possible-3dmodels/

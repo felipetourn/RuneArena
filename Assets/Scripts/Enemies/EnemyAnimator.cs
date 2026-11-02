@@ -1,5 +1,7 @@
+using System;
 using RuneArena.Effects;
 using UnityEngine;
+using Random = UnityEngine.Random;
 
 namespace RuneArena.Enemies
 {
@@ -9,6 +11,18 @@ namespace RuneArena.Enemies
     [RequireComponent(typeof(Enemy))]
     public class EnemyAnimator : MonoBehaviour
     {
+        // The clip for one of the enemy's attacks, by the name it gives its wind-up (Enemy.AttackName).
+        [Serializable]
+        public struct NamedAttack
+        {
+            public string Name;
+            public string State;
+            [Tooltip("Seconds into the clip where it lands.")]
+            public float Impact;
+            [Tooltip("Seconds of the clip to play, counted at its own pace.")]
+            public float Length;
+        }
+
         [SerializeField] Animator m_Animator;
         [Tooltip("Put on the Animator on wake, in case the model's own reference got lost.")]
         [SerializeField] RuntimeAnimatorController m_Controller;
@@ -23,6 +37,13 @@ namespace RuneArena.Enemies
         [SerializeField] string m_Death = "Death";
         [Tooltip("Played while a flying enemy dives at the player. Empty to keep the move clip.")]
         [SerializeField] string m_Lunge;
+        [Tooltip("Played above Run Above m/s instead of the move clip, like a boss's charge. Empty for none.")]
+        [SerializeField] string m_Run;
+        [SerializeField] float m_RunAbove = 4f;
+        [Tooltip("Speed in m/s at which the run clip plays at its own pace.")]
+        [SerializeField] float m_RunSpeed = 6f;
+        [Tooltip("Attacks with their own clip. Any other plays the Attack state with the timing below.")]
+        [SerializeField] NamedAttack[] m_Attacks = new NamedAttack[0];
 
         [Header("Timing")]
         [Tooltip("Speed in m/s at which the move clip plays at its own pace, faster or slower with the enemy. 0 always plays it at its own pace.")]
@@ -44,8 +65,14 @@ namespace RuneArena.Enemies
         [SerializeField] float m_SinkDelay = 1.5f;
         [SerializeField] float m_SinkTime = 1f;
         [SerializeField] float m_SinkDepth = 0.6f;
-        [Tooltip("How far under the floor it starts when it climbs out of it: about its height.")]
+        [Tooltip("How far under the floor it starts when it climbs out of it: about its height. 0 to appear where it is.")]
         [SerializeField] float m_EmergeDepth = 1.9f;
+        [Tooltip("Seconds of the climb, if shorter than the whole entrance. The rest plays the Entrance clip.")]
+        [SerializeField] float m_RiseTime;
+        [Tooltip("Played once it is out of the floor, for the rest of its entrance. Empty to stay idle.")]
+        [SerializeField] string m_Entrance;
+        [Tooltip("Pace of the entrance clip: below 1 to make it last longer.")]
+        [SerializeField] float m_EntrancePace = 1f;
 
         [Header("Sound")]
         [Tooltip("Loops while it is alive, louder while it moves. Starts at a random point, so a crowd doesn't sound in step.")]
@@ -65,6 +92,9 @@ namespace RuneArena.Enemies
         float m_BodyHeight;
         float m_EmergeAt;
         float m_EmergeTime;
+        string m_AttackState;
+        string m_ActionState;
+        float m_ActionUntil;
         AudioSource m_Loop;
         bool m_Reported;
 
@@ -91,6 +121,7 @@ namespace RuneArena.Enemies
             m_Enemy.Damaged += OnDamaged;
             m_Enemy.ArmorHit += OnArmorHit;
             m_Enemy.Emerging += OnEmerging;
+            m_Enemy.Acting += OnActing;
         }
 
         void Start()
@@ -106,6 +137,7 @@ namespace RuneArena.Enemies
             m_Enemy.Damaged -= OnDamaged;
             m_Enemy.ArmorHit -= OnArmorHit;
             m_Enemy.Emerging -= OnEmerging;
+            m_Enemy.Acting -= OnActing;
         }
 
         void Update()
@@ -140,12 +172,22 @@ namespace RuneArena.Enemies
                 Sink();
                 return;
             }
-            // Climbing out of the floor, fast at first and slowing down as it gets out.
+            if (Time.time < m_ActionUntil)
+            {
+                Play(m_ActionState, 1f);
+                return;
+            }
+            // Climbing out of the floor, fast at first and slowing down as it gets out, then its entrance.
             if (m_Enemy.IsEmerging)
             {
-                float t = 1f - Mathf.Clamp01((Time.time - m_EmergeAt) / m_EmergeTime);
+                float rise = m_RiseTime > 0f ? Mathf.Min(m_RiseTime, m_EmergeTime) : m_EmergeTime;
+                float t = 1f - Mathf.Clamp01((Time.time - m_EmergeAt) / rise);
                 SetBodyDepth(m_EmergeDepth * t * t);
-                Play(m_Idle, 1f);
+                bool risen = t <= 0f || m_EmergeDepth <= 0f;
+                if (risen && !string.IsNullOrEmpty(m_Entrance))
+                    Play(m_Entrance, m_EntrancePace);
+                else
+                    Play(m_Idle, 1f);
                 return;
             }
             if (m_EmergeTime > 0f)
@@ -179,7 +221,7 @@ namespace RuneArena.Enemies
             // Stretched up to the blow, then the follow-through at its own pace.
             if (Time.time < m_AttackUntil)
             {
-                Play(m_Attack, (Time.time < m_ImpactAt ? m_AttackSpeed : 1f) * pace);
+                Play(m_AttackState, (Time.time < m_ImpactAt ? m_AttackSpeed : 1f) * pace);
                 return;
             }
             if (Time.time < m_HitUntil)
@@ -188,7 +230,9 @@ namespace RuneArena.Enemies
                 return;
             }
 
-            if (m_Speed > 0.2f && !m_Enemy.HasStatus(EnemyStatus.Rooted))
+            if (!string.IsNullOrEmpty(m_Run) && m_Speed > m_RunAbove)
+                Play(m_Run, Mathf.Min(m_Speed / m_RunSpeed, m_MaxPace));
+            else if (m_Speed > 0.2f && !m_Enemy.HasStatus(EnemyStatus.Rooted))
                 Play(m_Move, m_MoveSpeed > 0f ? Mathf.Min(m_Speed / m_MoveSpeed, m_MaxPace) : pace);
             else
                 Play(m_Idle, pace);
@@ -196,15 +240,28 @@ namespace RuneArena.Enemies
 
         void OnAttackStarted(Enemy enemy, float windUp)
         {
-            m_AttackSpeed = windUp > 0f ? m_AttackImpact / windUp : 1f;
+            string state = m_Attack;
+            float impact = m_AttackImpact, length = m_AttackLength;
+            foreach (NamedAttack attack in m_Attacks)
+            {
+                if (attack.Name != enemy.AttackName)
+                    continue;
+                state = attack.State;
+                impact = attack.Impact;
+                length = attack.Length;
+                break;
+            }
+
+            m_AttackState = state;
+            m_AttackSpeed = windUp > 0f ? impact / windUp : 1f;
             m_ImpactAt = Time.time + windUp;
-            m_AttackUntil = m_ImpactAt + Mathf.Max(m_AttackLength - m_AttackImpact, 0f);
+            m_AttackUntil = m_ImpactAt + Mathf.Max(length - impact, 0f);
             m_HitUntil = 0f;
             // An attack on the clip already playing (the flyer's wind-up is its flying, faster) goes on from where it is.
-            if (m_Attack == m_Current)
+            if (state == m_Current)
                 m_Animator.speed = m_AttackSpeed;
             else
-                Restart(m_Attack, m_AttackSpeed);
+                Restart(state, m_AttackSpeed);
         }
 
         void OnDamaged(Enemy enemy, float amount, DamageKind kind)
@@ -238,6 +295,15 @@ namespace RuneArena.Enemies
             Vector3 p = m_Animator.transform.localPosition;
             p.y = m_BodyHeight - depth;
             m_Animator.transform.localPosition = p;
+        }
+
+        void OnActing(Enemy enemy, string state, float seconds)
+        {
+            m_ActionState = state;
+            m_ActionUntil = Time.time + seconds;
+            m_AttackUntil = 0f;
+            m_HitUntil = 0f;
+            Restart(state, 1f);
         }
 
         void OnEmerging(Enemy enemy, float duration)

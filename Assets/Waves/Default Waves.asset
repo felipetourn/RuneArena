@@ -69,11 +69,15 @@ MonoBehaviour:
     - prefab: {fileID: 1705323821864058233, guid: 391d9ebb92f6ac741bf7e835147844da, type: 3}
       count: 1
       fromStage: 1
-      everyStages: 2
-    - prefab: {fileID: 2767822460036861272, guid: 95eec9ccf7483634dbadf3384f4b41be, type: 3}
+      everyStages: 3
+    - prefab: {fileID: 3049992508773306487, guid: 7f4bf9329752f274c861e9a7b3d9954b, type: 3}
       count: 1
       fromStage: 2
-      everyStages: 2
+      everyStages: 3
+    - prefab: {fileID: 3049992508773306487, guid: 26a770447da3d0f448d00f0325bfd301, type: 3}
+      count: 1
+      fromStage: 3
+      everyStages: 3
     - prefab: {fileID: 3049992508773306487, guid: 79135dfe4a7024a45a193a9ecf7c1ed1, type: 3}
       count: 3
       fromStage: 1

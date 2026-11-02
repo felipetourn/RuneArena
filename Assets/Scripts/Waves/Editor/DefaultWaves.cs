@@ -19,8 +19,9 @@ namespace RuneArena.Waves.Editor
             Enemy flying = Load("Flying Enemy");
             Enemy healer = Load("Healer Enemy");
             Enemy boss = Load("Boss Enemy");
-            // Made by RuneArena > Create Enemy Models. Without it the ground boss closes every stage.
-            Enemy dragon = Load("Dragon Boss");
+            // Made by RuneArena > Create Enemy Models. Without them the ground boss closes every stage.
+            Enemy mage = Load("Mage Boss");
+            Enemy demon = Load("Demon Boss");
             if (melee == null || ranged == null || flying == null || healer == null || boss == null)
             {
                 Debug.LogError($"Missing enemy prefabs in {k_Prefabs}. Run RuneArena > Create Placeholder Enemies and Create Placeholder Healer and Boss first.");
@@ -36,13 +37,16 @@ namespace RuneArena.Waves.Editor
                 Wave(3f, (boss, 1), (melee, 3), (ranged, 2), (healer, 1)),
             };
 
-            // The two bosses take turns closing the stages: the ground one the odd stages, the dragon the even ones.
-            if (dragon != null)
-            {
-                List<WaveSet.Group> last = waves[waves.Count - 1].groups;
-                last[0].everyStages = 2;
-                last.Insert(1, new WaveSet.Group { prefab = dragon, count = 1, fromStage = 2, everyStages = 2 });
-            }
+            // The bosses take turns closing the stages, in order: the ground one, the rift mage, the reaper.
+            var bosses = new List<Enemy> { boss };
+            if (mage != null)
+                bosses.Add(mage);
+            if (demon != null)
+                bosses.Add(demon);
+            List<WaveSet.Group> last = waves[waves.Count - 1].groups;
+            last.RemoveAt(0);
+            for (int i = 0; i < bosses.Count; i++)
+                last.Insert(i, new WaveSet.Group { prefab = bosses[i], count = 1, fromStage = i + 1, everyStages = bosses.Count });
 
             var set = AssetDatabase.LoadAssetAtPath<WaveSet>(k_Path);
             if (set == null)
