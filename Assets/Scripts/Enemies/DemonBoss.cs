@@ -8,8 +8,9 @@ using UnityEngine.AI;
 namespace RuneArena.Enemies
 {
     // The skeletal reaper that closes the third stage. It doesn't walk: it vanishes in smoke and comes back
-    // next to the player, or leaps onto them. Its moves, in a fixed cycle:
-    //   combo -> leap -> whirl -> cleave
+    // next to the player, or leaps onto them. Its plain blow is the combo; each time its fury fills it lets
+    // out the next move of a fixed cycle:
+    //   leap -> whirl -> cleave
     // The combo and the whirl start with a blink: a ring marks where it is about to appear. At half health
     // it falls apart into a heap of bones that can't be hurt while skeletons climb out of the floor around
     // it, then puts itself back together and fights faster.
@@ -31,7 +32,7 @@ namespace RuneArena.Enemies
             Collapsed,
         }
 
-        static readonly Move[] k_Pattern = { Move.Combo, Move.Leap, Move.Whirl, Move.Cleave };
+        static readonly Move[] k_Pattern = { Move.Leap, Move.Whirl, Move.Cleave };
         static Material s_Material;
 
         public override bool IsBoss => true;
@@ -121,8 +122,18 @@ namespace RuneArena.Enemies
                 case State.Ready:
                     Stop();
                     FaceTowards(feet, 240f, deltaTime);
-                    if (Time.time >= m_Until)
-                        Begin(k_Pattern[m_Step % k_Pattern.Length], feet);
+                    BuildFury(deltaTime / TimeScale);
+                    if (Time.time < m_Until)
+                        break;
+                    if (FuryFull)
+                    {
+                        SpendFury();
+                        Begin(k_Pattern[m_Step++ % k_Pattern.Length], feet);
+                    }
+                    else
+                    {
+                        Begin(Move.Combo, feet);
+                    }
                     break;
 
                 case State.Vanished:
@@ -160,7 +171,7 @@ namespace RuneArena.Enemies
                 case Move.Leap:
                     m_LeapFrom = transform.position;
                     m_Spot = feet;
-                    SpellFx.GroundRing(feet, m_LeapRadius * 2f, m_DangerColor, m_LeapWindUp * TimeScale);
+                    DangerZone.Show(feet, m_LeapRadius, m_DangerColor, m_LeapWindUp * TimeScale);
                     WindUp(m_LeapWindUp);
                     break;
 
@@ -208,7 +219,7 @@ namespace RuneArena.Enemies
             Invulnerable = false;
             Smoke(m_Spot);
             if (m_Move == Move.Whirl)
-                SpellFx.GroundRing(m_Spot, m_WhirlRadius * 2f, m_DangerColor, m_WhirlWindUp * TimeScale);
+                DangerZone.Show(m_Spot, m_WhirlRadius, m_DangerColor, m_WhirlWindUp * TimeScale);
             WindUp(m_Move == Move.Combo ? m_ComboWindUp : m_WhirlWindUp);
         }
 
@@ -227,13 +238,14 @@ namespace RuneArena.Enemies
             HideMarker();
             Vector3 to = feet - transform.position;
             to.y = 0f;
-            bool hit = false;
             switch (m_Move)
             {
                 case Move.Combo:
-                    hit = to.magnitude <= m_ComboRange && Vector3.Angle(transform.forward, to) <= m_ComboAngle * 0.5f;
-                    if (hit)
+                    if (to.magnitude <= m_ComboRange && Vector3.Angle(transform.forward, to) <= m_ComboAngle * 0.5f)
+                    {
                         Player.Damage(m_ComboDamage * DamageMultiplier);
+                        LandedBlow();
+                    }
                     break;
 
                 case Move.Whirl:
@@ -265,7 +277,6 @@ namespace RuneArena.Enemies
             Invulnerable = false;
             Telegraphing = false;
             m_State = State.Ready;
-            m_Step++;
             m_Until = Time.time + m_Rest * TimeScale;
         }
 

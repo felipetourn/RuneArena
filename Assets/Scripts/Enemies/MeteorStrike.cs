@@ -36,8 +36,8 @@ namespace RuneArena.Enemies
             strike.m_StartAt = Time.time;
             strike.m_LandAt = Time.time + Mathf.Max(delay, k_Rise + k_Fall);
 
-            // The ring fills out until the moment it lands.
-            SpellFx.GroundRing(target, radius * 2f, color, strike.m_LandAt - Time.time);
+            // The zone fills out until the moment it lands.
+            DangerZone.Show(target, radius, color, strike.m_LandAt - Time.time);
             strike.m_Ball = strike.Ball(from);
         }
 

@@ -60,6 +60,14 @@ namespace RuneArena.Enemies
         [Tooltip("Seconds of its entrance. Above 0 it appears in the arena in front of the player instead of coming through a gate, and can't be hurt until it is done.")]
         [SerializeField] float m_EntranceTime;
 
+        [Header("Fury")]
+        [Tooltip("Bosses only. Seconds its fury takes to fill on its own. Full, it lets out its next special move.")]
+        [SerializeField, Min(0.1f)] float m_FurySeconds = 10f;
+        [Tooltip("Plain blows that land on the player it takes to fill it.")]
+        [SerializeField, Min(1)] int m_FuryBlows = 5;
+        [Tooltip("Part of its max health it has to lose to fill it.")]
+        [SerializeField, Range(0.01f, 1f)] float m_FuryHealth = 0.1f;
+
         [Header("Feedback")]
         [SerializeField] Color m_TelegraphColor = new Color(1f, 0.9f, 0.3f);
         [SerializeField] Color m_WetTint = new Color(0.4f, 0.6f, 1f);
@@ -106,6 +114,9 @@ namespace RuneArena.Enemies
         public float EntranceTime => m_EntranceTime;
         // Which attack the last wind-up was, for enemies with several: their animator plays a clip for each.
         public string AttackName { get; private set; }
+        // Bosses only, from 0 to 1. It builds up over time, with each plain blow that lands and with the damage
+        // it takes, and the boss spends it all on a special move.
+        public float Fury { get; private set; }
 
         public ArmorType Armor { get; private set; }
         public float ArmorPoints { get; private set; }
@@ -128,6 +139,7 @@ namespace RuneArena.Enemies
         public float SpeedMultiplier => HasStatus(EnemyStatus.Rooted) ? 0f : (HasStatus(EnemyStatus.Slowed) ? 1f - m_Slow : 1f) * m_SpeedScale;
         public bool IsFlying => this is FlyingEnemy;
 
+        protected bool FuryFull => Fury >= 1f;
         protected PlayerHealth Player { get; private set; }
         // Center of the colosseum floor and the inner radius of its wall. Radius is 0 when there is no colosseum.
         protected Vector3 ArenaCenter => m_ArenaCenter;
@@ -299,6 +311,28 @@ namespace RuneArena.Enemies
             AttackStarted?.Invoke(this, windUp);
         }
 
+        // Call every frame the boss spends fighting between its special moves.
+        protected void BuildFury(float deltaTime)
+        {
+            AddFury(deltaTime / m_FurySeconds);
+        }
+
+        protected void LandedBlow()
+        {
+            if (IsBoss)
+                AddFury(1f / m_FuryBlows);
+        }
+
+        protected void SpendFury()
+        {
+            Fury = 0f;
+        }
+
+        void AddFury(float amount)
+        {
+            Fury = Mathf.Min(Fury + amount, 1f);
+        }
+
         // source is the label of the rune whose spell did it, so the right one can break armor.
         public void Damage(float amount, DamageKind kind = DamageKind.Normal, string source = null)
         {
@@ -321,6 +355,8 @@ namespace RuneArena.Enemies
 
             float taken = Mathf.Min(amount, Health);
             Health -= taken;
+            if (IsBoss)
+                AddFury(taken / (m_MaxHealth * m_FuryHealth));
             m_FlashUntil = Time.time + m_FlashTime;
             Damaged?.Invoke(this, taken, kind);
             if (Health <= 0f)

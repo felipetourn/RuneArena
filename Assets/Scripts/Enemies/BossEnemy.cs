@@ -6,7 +6,9 @@ using UnityEngine.AI;
 
 namespace RuneArena.Enemies
 {
-    // Fights in a fixed, learnable cycle, walking towards the player between moves:
+    // Walks after the player and hits them with plain blows, or throws a big pitchfork at them when they are out
+    // of reach. Each time its fury fills it lets out the next
+    // move of a fixed, learnable cycle:
     //   charge -> slam -> volley           (below half health: charge -> slam -> summon -> volley, faster)
     // Every move is telegraphed. The charge is the one to play around: it goes straight along a marked
     // strip, smashes earth walls, and if it runs into a wall, a pillar or an earth wall the boss is stunned.
@@ -18,8 +20,9 @@ namespace RuneArena.Enemies
             Slam,
             Volley,
             Summon,
-            // Its plain blows, between the moves of the cycle, at whoever comes close.
+            // Its plain blows, between the moves of the cycle.
             Strike,
+            Throw,
         }
 
         enum State
@@ -38,7 +41,7 @@ namespace RuneArena.Enemies
         public override bool IsBoss => true;
 
         [Header("Pattern")]
-        [Tooltip("Seconds walking towards the player between two moves.")]
+        [Tooltip("Seconds after a move before the next one can come, however full its fury.")]
         [SerializeField] float m_Recover = 1.5f;
         [SerializeField, Range(0f, 1f)] float m_AngerHealth = 0.5f;
         [SerializeField] float m_AngerSpeed = 1.3f;
@@ -46,12 +49,20 @@ namespace RuneArena.Enemies
         [SerializeField] float m_AngerTime = 0.7f;
 
         [Header("Strikes")]
-        [Tooltip("Plain blows between moves, when the player is this close. Three different ones, in turn.")]
+        [Tooltip("Plain blows between moves, once it is this close to the player. Three different ones, in turn.")]
         [SerializeField] float m_StrikeRange = 3.2f;
         [SerializeField] float m_StrikeAngle = 120f;
         [SerializeField] float m_StrikeWindUp = 0.7f;
         [SerializeField] float m_StrikeDamage = 12f;
         [SerializeField] float m_StrikeCooldown = 1.2f;
+
+        [Header("Throw")]
+        [Tooltip("Its plain blow from afar: one pitchfork, bigger and faster than the volley's.")]
+        [SerializeField] float m_ThrowWindUp = 0.9f;
+        [SerializeField] float m_ThrowCooldown = 2.5f;
+        [SerializeField] float m_ThrowDamage = 10f;
+        [SerializeField] float m_ThrowSpeed = 9f;
+        [SerializeField] float m_ThrowSize = 1.8f;
 
         [Header("Charge")]
         [SerializeField] float m_ChargeWindUp = 1.2f;
@@ -111,6 +122,7 @@ namespace RuneArena.Enemies
 
         int m_Strikes;
         float m_StrikeReadyAt;
+        float m_ThrowReadyAt;
 
         bool Angry => Health <= MaxHealth * m_AngerHealth;
         float TimeScale => Angry ? m_AngerTime : 1f;
@@ -141,20 +153,29 @@ namespace RuneArena.Enemies
                         Stop();
                         return;
                     }
-                    if (Time.time < m_RecoverUntil)
+                    BuildFury(deltaTime / TimeScale);
+                    if (FuryFull && Time.time >= m_RecoverUntil)
                     {
-                        if (FlatDistance(transform.position, feet) <= m_StrikeRange && Time.time >= m_StrikeReadyAt)
-                        {
-                            m_Move = Move.Strike;
-                            m_Strikes++;
-                            Telegraph(m_StrikeWindUp, $"Strike{(m_Strikes - 1) % 3 + 1}");
-                            return;
-                        }
-                        MoveTo(feet);
+                        SpendFury();
+                        Move[] pattern = Angry ? k_Angry : k_Calm;
+                        Begin(pattern[m_Step % pattern.Length], feet);
                         return;
                     }
-                    Move[] pattern = Angry ? k_Angry : k_Calm;
-                    Begin(pattern[m_Step % pattern.Length], feet);
+                    bool close = FlatDistance(transform.position, feet) <= m_StrikeRange;
+                    if (close && Time.time >= m_StrikeReadyAt)
+                    {
+                        m_Move = Move.Strike;
+                        m_Strikes++;
+                        Telegraph(m_StrikeWindUp, $"Strike{(m_Strikes - 1) % 3 + 1}");
+                        return;
+                    }
+                    if (!close && m_Projectile != null && Time.time >= m_ThrowReadyAt)
+                    {
+                        m_Move = Move.Throw;
+                        Telegraph(m_ThrowWindUp, "Volley");
+                        return;
+                    }
+                    MoveTo(feet);
                     break;
 
                 case State.Approach:
@@ -257,11 +278,21 @@ namespace RuneArena.Enemies
                     Vector3 to = feet - transform.position;
                     to.y = 0f;
                     if (to.magnitude <= m_StrikeRange && Vector3.Angle(transform.forward, to) <= m_StrikeAngle * 0.5f)
+                    {
                         Player.Damage(m_StrikeDamage * DamageMultiplier);
-                    // Back to walking about; the cycle's next move still comes when it was due.
+                        LandedBlow();
+                    }
+                    // Back to walking after the player.
                     m_State = State.Ready;
                     Telegraphing = false;
                     m_StrikeReadyAt = Time.time + m_StrikeCooldown * TimeScale;
+                    break;
+
+                case Move.Throw:
+                    Throw();
+                    m_State = State.Ready;
+                    Telegraphing = false;
+                    m_ThrowReadyAt = Time.time + m_ThrowCooldown * TimeScale;
                     break;
             }
         }
@@ -333,6 +364,15 @@ namespace RuneArena.Enemies
                 End();
         }
 
+        void Throw()
+        {
+            Vector3 from = m_Muzzle != null ? m_Muzzle.position : transform.position + Vector3.up * 2f;
+            Vector3 direction = (Player.Head.position + Vector3.down * 0.3f - from).normalized;
+            EnemyProjectile shot = Instantiate(m_Projectile, from, Quaternion.LookRotation(direction));
+            shot.transform.localScale *= m_ThrowSize;
+            shot.Launch(direction * m_ThrowSpeed, m_ThrowDamage * DamageMultiplier, Player, LandedBlow);
+        }
+
         void Summon()
         {
             for (int i = 0; i < m_MinionCount; i++)
@@ -401,7 +441,10 @@ namespace RuneArena.Enemies
         protected override void Interrupt()
         {
             base.Interrupt();
-            if (m_State != State.Ready)
+            // A plain blow called off doesn't count as a move of the cycle.
+            if (m_State == State.Telegraph && (m_Move == Move.Strike || m_Move == Move.Throw))
+                m_State = State.Ready;
+            else if (m_State != State.Ready)
                 End();
         }
     }

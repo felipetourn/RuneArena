@@ -79,3 +79,14 @@ tools/audio/source/
 
 # Candidate models before they go through tools/models
 possible-3dmodels/
+
+# === Claude Code Game Studios (local only) ===
+/.claude/
+/CLAUDE.md
+/CLAUDE.local.md
+/project.yaml
+/project.local.yaml
+/.worktreeinclude
+/design/
+/docs/
+/production/

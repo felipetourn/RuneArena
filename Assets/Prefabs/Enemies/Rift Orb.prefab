@@ -108,3 +108,4 @@ MonoBehaviour:
   m_BlockMask:
     serializedVersion: 2
     m_Bits: 192
+  m_ExplosionRadius: 0

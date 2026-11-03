@@ -154,6 +154,7 @@ namespace RuneArena.Enemies
                     if (TouchesPlayer(body, body + m_Velocity * deltaTime, head))
                     {
                         Player.Damage(m_Damage * DamageMultiplier);
+                        LandedBlow();
                         Enter(State.Recover, m_RecoverTime);
                     }
                     else if ((body - m_DiveTarget).sqrMagnitude < 0.25f || Time.time >= m_StateUntil)

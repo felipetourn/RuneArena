@@ -74,7 +74,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1919398054712731513}
-  - {fileID: 861427913443853057}
+  - {fileID: 7001622610625088564}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!136 &5542720102147784193
@@ -110,7 +110,7 @@ NavMeshAgent:
   m_Enabled: 1
   m_AgentTypeID: 0
   m_Radius: 1.1
-  m_Speed: 1.5
+  m_Speed: 1
   m_Acceleration: 8
   avoidancePriority: 50
   m_AngularSpeed: 360
@@ -135,7 +135,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RuneArena.Enemies.BossEnemy
   m_MaxHealth: 600
-  m_Body: {fileID: 1936387319060167096}
+  m_Body: {fileID: 8070948290468607629}
   m_KnockbackDrag: 6
   m_StunImmunity: 1
   m_StunResistance: 0.5
@@ -146,6 +146,9 @@ MonoBehaviour:
   m_DisplayName: 
   m_Boss: 0
   m_EntranceTime: 7.6
+  m_FurySeconds: 4
+  m_FuryBlows: 5
+  m_FuryHealth: 0.1
   m_TelegraphColor: {r: 1, g: 0.9, b: 0.3, a: 1}
   m_WetTint: {r: 0.4, g: 0.6, b: 1, a: 1}
   m_StunnedColor: {r: 0.55, g: 0.55, b: 0.55, a: 1}
@@ -167,6 +170,11 @@ MonoBehaviour:
   m_StrikeWindUp: 0.7
   m_StrikeDamage: 12
   m_StrikeCooldown: 1.2
+  m_ThrowWindUp: 0.9
+  m_ThrowCooldown: 2.5
+  m_ThrowDamage: 10
+  m_ThrowSpeed: 9
+  m_ThrowSize: 1.8
   m_ChargeWindUp: 1.2
   m_ChargeSpeed: 12
   m_ChargeDistance: 14
@@ -179,6 +187,7 @@ MonoBehaviour:
   m_SlamDamage: 30
   m_SlamWindUp: 1.5
   m_SlamApproach: 3
+  m_SlamPlanted: 1.9
   m_SlamColor: {r: 0.8, g: 0.1, b: 0.1, a: 1}
   m_Projectile: {fileID: 6411130101203108986, guid: 098684f9fc41a244eb7942ec387d56dd, type: 3}
   m_Muzzle: {fileID: 1919398054712731513}
@@ -206,7 +215,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a94ca29ed4ada8e4bae943f6f4e6a9c7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RuneArena.Enemies.EnemyAnimator
-  m_Animator: {fileID: 6707061383882643835}
+  m_Animator: {fileID: 4020287848905905742}
   m_Controller: {fileID: 9100000, guid: 038ab48f4b6a47a42be6ebe6da267ace, type: 2}
   m_Fade: 0.15
   m_Idle: Idle
@@ -248,7 +257,7 @@ MonoBehaviour:
     State: Strike3
     Impact: 0.77
     Length: 2
-  m_MoveSpeed: 1.2
+  m_MoveSpeed: 1
   m_MaxPace: 2
   m_AttackImpact: 0.8
   m_AttackLength: 2.7
@@ -265,7 +274,7 @@ MonoBehaviour:
   m_MoveLoop: {fileID: 0}
   m_StillVolume: 0.15
   m_MovingVolume: 0.6
---- !u!1001 &900387198431405290
+--- !u!1001 &7395046749126765535
 PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
@@ -618,18 +627,18 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 375046701bc972449b1348856450422a, type: 3}
---- !u!4 &861427913443853057 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 375046701bc972449b1348856450422a, type: 3}
-  m_PrefabInstance: {fileID: 900387198431405290}
-  m_PrefabAsset: {fileID: 0}
---- !u!137 &1936387319060167096 stripped
-SkinnedMeshRenderer:
-  m_CorrespondingSourceObject: {fileID: 1630794972795428178, guid: 375046701bc972449b1348856450422a, type: 3}
-  m_PrefabInstance: {fileID: 900387198431405290}
-  m_PrefabAsset: {fileID: 0}
---- !u!95 &6707061383882643835 stripped
+--- !u!95 &4020287848905905742 stripped
 Animator:
   m_CorrespondingSourceObject: {fileID: 5866666021909216657, guid: 375046701bc972449b1348856450422a, type: 3}
-  m_PrefabInstance: {fileID: 900387198431405290}
+  m_PrefabInstance: {fileID: 7395046749126765535}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &7001622610625088564 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 375046701bc972449b1348856450422a, type: 3}
+  m_PrefabInstance: {fileID: 7395046749126765535}
+  m_PrefabAsset: {fileID: 0}
+--- !u!137 &8070948290468607629 stripped
+SkinnedMeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 1630794972795428178, guid: 375046701bc972449b1348856450422a, type: 3}
+  m_PrefabInstance: {fileID: 7395046749126765535}
   m_PrefabAsset: {fileID: 0}

@@ -8,6 +8,7 @@ namespace RuneArena.Enemies
 {
     // Added by Enemy. A bar over the enemy that shows up after its first hit. The lost part lingers
     // for a moment before draining, tinted by the kind of hit, and every hit pops a damage number.
+    // A boss also has a thin bar under it with its fury: full, a special move is coming.
     public class EnemyHealthBar : MonoBehaviour
     {
         static readonly int k_BaseColor = Shader.PropertyToID("_BaseColor");
@@ -24,6 +25,8 @@ namespace RuneArena.Enemies
         static readonly Color k_NormalTrail = new Color(1f, 1f, 1f);
         static readonly Color k_ComboTrail = new Color(1f, 0.85f, 0.1f);
         static readonly Color k_WeakenedTrail = new Color(0.45f, 0.65f, 0.9f);
+        static readonly Color k_Fury = new Color(1f, 0.55f, 0.1f);
+        static readonly Color k_FuryFull = new Color(1f, 0.9f, 0.4f);
 
         Enemy m_Enemy;
         Transform m_Head;
@@ -32,7 +35,9 @@ namespace RuneArena.Enemies
         Transform m_Trail;
         Transform m_ArmorRoot;
         Transform m_ArmorFill;
+        Transform m_FuryFill;
         Renderer m_TrailRenderer;
+        Renderer m_FuryRenderer;
         MaterialPropertyBlock m_Block;
         float m_TrailValue = 1f;
         float m_Width = k_BaseWidth;
@@ -51,6 +56,7 @@ namespace RuneArena.Enemies
             m_Enemy.Healed += OnHealed;
             m_Enemy.ArmorHit += OnArmorHit;
             m_Enemy.ArmorBroken += OnArmorBroken;
+            m_Enemy.Died += OnDied;
         }
 
         void OnDisable()
@@ -59,6 +65,14 @@ namespace RuneArena.Enemies
             m_Enemy.Healed -= OnHealed;
             m_Enemy.ArmorHit -= OnArmorHit;
             m_Enemy.ArmorBroken -= OnArmorBroken;
+            m_Enemy.Died -= OnDied;
+        }
+
+        // Gone as soon as it dies, not when the body does.
+        void OnDied(Enemy enemy)
+        {
+            if (m_Root != null)
+                m_Root.gameObject.SetActive(false);
         }
 
         void OnArmorHit(Enemy enemy, float amount)
@@ -133,6 +147,8 @@ namespace RuneArena.Enemies
                 label.rectTransform.sizeDelta = new Vector2(m_Width, 0.3f);
             }
 
+            if (m_Enemy.IsBoss)
+                BuildFury();
             if (m_Enemy.IsArmored)
                 BuildArmor();
             // Armored enemies show their armor from the start, so the player knows what to use.
@@ -157,6 +173,13 @@ namespace RuneArena.Enemies
 
             Set(m_Fill, health);
             Set(m_Trail, Mathf.Max(m_TrailValue, health));
+            if (m_FuryFill != null)
+            {
+                Set(m_FuryFill, m_Enemy.Fury);
+                // Blinks once full, until the move comes out.
+                bool full = m_Enemy.Fury >= 1f && Mathf.Repeat(Time.time * 4f, 1f) < 0.5f;
+                SetColor(m_FuryRenderer, full ? k_FuryFull : k_Fury);
+            }
             if (m_ArmorFill != null && m_Enemy.MaxArmor > 0f)
                 Set(m_ArmorFill, m_Enemy.ArmorPoints / m_Enemy.MaxArmor);
 
@@ -182,6 +205,18 @@ namespace RuneArena.Enemies
             scale.x = Mathf.Max(m_Width * fraction, 0.0001f);
             bar.localScale = scale;
             bar.localPosition = new Vector3(-m_Width * 0.5f + scale.x * 0.5f, bar.localPosition.y, 0f);
+        }
+
+        void BuildFury()
+        {
+            var root = new GameObject("Fury").transform;
+            root.SetParent(m_Root, false);
+            root.localPosition = Vector3.down * (m_Height * 1.1f);
+            root.localScale = new Vector3(1f, 0.5f, 1f);
+
+            Part("Fury Background", m_Width, 0.01f, k_Background, root);
+            m_FuryFill = Part("Fury Fill", m_Width, 0.02f, k_Fury, root);
+            m_FuryRenderer = m_FuryFill.GetComponent<Renderer>();
         }
 
         // A bar of the armor's color over the health bar, with the rune that breaks it drawn at its end.

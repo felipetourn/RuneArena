@@ -12,8 +12,13 @@ namespace RuneArena.Game.Editor
     static class GameMenuBuilder
     {
         const float k_Scale = 0.001f;
-        static readonly Vector2 k_PanelSize = new Vector2(700f, 560f);
-        static readonly Color k_PanelColor = new Color(0.08f, 0.08f, 0.1f, 0.92f);
+        const string k_FramePath = "Assets/Textures/UI/runico_base.png";
+        const string k_GlowPath = "Assets/Textures/UI/runico_brillo.png";
+        // In sprite pixels: the corners are 100 px and the glow runes along the edges repeat every 52 px.
+        const float k_FrameBorder = 100f;
+        const float k_RuneSpacing = 52f;
+        const float k_FrameScale = 2f;
+        static readonly Vector2 k_PanelSize = FrameSize(new Vector2(700f, 560f));
         static readonly Color k_ButtonColor = new Color(0.25f, 0.27f, 0.32f);
 
         [MenuItem("RuneArena/Create Game UI")]
@@ -23,6 +28,11 @@ namespace RuneArena.Game.Editor
             if (spawner == null)
             {
                 Debug.LogError("Create Game UI: add the WaveSpawner first (on a 'Game' object).");
+                return;
+            }
+            if (AssetDatabase.LoadAssetAtPath<Sprite>(k_FramePath) == null || AssetDatabase.LoadAssetAtPath<Sprite>(k_GlowPath) == null)
+            {
+                Debug.LogError("Create Game UI: the frame sprites are missing from Assets/Textures/UI (import them as Sprite).");
                 return;
             }
 
@@ -74,7 +84,7 @@ namespace RuneArena.Game.Editor
             // Taller than the other panels: three cards plus the skip button.
             var upgradesRect = (RectTransform)upgrades.transform;
             upgradesRect.anchorMin = upgradesRect.anchorMax = new Vector2(0.5f, 0.5f);
-            upgradesRect.sizeDelta = new Vector2(k_PanelSize.x + 60f, 780f);
+            upgradesRect.sizeDelta = FrameSize(new Vector2(k_PanelSize.x + 60f, 780f));
             SerializedProperty buttons = so.FindProperty("m_UpgradeButtons");
             buttons.arraySize = 3;
             for (int i = 0; i < 3; i++)
@@ -112,10 +122,19 @@ namespace RuneArena.Game.Editor
             panel.layer = parent.gameObject.layer;
             panel.transform.SetParent(parent, false);
             Stretch((RectTransform)panel.transform);
-            panel.GetComponent<Image>().color = k_PanelColor;
+            Frame(panel.GetComponent<Image>(), k_FramePath);
+
+            var glow = new GameObject("Glow", typeof(RectTransform), typeof(Image), typeof(LayoutElement));
+            glow.layer = panel.layer;
+            glow.transform.SetParent(panel.transform, false);
+            Stretch((RectTransform)glow.transform);
+            glow.GetComponent<LayoutElement>().ignoreLayout = true;
+            Image glowImage = glow.GetComponent<Image>();
+            Frame(glowImage, k_GlowPath);
+            glowImage.raycastTarget = false;
 
             var layout = panel.GetComponent<VerticalLayoutGroup>();
-            layout.padding = new RectOffset(60, 60, 40, 40);
+            layout.padding = new RectOffset(64, 64, 56, 56);
             layout.spacing = 16f;
             layout.childAlignment = TextAnchor.UpperCenter;
             layout.childControlWidth = true;
@@ -166,6 +185,23 @@ namespace RuneArena.Game.Editor
             colors.pressedColor = new Color(0.8f, 0.7f, 0.3f);
             button.colors = colors;
             return button;
+        }
+
+        static void Frame(Image image, string spritePath)
+        {
+            image.sprite = AssetDatabase.LoadAssetAtPath<Sprite>(spritePath);
+            image.type = Image.Type.Tiled;
+            image.pixelsPerUnitMultiplier = k_FrameScale;
+        }
+
+        // Rounds the size up so the tiled edges end between two runes instead of cutting one in half.
+        static Vector2 FrameSize(Vector2 size)
+        {
+            float corners = 2f * k_FrameBorder / k_FrameScale;
+            float spacing = k_RuneSpacing / k_FrameScale;
+            return new Vector2(
+                corners + Mathf.Ceil((size.x - corners) / spacing) * spacing,
+                corners + Mathf.Ceil((size.y - corners) / spacing) * spacing);
         }
 
         static void Stretch(RectTransform rect)

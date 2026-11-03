@@ -5,10 +5,10 @@ using UnityEngine.AI;
 
 namespace RuneArena.Enemies
 {
-    // The rift mage that closes the second stage. It keeps its distance and fights from afar, in a fixed
-    // cycle:
-    //   bolts -> rift -> bolts -> orb
-    //   Bolts: three quick shots at the player, one per hand thrust.
+    // The rift mage that closes the second stage. It keeps its distance and fights from afar, throwing
+    // bolts at the player. Each time its fury fills it lets out the next move of a fixed cycle:
+    //   rift -> orb
+    //   Bolt: one quick shot at the player, a different hand thrust each time. Its plain blow.
     //   Rift: it strikes the floor with its staff and rifts open under and around the player, marked a
     //         moment before they burst.
     //   Orb: one big slow shot that hits hard. An earth wall stops it, like the bolts.
@@ -18,7 +18,7 @@ namespace RuneArena.Enemies
     {
         enum Move
         {
-            Bolts,
+            Bolt,
             Rift,
             Orb,
         }
@@ -31,7 +31,7 @@ namespace RuneArena.Enemies
             Storm,
         }
 
-        static readonly Move[] k_Pattern = { Move.Bolts, Move.Rift, Move.Bolts, Move.Orb };
+        static readonly Move[] k_Pattern = { Move.Rift, Move.Orb };
 
         public override bool IsBoss => true;
 
@@ -44,13 +44,13 @@ namespace RuneArena.Enemies
         [Tooltip("Seconds into the portal step where it is gone and comes out the other side.")]
         [SerializeField] float m_BlinkAt = 0.5f;
         [SerializeField] float m_BlinkLength = 0.9f;
+        [Tooltip("Seconds between two of its casts, plain or not.")]
         [SerializeField] float m_Rest = 1.2f;
         [Tooltip("Where its shots leave from, in front of its hands, from its feet.")]
         [SerializeField] Vector3 m_Hands = new Vector3(0f, 1.4f, 0.6f);
 
-        [Header("Bolts")]
+        [Header("Bolt")]
         [SerializeField] EnemyProjectile m_Bolt;
-        [SerializeField] int m_Bolts = 3;
         [SerializeField] float m_BoltWindUp = 0.5f;
         [SerializeField] float m_BoltSpeed = 10f;
         [SerializeField] float m_BoltDamage = 10f;
@@ -84,9 +84,9 @@ namespace RuneArena.Enemies
         State m_State;
         Move m_Move;
         int m_Step;
+        int m_BoltCount;
         float m_Until;
         float m_NextAt;
-        int m_ShotsLeft;
         float m_BlinkReadyAt;
         bool m_Blinked;
         bool m_Stormed;
@@ -119,8 +119,18 @@ namespace RuneArena.Enemies
                         return;
                     }
                     Keep(feet, distance);
-                    if (Time.time >= m_Until)
-                        Begin(k_Pattern[m_Step % k_Pattern.Length]);
+                    BuildFury(deltaTime);
+                    if (Time.time < m_Until)
+                        break;
+                    if (FuryFull)
+                    {
+                        SpendFury();
+                        Begin(k_Pattern[m_Step++ % k_Pattern.Length]);
+                    }
+                    else
+                    {
+                        Begin(Move.Bolt);
+                    }
                     break;
 
                 case State.Casting:
@@ -140,7 +150,7 @@ namespace RuneArena.Enemies
                         Portal(transform.position);
                     }
                     if (Time.time >= m_Until)
-                        End(false);
+                        End();
                     break;
 
                 case State.Storm:
@@ -168,14 +178,8 @@ namespace RuneArena.Enemies
         {
             m_Move = move;
             m_State = State.Casting;
-            m_ShotsLeft = move == Move.Bolts ? m_Bolts : 1;
-            WindUp();
-        }
-
-        void WindUp()
-        {
-            float windUp = m_Move == Move.Bolts ? m_BoltWindUp : m_Move == Move.Rift ? m_RiftWindUp : m_OrbWindUp;
-            string name = m_Move == Move.Bolts ? $"Bolt{m_Bolts - m_ShotsLeft + 1}" : m_Move.ToString();
+            float windUp = move == Move.Bolt ? m_BoltWindUp : move == Move.Rift ? m_RiftWindUp : m_OrbWindUp;
+            string name = move == Move.Bolt ? $"Bolt{m_BoltCount++ % 3 + 1}" : move.ToString();
             m_NextAt = Time.time + windUp;
             BeginAttack(windUp, name);
         }
@@ -184,8 +188,8 @@ namespace RuneArena.Enemies
         {
             switch (m_Move)
             {
-                case Move.Bolts:
-                    Shoot(m_Bolt, m_BoltSpeed, m_BoltDamage, 0.12f);
+                case Move.Bolt:
+                    Shoot(m_Bolt, m_BoltSpeed, m_BoltDamage, 0.12f, LandedBlow);
                     break;
                 case Move.Orb:
                     Shoot(m_Orb, m_OrbSpeed, m_OrbDamage, 0.3f);
@@ -199,14 +203,10 @@ namespace RuneArena.Enemies
                     break;
             }
 
-            m_ShotsLeft--;
-            if (m_ShotsLeft > 0)
-                WindUp();
-            else
-                End(true);
+            End();
         }
 
-        void Shoot(EnemyProjectile prefab, float speed, float damage, float glow)
+        void Shoot(EnemyProjectile prefab, float speed, float damage, float glow, System.Action onHit = null)
         {
             if (prefab == null)
                 return;
@@ -226,13 +226,13 @@ namespace RuneArena.Enemies
                     Growth = FxGrowth.Shrink,
                 }, 0f, 14f);
             }
-            shot.Launch(direction * speed, damage * DamageMultiplier, Player);
+            shot.Launch(direction * speed, damage * DamageMultiplier, Player, onHit);
         }
 
         // Marked now, bursting after delay.
         void Rift(Vector3 point, float delay)
         {
-            SpellFx.GroundRing(point, m_RiftRadius * 2f, m_RiftColor, delay);
+            DangerZone.Show(point, m_RiftRadius, m_RiftColor, delay);
             StartCoroutine(Burst(point, delay));
         }
 
@@ -269,12 +269,10 @@ namespace RuneArena.Enemies
             SpellFx.Summoning(ground, m_RiftColor, 0.6f, 1.2f);
         }
 
-        void End(bool step)
+        void End()
         {
             Telegraphing = false;
             m_State = State.Ready;
-            if (step)
-                m_Step++;
             m_Until = Time.time + m_Rest;
         }
 
@@ -312,7 +310,7 @@ namespace RuneArena.Enemies
             if (Time.time >= m_Until)
             {
                 Invulnerable = false;
-                End(false);
+                End();
             }
         }
 
@@ -320,7 +318,7 @@ namespace RuneArena.Enemies
         {
             base.Interrupt();
             if (m_State == State.Casting)
-                End(true);
+                End();
         }
     }
 }

@@ -4,8 +4,8 @@ using UnityEngine;
 
 namespace RuneArena.Enemies
 {
-    // The big dragon that closes the even stages. Besides the dive it has two attacks from the air, in a
-    // fixed cycle: dive -> spit -> dive -> rain.
+    // The big dragon that closes the even stages. The dive is its plain blow; each time its fury fills it
+    // lets out the next of two attacks from the air, in turn: spit -> rain.
     //   Spit: a few fireballs at the player, one after the other. An earth wall stops them.
     //   Rain: fireballs shot up that come down on marked spots around the player, one right under them,
     //         so standing still isn't an option.
@@ -13,12 +13,11 @@ namespace RuneArena.Enemies
     {
         enum Attack
         {
-            Dive,
             Spit,
             Rain,
         }
 
-        static readonly Attack[] k_Pattern = { Attack.Dive, Attack.Spit, Attack.Dive, Attack.Rain };
+        static readonly Attack[] k_Pattern = { Attack.Spit, Attack.Rain };
 
         [Header("Spit")]
         [SerializeField] EnemyProjectile m_Projectile;
@@ -46,11 +45,22 @@ namespace RuneArena.Enemies
         float m_ActAt;
         int m_ShotsLeft;
 
+        // Between attacks, not while winding one up or diving.
+        protected override void Tick(float deltaTime)
+        {
+            if (!Telegraphing)
+                BuildFury(deltaTime);
+            base.Tick(deltaTime);
+        }
+
         protected override bool StartSpecial(Vector3 head)
         {
-            m_Attack = k_Pattern[m_Step++ % k_Pattern.Length];
-            if (m_Attack == Attack.Dive || (m_Attack == Attack.Spit && m_Projectile == null))
+            if (!FuryFull)
                 return false;
+            m_Attack = k_Pattern[m_Step++ % k_Pattern.Length];
+            if (m_Attack == Attack.Spit && m_Projectile == null)
+                return false;
+            SpendFury();
 
             float windUp = m_Attack == Attack.Spit ? m_SpitWindUp : m_RainWindUp;
             m_ActAt = Time.time + windUp;
