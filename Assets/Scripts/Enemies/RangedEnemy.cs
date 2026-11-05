@@ -95,6 +95,14 @@ namespace RuneArena.Enemies
                 return;
             }
 
+            // Into the arena first, whoever stands in the way: keeping its distance from a player in the doorway
+            // would keep it outside for good, where spells can't reach it.
+            if (!HasEntered)
+            {
+                MoveTo(ArenaCenter);
+                return;
+            }
+
             bool canSee = !Physics.Linecast(m_Muzzle.position, head, m_SightMask, QueryTriggerInteraction.Ignore);
 
             if (distance > m_MaxDistance || !canSee)
@@ -121,7 +129,8 @@ namespace RuneArena.Enemies
         {
             Vector3 away = transform.position - feet;
             away.y = 0f;
-            Vector3 target = transform.position + away.normalized * (m_MinDistance - distance + 2f);
+            // Never back out through a door.
+            Vector3 target = KeepInside(transform.position + away.normalized * (m_MinDistance - distance + 2f));
             if (!NavMesh.SamplePosition(target, out NavMeshHit hit, 2f, NavMesh.AllAreas))
                 return false;
             if (FlatDistance(hit.position, feet) <= distance + 0.5f)
