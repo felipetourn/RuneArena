@@ -59,6 +59,12 @@ namespace RuneArena.Game
         [SerializeField] Slider[] m_VolumeSliders;
         [SerializeField] Button m_SoundBackButton;
 
+        [Header("Frame")]
+        [Tooltip("Height of the frame's two corners together, in canvas units. Panels that fit their content are " +
+                 "rounded up to the corners plus whole runes, so the runes along the edges come out whole.")]
+        [SerializeField] float m_FrameCorners = 100f;
+        [SerializeField] float m_FrameRuneSpacing = 26f;
+
         static readonly Color[] k_TierColors =
         {
             new Color(0.5f, 0.33f, 0.2f),
@@ -180,16 +186,16 @@ namespace RuneArena.Game
         // picked gets null when the player skips.
         public void ShowUpgrades(IReadOnlyList<Upgrade> offer, Upgrades upgrades, bool stageReward, Action<Upgrade> picked)
         {
+            // The odds of each tier are for the tutorial, not for here.
             if (m_UpgradeInfo != null)
             {
-                string reward = stageReward ? "<b>Recompensa de etapa: mínimo Oro</b>\n" : "";
-                m_UpgradeInfo.text = reward +
-                    $"Bronce {Odds(upgrades, UpgradeTier.Bronze)}   Plata {Odds(upgrades, UpgradeTier.Silver)}   " +
-                    $"Oro {Odds(upgrades, UpgradeTier.Gold)}   Diamante {Odds(upgrades, UpgradeTier.Diamond)}\n" +
-                    $"<size=80%>Saltear: +{upgrades.SkipMana:0} de maná y mejores chances la próxima vez</size>";
+                m_UpgradeInfo.text = stageReward ? "<b>Recompensa de etapa: mínimo Oro</b>" : "";
+                m_UpgradeInfo.gameObject.SetActive(stageReward);
             }
             if (m_SkipButton != null)
             {
+                m_SkipButton.GetComponentInChildren<TMP_Text>().text =
+                    $"<b>Saltear</b>\n<size=70%>+{upgrades.SkipMana:0} de maná y mejores chances la próxima vez</size>";
                 m_SkipButton.onClick.RemoveAllListeners();
                 m_SkipButton.onClick.AddListener(() => picked(null));
             }
@@ -254,10 +260,24 @@ namespace RuneArena.Game
             if (m_SoundPanel != null)
                 m_SoundPanel.SetActive(panel == m_SoundPanel);
             m_Canvas.gameObject.SetActive(true);
+            Fit(panel);
             if (m_Settings != null)
                 m_Settings.MenuOpen = true;
             if (!placed)
                 PlaceInFront();
+        }
+
+        // A panel that isn't stretched over the canvas takes the height of what it shows, so the frame closes
+        // right under its last button.
+        void Fit(GameObject panel)
+        {
+            var rect = (RectTransform)panel.transform;
+            if (rect.anchorMin != rect.anchorMax)
+                return;
+            LayoutRebuilder.ForceRebuildLayoutImmediate(rect);
+            float height = LayoutUtility.GetPreferredHeight(rect);
+            height = m_FrameCorners + Mathf.Ceil((height - m_FrameCorners) / m_FrameRuneSpacing) * m_FrameRuneSpacing;
+            rect.sizeDelta = new Vector2(rect.sizeDelta.x, height);
         }
 
         bool InOptions(GameObject panel)
@@ -295,11 +315,6 @@ namespace RuneArena.Game
             Transform t = m_Canvas.transform;
             t.position = m_Head.position + forward * m_Distance + Vector3.up * m_HeightOffset;
             t.rotation = Quaternion.LookRotation(forward);
-        }
-
-        static string Odds(Upgrades upgrades, UpgradeTier tier)
-        {
-            return $"{upgrades.Odds(tier):0.#}%";
         }
 
         static string Name(Difficulty difficulty)

@@ -83,6 +83,8 @@ namespace RuneArena.Game.Editor
             so.FindProperty("m_UpgradePanel").objectReferenceValue = upgrades;
             so.FindProperty("m_UpgradeInfo").objectReferenceValue = upgradeInfo;
             upgradeInfo.fontSize = 24f;
+            // A little room between the title and the first card.
+            upgrades.transform.Find("Title").GetComponent<LayoutElement>().preferredHeight = 100f;
             // Taller than the other panels: three cards plus the skip button.
             var upgradesRect = (RectTransform)upgrades.transform;
             upgradesRect.anchorMin = upgradesRect.anchorMax = new Vector2(0.5f, 0.5f);
@@ -95,7 +97,9 @@ namespace RuneArena.Game.Editor
                 button.GetComponent<LayoutElement>().preferredHeight = 100f;
                 buttons.GetArrayElementAtIndex(i).objectReferenceValue = button;
             }
-            so.FindProperty("m_SkipButton").objectReferenceValue = ButtonIn(upgrades, "Saltear");
+            Button skip = ButtonIn(upgrades, "Saltear");
+            skip.GetComponent<LayoutElement>().preferredHeight = 100f;
+            so.FindProperty("m_SkipButton").objectReferenceValue = skip;
 
             GameObject settings = Panel(root.transform, "Settings Panel", "Opciones", "", out TMP_Text settingsInfo);
             so.FindProperty("m_SettingsPanel").objectReferenceValue = settings;
@@ -109,7 +113,7 @@ namespace RuneArena.Game.Editor
             for (int i = 0; i < settingButtons.arraySize; i++)
             {
                 Button button = ButtonIn(settings, ((Setting)i).ToString());
-                button.GetComponentInChildren<TMP_Text>().fontSize = 26f;
+                button.GetComponentInChildren<TMP_Text>().fontSizeMax = 26f;
                 settingButtons.GetArrayElementAtIndex(i).objectReferenceValue = button;
             }
             so.FindProperty("m_SoundButton").objectReferenceValue = ButtonIn(settings, "Sonido");
@@ -124,6 +128,8 @@ namespace RuneArena.Game.Editor
             for (int i = 0; i < volumes.Length; i++)
                 sliders.GetArrayElementAtIndex(i).objectReferenceValue = SliderIn(sound, volumes[i]);
             so.FindProperty("m_SoundBackButton").objectReferenceValue = ButtonIn(sound, "Volver");
+            so.FindProperty("m_FrameCorners").floatValue = 2f * k_FrameBorder / k_FrameScale;
+            so.FindProperty("m_FrameRuneSpacing").floatValue = k_RuneSpacing / k_FrameScale;
             so.ApplyModifiedPropertiesWithoutUndo();
 
             pause.SetActive(false);
@@ -176,7 +182,7 @@ namespace RuneArena.Game.Editor
             layout.childForceExpandWidth = true;
             layout.childForceExpandHeight = false;
 
-            Text(panel.transform, "Title", title, 64f, 80f, FontStyles.Bold);
+            OneLine(Text(panel.transform, "Title", title, 64f, 80f, FontStyles.Bold));
             infoText = Text(panel.transform, "Info", info, 30f, 120f, FontStyles.Normal);
             return panel;
         }
@@ -212,6 +218,7 @@ namespace RuneArena.Game.Editor
             text.text = label;
             text.fontSize = 32f;
             text.color = Color.white;
+            OneLine(text);
 
             var button = go.GetComponent<Button>();
             ColorBlock colors = button.colors;
@@ -262,6 +269,15 @@ namespace RuneArena.Game.Editor
             colors.pressedColor = new Color(0.8f, 0.7f, 0.3f);
             slider.colors = colors;
             return slider;
+        }
+
+        // Never wraps: each line shrinks to fit the width instead.
+        static void OneLine(TMP_Text text)
+        {
+            text.textWrappingMode = TextWrappingModes.NoWrap;
+            text.enableAutoSizing = true;
+            text.fontSizeMax = text.fontSize;
+            text.fontSizeMin = text.fontSize * 0.4f;
         }
 
         static void Frame(Image image, string spritePath)
