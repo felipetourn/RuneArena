@@ -1,3 +1,4 @@
+using RuneArena.Effects;
 using RuneArena.Player;
 using UnityEngine;
 
@@ -56,13 +57,19 @@ namespace RuneArena.Pickups
             if (m_Kind == PickupKind.Health && m_Health.Health < m_Health.MaxHealth)
             {
                 m_Health.Heal(m_Amount);
-                Destroy(gameObject);
+                PickedUp(Sfx.Library != null ? Sfx.Library.HealthPickup : null);
             }
             else if (m_Kind == PickupKind.Mana && m_Mana != null && m_Mana.Mana < m_Mana.MaxMana)
             {
                 m_Mana.Add(m_Amount);
-                Destroy(gameObject);
+                PickedUp(Sfx.Library != null ? Sfx.Library.ManaPickup : null);
             }
+        }
+
+        void PickedUp(AudioClip sound)
+        {
+            Sfx.Play(sound, transform.position, 1f, 0.03f);
+            Destroy(gameObject);
         }
 
         bool TooFar()

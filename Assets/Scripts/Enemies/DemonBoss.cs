@@ -251,7 +251,7 @@ namespace RuneArena.Enemies
                 case Move.Whirl:
                     if (to.magnitude <= m_WhirlRadius)
                         Player.Damage(m_WhirlDamage * DamageMultiplier);
-                    SpellFx.Dust(transform.position, m_WhirlRadius, false);
+                    SpellFx.Dust(transform.position, m_WhirlRadius);
                     break;
 
                 case Move.Leap:

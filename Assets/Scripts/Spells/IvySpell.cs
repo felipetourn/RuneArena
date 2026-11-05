@@ -66,7 +66,7 @@ namespace RuneArena.Spells
             bool leafy = fx != null && fx.Ivy != null;
             GameObject go = CreateVisual(PrimitiveType.Cylinder, "Ivy", leafy ? fx.Ivy : cast.Material, leafy ? Color.white : m_Color);
             go.AddComponent<IvyPatch>().Grow(this, ground, cast.Power);
-            SpellFx.Leaves(ground, Radius, m_Color);
+            SpellFx.Leaves(ground, Radius, m_Color, wall != null);
         }
 
         EarthWall NearestWall(Vector3 point)

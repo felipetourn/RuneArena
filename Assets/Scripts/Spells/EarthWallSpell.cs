@@ -63,7 +63,7 @@ namespace RuneArena.Spells
             Tint(go.GetComponent<Renderer>(), Earth(material, out Color tint), tint);
             Rocks(go);
             go.AddComponent<EarthWall>().Raise(this, ground, rotation, duration);
-            SpellFx.Dust(ground, Width);
+            SpellFx.Dust(ground, Width, true);
         }
 
         // With effects the box is drawn as a row of rock slabs instead; it still is what blocks.

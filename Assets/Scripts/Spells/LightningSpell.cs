@@ -42,6 +42,7 @@ namespace RuneArena.Spells
 
         public override void Cast(in SpellCast cast)
         {
+            Sfx.Play(Sfx.Library != null ? Sfx.Library.LightningLaunch : null, cast.Origin);
             if (!Physics.Raycast(cast.Aim, out RaycastHit hit, m_Range, EnemyMask | FloorMask | WallMask, QueryTriggerInteraction.Ignore))
                 return;
 

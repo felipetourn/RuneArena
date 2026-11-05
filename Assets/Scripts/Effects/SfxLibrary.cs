@@ -17,16 +17,27 @@ namespace RuneArena.Effects
         [Header("Spells")]
         public AudioClip FireLaunch;
         public AudioClip FireExplode;
+        public AudioClip LightningLaunch;
         public AudioClip LightningStrike;
-        public AudioClip WaveSplash;
+        public AudioClip WaveLaunch;
+        [Tooltip("The seed lands and the earth wall rises.")]
         public AudioClip EarthRise;
         public AudioClip EarthBreak;
+        [Tooltip("Ivy lands on the floor.")]
         public AudioClip IvyGrow;
+        [Tooltip("Ivy lands by an earth wall and its roots come out (the combo).")]
+        public AudioClip IvyRoots;
         public AudioClip IceLaunch;
         public AudioClip IceShatter;
+
+        [Header("Pickups")]
+        public AudioClip HealthPickup;
+        public AudioClip ManaPickup;
 
         [Header("Enemies")]
         [Tooltip("The boss laughing, when it gets angry and when it raises skeletons.")]
         public AudioClip BossLaugh;
+        [Tooltip("The first stage's boss rising from the floor.")]
+        public AudioClip BossRise;
     }
 }

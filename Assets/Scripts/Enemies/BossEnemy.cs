@@ -1,3 +1,4 @@
+using RuneArena.Effects;
 using RuneArena.Spells;
 using RuneArena.Strokes;
 using RuneArena.Waves;
@@ -133,6 +134,7 @@ namespace RuneArena.Enemies
             base.Start();
             m_Spawner = FindAnyObjectByType<WaveSpawner>();
             m_RecoverUntil = Time.time + m_Recover;
+            Sfx.Play(Sfx.Library != null ? Sfx.Library.BossRise : null, transform.position, 1f, 0f);
         }
 
         protected override void Think(float deltaTime)

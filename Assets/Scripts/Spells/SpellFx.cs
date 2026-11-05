@@ -203,7 +203,7 @@ namespace RuneArena.Spells
         // The box is half a meter deep; the water reaches further back behind its front.
         public static void WaveBody(Transform wave)
         {
-            Sound(Sounds?.WaveSplash, wave.position);
+            Sound(Sounds?.WaveLaunch, wave.position);
             if (Lib == null || Lib.Water == null)
                 return;
             var body = new GameObject("Wave Water");
@@ -267,7 +267,8 @@ namespace RuneArena.Spells
 
         // ---- Earth ----
 
-        public static void Dust(Vector3 ground, float width, bool sound = true)
+        // With sound, it is the earth wall rising.
+        public static void Dust(Vector3 ground, float width, bool sound = false)
         {
             if (sound)
                 Sound(Sounds?.EarthRise, ground);
@@ -329,9 +330,10 @@ namespace RuneArena.Spells
 
         // ---- Ivy ----
 
-        public static void Leaves(Vector3 center, float radius, Color color)
+        // roots: it landed by an earth wall and the combo came out.
+        public static void Leaves(Vector3 center, float radius, Color color, bool roots)
         {
-            Sound(Sounds?.IvyGrow, center);
+            Sound(roots ? Sounds?.IvyRoots : Sounds?.IvyGrow, center);
             if (Lib == null)
                 return;
             Fx.Burst(center + Vector3.up * 0.1f, new FxBurst

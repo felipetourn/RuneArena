@@ -18,11 +18,16 @@ MonoBehaviour:
   DrawHum: {fileID: 0}
   FireLaunch: {fileID: 8300000, guid: 92186372dcb437345a85b28f8b604273, type: 3}
   FireExplode: {fileID: 0}
+  LightningLaunch: {fileID: 8300000, guid: 53d0c676de9af944c919fd82554ab7b1, type: 3}
   LightningStrike: {fileID: 0}
-  WaveSplash: {fileID: 0}
-  EarthRise: {fileID: 0}
+  WaveLaunch: {fileID: 8300000, guid: a2e2977781d30e547988563519ea4522, type: 3}
+  EarthRise: {fileID: 8300000, guid: dd40cbeec691ac34fbf425bac8be29b1, type: 3}
   EarthBreak: {fileID: 0}
-  IvyGrow: {fileID: 0}
-  IceLaunch: {fileID: 0}
+  IvyGrow: {fileID: 8300000, guid: 1d4b9fc6baa74a54f973f08b8b19e8f8, type: 3}
+  IvyRoots: {fileID: 8300000, guid: 9283a7b931ba32b43a08c4a87fa72364, type: 3}
+  IceLaunch: {fileID: 8300000, guid: 51f411b0288ded045a9b89febbc3970b, type: 3}
   IceShatter: {fileID: 0}
+  HealthPickup: {fileID: 8300000, guid: 29744549e7d137641acc17efe2b80501, type: 3}
+  ManaPickup: {fileID: 8300000, guid: c03e816958dabf347bdcd22dbde3dbb8, type: 3}
   BossLaugh: {fileID: 8300000, guid: 61cacb3d96580fd49b05f532416d970d, type: 3}
+  BossRise: {fileID: 8300000, guid: d52fab5e98b51644ea83fb96a886781f, type: 3}
