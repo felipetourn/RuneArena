@@ -32,3 +32,5 @@
 *.onnx binary
 *.ttf binary
 *.otf binary
+# Shell scripts (studio hooks) break with CRLF
+*.sh text eol=lf
