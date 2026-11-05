@@ -14,7 +14,7 @@ namespace RuneArena.Player
         const float k_BarHeight = 0.009f;
         const float k_Gap = 0.006f;
 
-        [SerializeField] Vector3 m_LocalPosition = new Vector3(0f, 0.035f, -0.1f);
+        [SerializeField] Vector3 m_LocalPosition = new Vector3(0f, 0.035f, -0.06f);
         [SerializeField] Vector3 m_LocalRotation = new Vector3(45f, 0f, 0f);
         [SerializeField] bool m_PinToViewInEditor = true;
         [SerializeField] Vector3 m_ViewPosition = new Vector3(-0.13f, -0.09f, 0.4f);

@@ -53,7 +53,7 @@ MonoBehaviour:
   m_VisualPointCount: 20
   m_MaxVisualCurveDistance: 10
   m_RestingVisualLineLength: 0.25
-  m_LineDynamicsMode: 1
+  m_LineDynamicsMode: 0
   m_RetractDelay: 1
   m_RetractDuration: 1
   m_ExtendLineToEmptyHit: 0

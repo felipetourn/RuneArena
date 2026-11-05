@@ -25,6 +25,9 @@ namespace RuneArena.Player.Editor
         // Wand, measured from the end of the pommel along its axis.
         const float k_GripCenter = 0.085f;
         const float k_WandLength = 0.445f;
+        // How far forward of its mesh the bracer sits, so it reaches the hand. Keep the WristDisplay's
+        // position the same amount forward, since the bars sit on it.
+        const float k_BracerForward = 0.04f;
 
         [MenuItem("RuneArena/Create Hand Props")]
         static void Create()
@@ -52,6 +55,7 @@ namespace RuneArena.Player.Editor
             so.ApplyModifiedProperties();
 
             Transform bracer = Prop(wrist.transform, "Bracer", SaveMesh(Bracer(), "Bracer"), materials);
+            bracer.localPosition = new Vector3(0f, 0f, k_BracerForward);
             var wristSettings = new SerializedObject(wrist);
             wristSettings.FindProperty("m_HideWhenPinned").objectReferenceValue = bracer.gameObject;
             wristSettings.ApplyModifiedProperties();

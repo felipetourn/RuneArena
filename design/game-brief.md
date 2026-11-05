@@ -36,6 +36,14 @@
 6. **En el casco — sensación:** ajustar lo que el simulador no muestra: escala de los jefes (Gideon mide 3,2 m), hitboxes y velocidad de los jefes.
 7. Tabla de puntajes guardada y visible en el juego (pospuesta, no es parte del MVP).
 
+## Pendientes a futuro
+- **Opción en el menú para mostrar u ocultar la línea de los controles.** Hoy se ve siempre entera:
+  `m_LineDynamicsMode` en Traditional en `Left_NearFarInteractor.prefab` (el derecho es una variante y la
+  hereda). La opción cambiaría `CurveVisualController.lineDynamicsMode` (o apagaría la línea) en los dos
+  controles. Va junto con las opciones de comodidad VR, todavía por definir.
+- **Reducir el esqueleto mago (enemigo a distancia) en Blender:** ~100k triángulos, apuntar a ~12k como el
+  esqueleto melee. Guardarlo como `SkeletonMage.fbx` y correr RuneArena > Create Ranged Mage Model.
+
 ---
 **Who it's for / what they feel:** Jugadores de VR en Quest que quieren sentirse magos de verdad lanzando hechizos con el cuerpo.
 
