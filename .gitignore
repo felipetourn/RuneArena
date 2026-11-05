@@ -80,13 +80,9 @@ tools/audio/source/
 # Candidate models before they go through tools/models
 possible-3dmodels/
 
-# === Claude Code Game Studios (local only) ===
-/.claude/
-/CLAUDE.md
+# === Claude Code Game Studios: per-machine and per-session files only ===
 /CLAUDE.local.md
-/project.yaml
 /project.local.yaml
-/.worktreeinclude
-/design/
-/docs/
-/production/
+/.claude/settings.local.json
+/production/session-state/
+/production/session-logs/
