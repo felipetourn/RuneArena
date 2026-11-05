@@ -6,7 +6,7 @@ made (ColosseumBuilderEditor), so if you change it here change it there too:
 The earth (for the earth rune's walls) and the ivy are tiled by the effects' materials instead.
 
 The sun angles of the two skies are the ones in ArenaLighting's presets.
-The particle sprites go to a Fx folder next to the arena textures.
+The particle sprites go to a Fx folder next to the arena textures, and the spectators to a Crowd one.
 """
 import argparse
 import time
@@ -14,7 +14,7 @@ from pathlib import Path
 
 import numpy as np
 
-from arena import fx, props, sky, stone
+from arena import fx, props, sky, spectators, stone
 from arena.image import normal_from_height, save_albedo, save_normal
 
 
@@ -48,6 +48,8 @@ def main():
         ("Earth", lambda: stone_set("Earth", stone.earth(1024, rng), 0.5)),
         ("Ivy", lambda: ivy(out.parent / "Fx", rng)),
         ("Fx", lambda: effects(out.parent / "Fx", rng)),
+        # Its own generator, so it comes out the same whatever else is made.
+        ("Spectators", lambda: crowd(out.parent / "Crowd", np.random.default_rng(args.seed))),
     ]
     for name, job in jobs:
         if not wanted(name):
@@ -55,6 +57,11 @@ def main():
         start = time.time()
         job()
         print(f"{name}: {time.time() - start:.1f}s")
+
+
+def crowd(out, rng):
+    out.mkdir(parents=True, exist_ok=True)
+    spectators.atlas(rng).save(out / "Spectators.png")
 
 
 def gate(out, rng):

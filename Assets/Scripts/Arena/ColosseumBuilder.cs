@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace RuneArena.Arena
@@ -8,6 +9,8 @@ namespace RuneArena.Arena
     // behind the wall (seats, arcade, banners) is scenery without colliders.
     public class ColosseumBuilder : MonoBehaviour
     {
+        public const float TierWallThickness = 0.6f;
+
         public enum PillarStyle
         {
             Column,
@@ -107,6 +110,33 @@ namespace RuneArena.Arena
         [SerializeField] Material m_BronzeMaterial;
         [Tooltip("Glowing parts of the pillars. No style uses it right now.")]
         [SerializeField] Material m_GlowMaterial;
+
+        // Each row of seats, from the bottom up: x is the distance from the center to the front of the seat,
+        // y its height and z its depth, all in this object's space. Laid out like the stands are built.
+        public void SeatRows(List<Vector3> rows)
+        {
+            rows.Clear();
+            if (!m_BuildStands || m_Tiers == null)
+                return;
+            float r = m_Radius + m_TerraceWidth;
+            float y = m_Height;
+            for (int t = 0; t < m_Tiers.Length; t++)
+            {
+                if (t > 0)
+                {
+                    r += TierWallThickness;
+                    y += m_TierWallHeight;
+                }
+                for (int s = 0; s < m_Tiers[t].Steps; s++)
+                {
+                    y += m_Tiers[t].Rise;
+                    rows.Add(new Vector3(r, y, m_Tiers[t].Depth));
+                    r += m_Tiers[t].Depth;
+                }
+                if (t < m_Tiers.Length - 1)
+                    r += m_WalkwayWidth;
+            }
+        }
 
         public float Radius => m_Radius;
         public float Thickness => m_Thickness;

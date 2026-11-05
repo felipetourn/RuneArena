@@ -37,7 +37,6 @@ namespace RuneArena.Arena.Editor
         const float k_CorniceHeight = 0.28f;
         const float k_ParapetHeight = 1f;
         const float k_ParapetThickness = 0.35f;
-        const float k_TierWallThickness = 0.6f;
         const float k_EntranceWidth = 1.6f;
         const float k_EntranceDepth = 1.4f;
         const float k_GalleryWidth = 3f;
@@ -264,7 +263,7 @@ namespace RuneArena.Arena.Editor
                 if (t > 0)
                 {
                     TierWall(m, b, r, y);
-                    r += k_TierWallThickness;
+                    r += ColosseumBuilder.TierWallThickness;
                     y += b.TierWallHeight;
                 }
 
@@ -309,7 +308,7 @@ namespace RuneArena.Arena.Editor
             var wall = new Arcade
             {
                 Inner = r,
-                Outer = r + k_TierWallThickness,
+                Outer = r + ColosseumBuilder.TierWallThickness,
                 Bottom = y,
                 Top = y + b.TierWallHeight,
                 Arches = b.Entrances,
