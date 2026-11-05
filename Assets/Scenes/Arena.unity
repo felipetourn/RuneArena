@@ -2613,17 +2613,17 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RuneArena.Waves.WaveSpawner
   m_Waves: {fileID: 11400000, guid: 860480f1f04b31b45832e058e6f8151f, type: 2}
-  m_Difficulty: 1
+  m_Difficulty: 0
   m_Easy:
-    speed: 1
+    speed: 0.7
     damage: 1
     health: 1
   m_Normal:
-    speed: 1.1
+    speed: 0.9
     damage: 1.25
     health: 1
   m_Hard:
-    speed: 1.2
+    speed: 1
     damage: 1.5
     health: 1.4
   m_PerLevel: 0.3
@@ -2670,6 +2670,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RuneArena.Pickups.PickupDropper
   m_Spawner: {fileID: 0}
+  m_Material: {fileID: 0}
+  m_Glow: 1.5
   m_HealthChance: 0.15
   m_HealthAmount: 15
   m_HealthColor: {r: 0.2, g: 0.9, b: 0.3, a: 1}
@@ -5179,7 +5181,7 @@ AudioSource:
   m_audioClip: {fileID: 0}
   m_Resource: {fileID: 8300000, guid: afe9f2b174afed64aaad193c001c01a6, type: 3}
   m_PlayOnAwake: 0
-  m_Volume: 0.09
+  m_Volume: 0.175
   m_Pitch: 1
   Loop: 1
   Mute: 0
@@ -7722,6 +7724,22 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: -23
       objectReference: {fileID: 0}
+    - target: {fileID: 5518899284880179293, guid: 77e7c27b2c5525e4aa8cc9f99d654486, type: 3}
+      propertyPath: m_LocomotionVignetteProviders.Array.data[0].m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5518899284880179293, guid: 77e7c27b2c5525e4aa8cc9f99d654486, type: 3}
+      propertyPath: m_LocomotionVignetteProviders.Array.data[1].m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5518899284880179293, guid: 77e7c27b2c5525e4aa8cc9f99d654486, type: 3}
+      propertyPath: m_LocomotionVignetteProviders.Array.data[2].m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5518899284880179293, guid: 77e7c27b2c5525e4aa8cc9f99d654486, type: 3}
+      propertyPath: m_LocomotionVignetteProviders.Array.data[3].m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 6150467722377659599, guid: 77e7c27b2c5525e4aa8cc9f99d654486, type: 3}
       propertyPath: m_IsActive
       value: 0
@@ -7957,11 +7975,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RuneArena.Player.PlayerMovement
   m_MoveProvider: {fileID: 0}
-  m_ForwardSpeed: 3
-  m_SideSpeed: 1.8
-  m_BackSpeed: 1.8
+  m_ForwardSpeed: 4
+  m_SideSpeed: 2
+  m_BackSpeed: 2
   m_DrawingMultiplier: 0.5
-  m_SpeedChange: 6
+  m_SpeedChange: 6.25
 --- !u!1 &1486199296
 GameObject:
   m_ObjectHideFlags: 0
@@ -10219,7 +10237,7 @@ Light:
   m_BounceIntensity: 1
   m_ColorTemperature: 6570
   m_UseColorTemperature: 0
-  m_BoundingSphereOverride: {x: 0, y: 6e-44, z: 3e-45, w: 4.407e-42}
+  m_BoundingSphereOverride: {x: 0, y: 0, z: 0, w: 0}
   m_UseBoundingSphereOverride: 0
   m_UseViewFrustumForShadowCasterCull: 1
   m_ForceVisible: 0

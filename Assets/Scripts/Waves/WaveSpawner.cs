@@ -32,7 +32,7 @@ namespace RuneArena.Waves
         }
 
         [SerializeField] WaveSet m_Waves;
-        [SerializeField] Difficulty m_Difficulty = Difficulty.Normal;
+        [SerializeField] Difficulty m_Difficulty = Difficulty.Easy;
         [Tooltip("Multipliers over the enemy prefabs, which are tuned as Easy.")]
         [SerializeField] DifficultyScale m_Easy = new DifficultyScale { speed = 1f, damage = 1f, health = 1f };
         [SerializeField] DifficultyScale m_Normal = new DifficultyScale { speed = 1.1f, damage = 1.25f, health = 1f };

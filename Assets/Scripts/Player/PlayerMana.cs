@@ -41,7 +41,7 @@ namespace RuneArena.Player
         void Start()
         {
             m_Spawner = FindAnyObjectByType<WaveSpawner>();
-            SetDifficulty(m_Spawner != null ? m_Spawner.Difficulty : Difficulty.Normal);
+            SetDifficulty(m_Spawner != null ? m_Spawner.Difficulty : Difficulty.Easy);
             if (m_Spawner != null)
                 m_Spawner.WaveCleared += OnWaveCleared;
         }
