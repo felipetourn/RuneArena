@@ -105,7 +105,7 @@ namespace RuneArena.Strokes
 
             if (m_Hum != null)
             {
-                float target = m_Recorder.IsDrawing ? m_HumVolume : 0f;
+                float target = m_Recorder.IsDrawing ? m_HumVolume * Sfx.Volume(SoundGroup.Spells) : 0f;
                 m_Hum.volume = Mathf.MoveTowards(m_Hum.volume, target, Time.deltaTime * 3f);
             }
         }

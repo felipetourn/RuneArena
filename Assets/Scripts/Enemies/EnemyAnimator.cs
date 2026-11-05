@@ -153,6 +153,7 @@ namespace RuneArena.Enemies
             if (m_Loop != null)
             {
                 float target = m_Enemy.IsDead ? 0f : Mathf.Lerp(m_StillVolume, m_MovingVolume, Mathf.Clamp01(m_Speed));
+                target *= Sfx.Volume(SoundGroup.Enemies);
                 m_Loop.volume = Mathf.MoveTowards(m_Loop.volume, target, dt * 2f);
             }
 

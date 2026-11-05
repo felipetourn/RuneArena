@@ -31,3 +31,9 @@ MonoBehaviour:
   ManaPickup: {fileID: 8300000, guid: c03e816958dabf347bdcd22dbde3dbb8, type: 3}
   BossLaugh: {fileID: 8300000, guid: 61cacb3d96580fd49b05f532416d970d, type: 3}
   BossRise: {fileID: 8300000, guid: d52fab5e98b51644ea83fb96a886781f, type: 3}
+  CrowdAmbience: {fileID: 8300000, guid: b72076401e5de7b41a0f38647e60c051, type: 3}
+  CrowdKill1: {fileID: 8300000, guid: e54eda6667751284786f86ea376b2f7e, type: 3}
+  CrowdKill2: {fileID: 8300000, guid: 749a76540201f2644b3755f0d9b9f0e2, type: 3}
+  CrowdWave: {fileID: 8300000, guid: 63533f292a9be834c921ac88b5dab269, type: 3}
+  CrowdStage: {fileID: 8300000, guid: 64bc2437139a9204086c1c79da776007, type: 3}
+  CrowdVictory: {fileID: 8300000, guid: ddbb0f7daa58ec441b4c04bb4d3df7bc, type: 3}

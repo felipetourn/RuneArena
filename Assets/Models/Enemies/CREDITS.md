@@ -10,4 +10,5 @@
   non-commercial university project (tools/models/gideon.py).
 - SkeletonMage (ranged enemy): "Animated skeleton casts spell with hands", Sketchfab, rigged with
   Mixamo; its Idle, Walk, Hit and Death clips are Mixamo animations. Author and license still to check
-  before publishing anything. Not reduced yet: about 100k triangles.
+  before publishing anything. Its 100k triangles are brought down to about 12k when the prefab is made
+  (RuneArena > Create Ranged Mage Model), with UnityMeshSimplifier (MIT, Mattias Edlund) in Packages.

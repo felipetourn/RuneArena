@@ -39,5 +39,16 @@ namespace RuneArena.Effects
         public AudioClip BossLaugh;
         [Tooltip("The first stage's boss rising from the floor.")]
         public AudioClip BossRise;
+
+        [Header("Crowd")]
+        [Tooltip("The stands murmuring, made to loop.")]
+        public AudioClip CrowdAmbience;
+        [Tooltip("Short cheers when an enemy goes down, one or the other.")]
+        public AudioClip CrowdKill1;
+        public AudioClip CrowdKill2;
+        public AudioClip CrowdWave;
+        public AudioClip CrowdStage;
+        [Tooltip("The last stage cleared.")]
+        public AudioClip CrowdVictory;
     }
 }

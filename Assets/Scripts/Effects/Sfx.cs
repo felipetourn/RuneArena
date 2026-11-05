@@ -3,11 +3,20 @@ using UnityEngine.XR;
 
 namespace RuneArena.Effects
 {
+    // Which volume in the options a sound follows.
+    public enum SoundGroup
+    {
+        Spells,
+        Enemies,
+        Crowd,
+    }
+
     // One-shot sounds in the world, and the controllers' vibration.
     public static class Sfx
     {
         static SfxLibrary s_Library;
         static bool s_Loaded;
+        static readonly float[] s_Volumes = { 1f, 1f, 1f };
 
         public static SfxLibrary Library
         {
@@ -22,14 +31,26 @@ namespace RuneArena.Effects
             }
         }
 
+        // From 0 to 1, set by the options. Loops multiply the volume they want by it themselves.
+        public static float Volume(SoundGroup group)
+        {
+            return s_Volumes[(int)group];
+        }
+
+        public static void SetVolume(SoundGroup group, float volume)
+        {
+            s_Volumes[(int)group] = Mathf.Clamp01(volume);
+        }
+
         // Plays where it happens, a little higher or lower each time so repeats don't sound identical.
-        public static AudioSource Play(AudioClip clip, Vector3 position, float volume = 1f, float pitchJitter = 0.08f)
+        public static AudioSource Play(AudioClip clip, Vector3 position, float volume = 1f, float pitchJitter = 0.08f,
+                                       SoundGroup group = SoundGroup.Spells)
         {
             if (clip == null)
                 return null;
             var go = new GameObject("Sfx " + clip.name);
             go.transform.position = position;
-            AudioSource source = Source(go, clip, volume);
+            AudioSource source = Source(go, clip, volume * Volume(group));
             source.pitch = 1f + Random.Range(-pitchJitter, pitchJitter);
             source.Play();
             Object.Destroy(go, clip.length / Mathf.Max(source.pitch, 0.1f) + 0.1f);

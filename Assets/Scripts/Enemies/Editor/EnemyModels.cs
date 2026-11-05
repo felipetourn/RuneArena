@@ -24,6 +24,8 @@ namespace RuneArena.Enemies.Editor
         const float k_MageScale = 1.6f;
         // The ranged mage's height in meters. Its download comes tiny, so it is measured and scaled to this.
         const float k_RangedMageHeight = 1.85f;
+        // Its download is about 100k triangles; the melee skeleton has about 12k.
+        const int k_RangedMageTriangles = 12000;
 
         [MenuItem("RuneArena/Create Enemy Models")]
         static void Create()
@@ -440,6 +442,7 @@ namespace RuneArena.Enemies.Editor
             // Mixamo exports face +Z, like the prefab: no turn.
             Animator animator = SwapBody(root, model, new[] { material }, "Idle", 1f, 0f, clipFiles);
             Transform body = animator.transform;
+            Reduce(body.GetComponentInChildren<SkinnedMeshRenderer>(), $"{folder}/{model} Reduced.asset", k_RangedMageTriangles);
             body.localScale = Vector3.one * (k_RangedMageHeight / Height(body));
 
             // The shot comes out from between its hands, where they meet at the end of the cast.
@@ -470,6 +473,51 @@ namespace RuneArena.Enemies.Editor
 
             PrefabUtility.SaveAsPrefabAsset(root, path);
             PrefabUtility.UnloadPrefabContents(root);
+        }
+
+        // Swaps the renderer's mesh for a copy with about this many triangles, saved at path; the model itself is
+        // left as it came. Bones and weights carry over, so it animates the same.
+        static void Reduce(SkinnedMeshRenderer renderer, string path, int triangles)
+        {
+            Mesh source = renderer.sharedMesh;
+            var importer = AssetImporter.GetAtPath(AssetDatabase.GetAssetPath(source)) as ModelImporter;
+            // Its data can only be read with Read/Write on, for as long as this takes.
+            bool readable = importer == null || importer.isReadable;
+            if (!readable)
+            {
+                importer.isReadable = true;
+                importer.SaveAndReimport();
+                source = renderer.sharedMesh;
+            }
+
+            int before = source.triangles.Length / 3;
+            var simplifier = new UnityMeshSimplifier.MeshSimplifier();
+            simplifier.Initialize(source);
+            simplifier.SimplifyMesh(Mathf.Clamp01((float)triangles / before));
+            Mesh reduced = simplifier.ToMesh();
+            reduced.name = $"{source.name} Reduced";
+            reduced.RecalculateBounds();
+
+            if (!readable)
+            {
+                importer.isReadable = false;
+                importer.SaveAndReimport();
+            }
+
+            // Overwritten in place, so whatever points at it keeps pointing at it.
+            var existing = AssetDatabase.LoadAssetAtPath<Mesh>(path);
+            if (existing != null)
+            {
+                EditorUtility.CopySerialized(reduced, existing);
+                Object.DestroyImmediate(reduced);
+                reduced = existing;
+            }
+            else
+            {
+                AssetDatabase.CreateAsset(reduced, path);
+            }
+            renderer.sharedMesh = reduced;
+            Debug.Log($"{renderer.name}: {before} triangles reduced to {reduced.triangles.Length / 3}");
         }
 
         // From the feet to the top of the head, at the model's own scale: from its head bone if it has one.

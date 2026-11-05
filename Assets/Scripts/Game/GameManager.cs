@@ -72,7 +72,11 @@ namespace RuneArena.Game
                 m_Menu = FindAnyObjectByType<GameMenu>();
             m_Upgrades = GetComponent<Upgrades>();
             if (m_Spawner != null)
+            {
                 m_Spawner.StartOnPlay = false;
+                if (m_Spawner.GetComponent<Crowd>() == null)
+                    m_Spawner.gameObject.AddComponent<Crowd>();
+            }
         }
 
         void Start()

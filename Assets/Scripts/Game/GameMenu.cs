@@ -23,6 +23,7 @@ namespace RuneArena.Game
         [SerializeField] Button m_EasyButton;
         [SerializeField] Button m_NormalButton;
         [SerializeField] Button m_HardButton;
+        [SerializeField] Button m_StartSettingsButton;
         [SerializeField] Button m_QuitButton;
 
         [Header("Pause")]
@@ -30,6 +31,7 @@ namespace RuneArena.Game
         [SerializeField] TMP_Text m_PauseInfo;
         [SerializeField] Button m_ResumeButton;
         [SerializeField] Button m_PauseRestartButton;
+        [SerializeField] Button m_PauseSettingsButton;
         [SerializeField] Button m_PauseMenuButton;
 
         [Header("Game over")]
@@ -44,6 +46,19 @@ namespace RuneArena.Game
         [SerializeField] Button m_SkipButton;
         [SerializeField] TMP_Text m_UpgradeInfo;
 
+        [Header("Settings")]
+        [SerializeField] GameObject m_SettingsPanel;
+        [Tooltip("One per setting, in the order of the Setting enum.")]
+        [SerializeField] Button[] m_SettingButtons;
+        [SerializeField] Button m_SoundButton;
+        [SerializeField] Button m_SettingsBackButton;
+
+        [Header("Sound")]
+        [SerializeField] GameObject m_SoundPanel;
+        [Tooltip("One per volume, in the order of the Volume enum.")]
+        [SerializeField] Slider[] m_VolumeSliders;
+        [SerializeField] Button m_SoundBackButton;
+
         static readonly Color[] k_TierColors =
         {
             new Color(0.5f, 0.33f, 0.2f),
@@ -53,11 +68,15 @@ namespace RuneArena.Game
         };
 
         GameManager m_Game;
+        GameSettings m_Settings;
         Transform m_Head;
+        // The panel the settings were opened from, to go back to.
+        GameObject m_SettingsFrom;
 
         void Awake()
         {
             m_Game = FindAnyObjectByType<GameManager>();
+            m_Settings = FindAnyObjectByType<GameSettings>();
 
             m_EasyButton.onClick.AddListener(() => m_Game.StartGame(Difficulty.Easy));
             m_NormalButton.onClick.AddListener(() => m_Game.StartGame(Difficulty.Normal));
@@ -70,6 +89,49 @@ namespace RuneArena.Game
 
             m_RetryButton.onClick.AddListener(() => m_Game.Restart());
             m_GameOverMenuButton.onClick.AddListener(() => m_Game.BackToMenu());
+
+            if (m_SettingsPanel != null && m_Settings != null)
+            {
+                m_StartSettingsButton.onClick.AddListener(() => ShowSettings(m_StartPanel));
+                m_PauseSettingsButton.onClick.AddListener(() => ShowSettings(m_PausePanel));
+                m_SettingsBackButton.onClick.AddListener(() => Show(m_SettingsFrom));
+                for (int i = 0; i < m_SettingButtons.Length; i++)
+                {
+                    var setting = (Setting)i;
+                    m_SettingButtons[i].onClick.AddListener(() =>
+                    {
+                        m_Settings.Next(setting);
+                        RefreshSettings();
+                    });
+                }
+            }
+            if (m_SoundPanel != null && m_Settings != null)
+            {
+                m_SoundButton.onClick.AddListener(ShowSound);
+                m_SoundBackButton.onClick.AddListener(() =>
+                {
+                    m_Settings.Save();
+                    RefreshSettings();
+                    Show(m_SettingsPanel);
+                });
+                for (int i = 0; i < m_VolumeSliders.Length; i++)
+                {
+                    var volume = (Volume)i;
+                    m_VolumeSliders[i].onValueChanged.AddListener(value => m_Settings.SetVolume(volume, value));
+                }
+            }
+            else if (m_SoundButton != null)
+            {
+                m_SoundButton.gameObject.SetActive(false);
+            }
+            else
+            {
+                // Built before there were settings: no way into them.
+                if (m_StartSettingsButton != null)
+                    m_StartSettingsButton.gameObject.SetActive(false);
+                if (m_PauseSettingsButton != null)
+                    m_PauseSettingsButton.gameObject.SetActive(false);
+            }
         }
 
         void Start()
@@ -85,8 +147,7 @@ namespace RuneArena.Game
             }
         }
 
-        // Keeps facing the player while open, so it reads right from wherever they walk; if they walk
-        // well away from it, it comes back in front of them.
+        // Stays where it opened, turning to face the player so it reads right from wherever they walk.
         void LateUpdate()
         {
             if (m_Head == null || !m_Canvas.gameObject.activeInHierarchy)
@@ -94,11 +155,6 @@ namespace RuneArena.Game
 
             Transform t = m_Canvas.transform;
             Vector3 toMenu = Vector3.ProjectOnPlane(t.position - m_Head.position, Vector3.up);
-            if (toMenu.magnitude > m_Distance * 2f)
-            {
-                PlaceInFront();
-                return;
-            }
             if (toMenu.sqrMagnitude > 1e-4f)
                 t.rotation = Quaternion.LookRotation(toMenu);
         }
@@ -159,17 +215,59 @@ namespace RuneArena.Game
         public void Hide()
         {
             m_Canvas.gameObject.SetActive(false);
+            if (m_Settings != null)
+                m_Settings.MenuOpen = false;
+        }
+
+        void ShowSettings(GameObject from)
+        {
+            m_SettingsFrom = from;
+            RefreshSettings();
+            Show(m_SettingsPanel);
+        }
+
+        void ShowSound()
+        {
+            for (int i = 0; i < m_VolumeSliders.Length; i++)
+                m_VolumeSliders[i].SetValueWithoutNotify(m_Settings.GetVolume((Volume)i));
+            Show(m_SoundPanel);
+        }
+
+        void RefreshSettings()
+        {
+            for (int i = 0; i < m_SettingButtons.Length; i++)
+                m_SettingButtons[i].GetComponentInChildren<TMP_Text>().text = m_Settings.Label((Setting)i);
         }
 
         void Show(GameObject panel)
         {
+            // Going in and out of the options keeps the menu where it is.
+            bool placed = m_Canvas.gameObject.activeSelf &&
+                          (InOptions(panel) || IsOpen(m_SettingsPanel) || IsOpen(m_SoundPanel));
             m_StartPanel.SetActive(panel == m_StartPanel);
             m_PausePanel.SetActive(panel == m_PausePanel);
             m_GameOverPanel.SetActive(panel == m_GameOverPanel);
             if (m_UpgradePanel != null)
                 m_UpgradePanel.SetActive(panel == m_UpgradePanel);
+            if (m_SettingsPanel != null)
+                m_SettingsPanel.SetActive(panel == m_SettingsPanel);
+            if (m_SoundPanel != null)
+                m_SoundPanel.SetActive(panel == m_SoundPanel);
             m_Canvas.gameObject.SetActive(true);
-            PlaceInFront();
+            if (m_Settings != null)
+                m_Settings.MenuOpen = true;
+            if (!placed)
+                PlaceInFront();
+        }
+
+        bool InOptions(GameObject panel)
+        {
+            return panel != null && (panel == m_SettingsPanel || panel == m_SoundPanel);
+        }
+
+        static bool IsOpen(GameObject panel)
+        {
+            return panel != null && panel.activeSelf;
         }
 
         // The GameManager may open a panel before this Start runs, so look the head up on demand.

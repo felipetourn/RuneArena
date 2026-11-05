@@ -3,7 +3,8 @@ using UnityEngine;
 
 namespace RuneArena.Spells
 {
-    // Shapes for the spells, built in code: a breaking wave, an icicle, thorny roots and a wall of rock.
+    // Shapes for the spells, built in code: a breaking wave, an icicle, thorny roots and a wall of rock. Also the
+    // rune stones the enemies drop.
     // Their v coordinate runs from base to tip, which is what the Spell Surface shader colors and grows along.
     static class SpellMeshes
     {
@@ -160,6 +161,72 @@ namespace RuneArena.Spells
                 shape.Facet(0, tip, r0, r1, center);
                 shape.Facet(0, tail, r1, r0, center);
             }
+        }
+
+        // ---- Rune stone ----
+
+        // A rough standing stone about a unit tall, flat on its two faces, with a rune cut into both: submesh 0
+        // the stone, submesh 1 the rune. glyph is one stroke, from about -1 to 1 up and down.
+        public static Mesh RuneStone(IReadOnlyList<Vector2> glyph, int seed)
+        {
+            const int sides = 9;
+            const float halfDepth = 0.13f;
+            const float face = 0.8f;
+            var random = new System.Random(seed);
+            float Range(float lo, float hi) => lo + (float)random.NextDouble() * (hi - lo);
+
+            // Taller than wide, a little narrower at the top, every corner nudged so no two look alike.
+            var outline = new Vector2[sides];
+            for (int i = 0; i < sides; i++)
+            {
+                float a = 2f * Mathf.PI * (i + Range(-0.2f, 0.2f)) / sides;
+                float width = 0.36f * (Mathf.Sin(a) > 0f ? 0.85f : 1f);
+                outline[i] = new Vector2(Mathf.Cos(a) * width, Mathf.Sin(a) * 0.5f) * Range(0.9f, 1.05f);
+            }
+
+            var shape = new Shape(2);
+            Vector3 center = Vector3.zero;
+            var front = new Vector3[sides];
+            var middle = new Vector3[sides];
+            var back = new Vector3[sides];
+            for (int i = 0; i < sides; i++)
+            {
+                front[i] = new Vector3(outline[i].x * face, outline[i].y * face, -halfDepth);
+                middle[i] = new Vector3(outline[i].x, outline[i].y, Range(-0.02f, 0.02f));
+                back[i] = new Vector3(outline[i].x * face, outline[i].y * face, halfDepth);
+            }
+            for (int i = 0; i < sides; i++)
+            {
+                int j = (i + 1) % sides;
+                shape.Facet(0, front[i], front[j], new Vector3(0f, 0f, -halfDepth), center);
+                shape.Facet(0, back[i], back[j], new Vector3(0f, 0f, halfDepth), center);
+                shape.Facet(0, front[i], middle[i], middle[j], center);
+                shape.Facet(0, front[i], middle[j], front[j], center);
+                shape.Facet(0, back[i], middle[j], middle[i], center);
+                shape.Facet(0, back[i], back[j], middle[j], center);
+            }
+
+            // The rune a hair off each face, as flat strips with their own color.
+            const float scale = 0.28f;
+            const float stroke = 0.045f;
+            for (int side = -1; side <= 1; side += 2)
+            {
+                float z = side * (halfDepth + 0.004f);
+                Vector3 inside = new Vector3(0f, 0f, z - side);
+                for (int k = 0; k + 1 < glyph.Count; k++)
+                {
+                    Vector3 a = new Vector3(glyph[k].x * scale, glyph[k].y * scale, z);
+                    Vector3 b = new Vector3(glyph[k + 1].x * scale, glyph[k + 1].y * scale, z);
+                    Vector3 along = (b - a).normalized;
+                    // Run past the corners a little so the joints close.
+                    a -= along * (stroke * 0.5f);
+                    b += along * (stroke * 0.5f);
+                    Vector3 across = Vector3.Cross(along, Vector3.forward) * (stroke * 0.5f);
+                    shape.Facet(1, a - across, a + across, b + across, inside);
+                    shape.Facet(1, a - across, b + across, b - across, inside);
+                }
+            }
+            return shape.ToMesh("Rune Stone");
         }
 
         // ---- Roots ----

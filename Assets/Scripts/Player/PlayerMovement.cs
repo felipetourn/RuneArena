@@ -20,6 +20,7 @@ namespace RuneArena.Player
         StrokeRecorder m_Recorder;
         float m_Speed;
         float m_SpeedScale = 1f;
+        float m_ComfortScale = 1f;
         float m_Slow;
         float m_SlowUntil;
 
@@ -43,6 +44,12 @@ namespace RuneArena.Player
         public void AddSpeed(float fraction)
         {
             m_SpeedScale += fraction;
+        }
+
+        // The walking speed picked in the options, on top of everything else.
+        public void SetComfortSpeed(float multiplier)
+        {
+            m_ComfortScale = multiplier;
         }
 
         /// <summary>Slows the player down by fraction (0.4 = 40% slower) for some seconds, like an ice hit.
@@ -73,7 +80,7 @@ namespace RuneArena.Player
                 speed *= m_DrawingMultiplier;
             if (IsSlowed)
                 speed *= 1f - m_Slow;
-            return speed * m_SpeedScale;
+            return speed * m_SpeedScale * m_ComfortScale;
         }
     }
 }

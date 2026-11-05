@@ -18,7 +18,7 @@ namespace RuneArena.Game.Editor
         const float k_FrameBorder = 100f;
         const float k_RuneSpacing = 52f;
         const float k_FrameScale = 2f;
-        static readonly Vector2 k_PanelSize = FrameSize(new Vector2(700f, 560f));
+        static readonly Vector2 k_PanelSize = FrameSize(new Vector2(700f, 680f));
         static readonly Color k_ButtonColor = new Color(0.25f, 0.27f, 0.32f);
 
         [MenuItem("RuneArena/Create Game UI")]
@@ -63,6 +63,7 @@ namespace RuneArena.Game.Editor
             so.FindProperty("m_EasyButton").objectReferenceValue = ButtonIn(start, "Fácil");
             so.FindProperty("m_NormalButton").objectReferenceValue = ButtonIn(start, "Normal");
             so.FindProperty("m_HardButton").objectReferenceValue = ButtonIn(start, "Difícil");
+            so.FindProperty("m_StartSettingsButton").objectReferenceValue = ButtonIn(start, "Opciones");
             so.FindProperty("m_QuitButton").objectReferenceValue = ButtonIn(start, "Salir");
 
             GameObject pause = Panel(root.transform, "Pause Panel", "Pausa", "", out TMP_Text pauseInfo);
@@ -70,6 +71,7 @@ namespace RuneArena.Game.Editor
             so.FindProperty("m_PauseInfo").objectReferenceValue = pauseInfo;
             so.FindProperty("m_ResumeButton").objectReferenceValue = ButtonIn(pause, "Continuar");
             so.FindProperty("m_PauseRestartButton").objectReferenceValue = ButtonIn(pause, "Reiniciar");
+            so.FindProperty("m_PauseSettingsButton").objectReferenceValue = ButtonIn(pause, "Opciones");
             so.FindProperty("m_PauseMenuButton").objectReferenceValue = ButtonIn(pause, "Menú principal");
 
             GameObject over = Panel(root.transform, "Game Over Panel", "Moriste", "", out TMP_Text overInfo);
@@ -94,11 +96,41 @@ namespace RuneArena.Game.Editor
                 buttons.GetArrayElementAtIndex(i).objectReferenceValue = button;
             }
             so.FindProperty("m_SkipButton").objectReferenceValue = ButtonIn(upgrades, "Saltear");
+
+            GameObject settings = Panel(root.transform, "Settings Panel", "Opciones", "", out TMP_Text settingsInfo);
+            so.FindProperty("m_SettingsPanel").objectReferenceValue = settings;
+            settingsInfo.gameObject.SetActive(false);
+            var settingsRect = (RectTransform)settings.transform;
+            settingsRect.anchorMin = settingsRect.anchorMax = new Vector2(0.5f, 0.5f);
+            settingsRect.sizeDelta = upgradesRect.sizeDelta;
+            // Their labels come from GameSettings when the panel opens.
+            SerializedProperty settingButtons = so.FindProperty("m_SettingButtons");
+            settingButtons.arraySize = System.Enum.GetValues(typeof(Setting)).Length;
+            for (int i = 0; i < settingButtons.arraySize; i++)
+            {
+                Button button = ButtonIn(settings, ((Setting)i).ToString());
+                button.GetComponentInChildren<TMP_Text>().fontSize = 26f;
+                settingButtons.GetArrayElementAtIndex(i).objectReferenceValue = button;
+            }
+            so.FindProperty("m_SoundButton").objectReferenceValue = ButtonIn(settings, "Sonido");
+            so.FindProperty("m_SettingsBackButton").objectReferenceValue = ButtonIn(settings, "Volver");
+
+            GameObject sound = Panel(root.transform, "Sound Panel", "Sonido", "", out TMP_Text soundInfo);
+            so.FindProperty("m_SoundPanel").objectReferenceValue = sound;
+            soundInfo.gameObject.SetActive(false);
+            string[] volumes = { "Música", "Hechizos", "Enemigos", "Público" };
+            SerializedProperty sliders = so.FindProperty("m_VolumeSliders");
+            sliders.arraySize = volumes.Length;
+            for (int i = 0; i < volumes.Length; i++)
+                sliders.GetArrayElementAtIndex(i).objectReferenceValue = SliderIn(sound, volumes[i]);
+            so.FindProperty("m_SoundBackButton").objectReferenceValue = ButtonIn(sound, "Volver");
             so.ApplyModifiedPropertiesWithoutUndo();
 
             pause.SetActive(false);
             over.SetActive(false);
             upgrades.SetActive(false);
+            settings.SetActive(false);
+            sound.SetActive(false);
 
             GameObject game = spawner.gameObject;
             var manager = game.GetComponent<GameManager>();
@@ -106,6 +138,8 @@ namespace RuneArena.Game.Editor
                 manager = Undo.AddComponent<GameManager>(game);
             if (game.GetComponent<Upgrades>() == null)
                 Undo.AddComponent<Upgrades>(game);
+            if (game.GetComponent<GameSettings>() == null)
+                Undo.AddComponent<GameSettings>(game);
 
             var managerSo = new SerializedObject(manager);
             managerSo.FindProperty("m_Spawner").objectReferenceValue = spawner;
@@ -185,6 +219,49 @@ namespace RuneArena.Game.Editor
             colors.pressedColor = new Color(0.8f, 0.7f, 0.3f);
             button.colors = colors;
             return button;
+        }
+
+        // A row with the name on the left and a slider from 0 to 1 filling the rest.
+        static Slider SliderIn(GameObject panel, string label)
+        {
+            var row = new GameObject($"{label} Row", typeof(RectTransform), typeof(HorizontalLayoutGroup), typeof(LayoutElement));
+            row.layer = panel.layer;
+            row.transform.SetParent(panel.transform, false);
+            row.GetComponent<LayoutElement>().preferredHeight = 64f;
+            var layout = row.GetComponent<HorizontalLayoutGroup>();
+            layout.spacing = 24f;
+            layout.childAlignment = TextAnchor.MiddleLeft;
+            layout.childControlWidth = true;
+            layout.childControlHeight = true;
+            layout.childForceExpandWidth = false;
+            layout.childForceExpandHeight = false;
+
+            TMP_Text text = Text(row.transform, "Label", label, 30f, 64f, FontStyles.Normal);
+            text.alignment = TextAlignmentOptions.Left;
+            text.GetComponent<LayoutElement>().preferredWidth = 200f;
+
+            GameObject go = DefaultControls.CreateSlider(new DefaultControls.Resources());
+            go.name = $"{label} Slider";
+            go.transform.SetParent(row.transform, false);
+            foreach (Transform t in go.GetComponentsInChildren<Transform>(true))
+                t.gameObject.layer = panel.layer;
+            var element = go.AddComponent<LayoutElement>();
+            element.flexibleWidth = 1f;
+            element.preferredHeight = 28f;
+
+            var slider = go.GetComponent<Slider>();
+            slider.minValue = 0f;
+            slider.maxValue = 1f;
+            slider.value = 1f;
+            slider.transform.Find("Background").GetComponent<Image>().color = k_ButtonColor;
+            slider.fillRect.GetComponent<Image>().color = new Color(0.35f, 0.75f, 0.85f);
+            slider.handleRect.GetComponent<Image>().color = Color.white;
+            slider.handleRect.sizeDelta = new Vector2(32f, 16f);
+            ColorBlock colors = slider.colors;
+            colors.highlightedColor = new Color(0.8f, 0.9f, 1f);
+            colors.pressedColor = new Color(0.8f, 0.7f, 0.3f);
+            slider.colors = colors;
+            return slider;
         }
 
         static void Frame(Image image, string spritePath)
