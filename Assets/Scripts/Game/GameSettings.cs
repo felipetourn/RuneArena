@@ -55,6 +55,8 @@ namespace RuneArena.Game
         CurveVisualController[] m_Lines;
         ControllerInputActionManager[] m_TurnHands;
         float m_MusicVolume;
+        float m_MusicFade = 1f;
+        float m_MusicFadeSpeed;
         bool m_MenuOpen;
 
         // While a menu is open the controller line always shows: it is what points at the buttons.
@@ -120,8 +122,7 @@ namespace RuneArena.Game
             switch (volume)
             {
                 case Volume.Music:
-                    if (m_Music != null)
-                        m_Music.volume = m_MusicVolume * value;
+                    ApplyMusic();
                     break;
                 case Volume.Spells:
                     Sfx.SetVolume(SoundGroup.Spells, value);
@@ -133,6 +134,28 @@ namespace RuneArena.Game
                     Sfx.SetVolume(SoundGroup.Crowd, value);
                     break;
             }
+        }
+
+        // Brings the music up from silence over seconds instead of starting it at full volume.
+        public void FadeInMusic(float seconds)
+        {
+            m_MusicFade = 0f;
+            m_MusicFadeSpeed = 1f / Mathf.Max(seconds, 0.01f);
+            ApplyMusic();
+        }
+
+        void Update()
+        {
+            if (m_MusicFade >= 1f)
+                return;
+            m_MusicFade = Mathf.MoveTowards(m_MusicFade, 1f, m_MusicFadeSpeed * Time.unscaledDeltaTime);
+            ApplyMusic();
+        }
+
+        void ApplyMusic()
+        {
+            if (m_Music != null)
+                m_Music.volume = m_MusicVolume * m_Volumes[(int)Volume.Music] * m_MusicFade;
         }
 
         public void Save()

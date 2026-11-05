@@ -30,6 +30,8 @@ namespace RuneArena.Game
         [SerializeField] GameMenu m_Menu;
         [Tooltip("Background music. Starts with the first wave and keeps looping.")]
         [SerializeField] AudioSource m_Music;
+        [Tooltip("Seconds the music takes to come up when it starts.")]
+        [SerializeField] float m_MusicFadeIn = 4f;
         [Tooltip("Menu button on the left controller, Escape or P on the keyboard.")]
         [SerializeField] InputActionProperty m_PauseAction = CreatePauseAction();
 
@@ -217,7 +219,12 @@ namespace RuneArena.Game
         {
             m_WaveStartedAt = Time.time;
             if (m_Music != null && !m_Music.isPlaying)
+            {
+                var settings = FindAnyObjectByType<GameSettings>();
+                if (settings != null)
+                    settings.FadeInMusic(m_MusicFadeIn);
                 m_Music.Play();
+            }
         }
 
         void OnWaveCleared(int wave)
