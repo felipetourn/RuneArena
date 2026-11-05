@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.IO;
 using UnityEditor;
 using UnityEditor.Animations;
@@ -21,6 +22,8 @@ namespace RuneArena.Enemies.Editor
         const float k_DragonScale = 1.15f;
         const float k_BossScale = 2.5f;
         const float k_MageScale = 1.6f;
+        // The ranged mage's height in meters. Its download comes tiny, so it is measured and scaled to this.
+        const float k_RangedMageHeight = 1.85f;
 
         [MenuItem("RuneArena/Create Enemy Models")]
         static void Create()
@@ -31,6 +34,7 @@ namespace RuneArena.Enemies.Editor
             Tillagemon();
             Demon();
             Mage();
+            RangedMage();
             AssetDatabase.SaveAssets();
             Debug.Log("Enemy models set up in the melee, flying and dragon boss prefabs");
         }
@@ -397,6 +401,112 @@ namespace RuneArena.Enemies.Editor
             PrefabUtility.UnloadPrefabContents(root);
         }
 
+        [MenuItem("RuneArena/Create Ranged Mage Model")]
+        static void CreateRangedMage()
+        {
+            RangedMage();
+            AssetDatabase.SaveAssets();
+            Debug.Log("Skeleton mage set up in the ranged enemy prefab");
+        }
+
+        // The ranged enemy: a skeleton mage from Mixamo, half of them throwing fire and half ice. Its body
+        // comes with only the cast; the rest of its clips are Mixamo downloads in its Animations folder.
+        static void RangedMage()
+        {
+            const string model = "SkeletonMage";
+            string folder = $"{k_ModelFolder}/{model}";
+            string modelPath = $"{folder}/{model}.fbx";
+            if (AssetDatabase.LoadAssetAtPath<GameObject>(modelPath) == null)
+            {
+                Debug.LogWarning($"No {modelPath}: the ranged enemy keeps its placeholder body.");
+                return;
+            }
+
+            // Imported again so the humanoid settings below (EnemyModelImport) are on, the model first:
+            // the clips are matched to its skeleton.
+            string[] clipFiles = AssetDatabase.FindAssets("t:Model", new[] { $"{folder}/Animations" });
+            for (int i = 0; i < clipFiles.Length; i++)
+                clipFiles[i] = AssetDatabase.GUIDToAssetPath(clipFiles[i]);
+            AssetDatabase.ImportAsset(modelPath, ImportAssetOptions.ForceUpdate);
+            foreach (string clipFile in clipFiles)
+                AssetDatabase.ImportAsset(clipFile, ImportAssetOptions.ForceUpdate);
+            if (clipFiles.Length == 0)
+                Debug.LogWarning($"No clips in {folder}/Animations: the ranged mage only has its cast.");
+
+            // Emission on with no color, so the element and the wind-up can light it up.
+            Material material = Lit("Enemy Skeleton Mage", model, 0.25f, Color.black, false);
+            string path = $"{k_PrefabFolder}/Ranged Enemy.prefab";
+            GameObject root = PrefabUtility.LoadPrefabContents(path);
+            // Mixamo exports face +Z, like the prefab: no turn.
+            Animator animator = SwapBody(root, model, new[] { material }, "Idle", 1f, 0f, clipFiles);
+            Transform body = animator.transform;
+            body.localScale = Vector3.one * (k_RangedMageHeight / Height(body));
+
+            // The shot comes out from between its hands, where they meet at the end of the cast.
+            Transform muzzle = root.transform.Find("Muzzle");
+            if (muzzle != null)
+            {
+                Object.DestroyImmediate(muzzle.GetComponent<Renderer>());
+                Object.DestroyImmediate(muzzle.GetComponent<MeshFilter>());
+                muzzle.localPosition = new Vector3(0f, 0.64f, 0.45f) * k_RangedMageHeight;
+            }
+
+            var enemy = new SerializedObject(root.GetComponent<RangedEnemy>());
+            enemy.FindProperty("m_FlashBrightness").floatValue = 2.5f;
+            enemy.FindProperty("m_TelegraphGlow").floatValue = 0.6f;
+            enemy.FindProperty("m_FireProjectile").objectReferenceValue = ElementShot("Mage Fire Bolt", ProjectileLook.Fire,
+                new Color(1f, 0.45f, 0.1f), 0.35f, 0.3f, 1f, 0f);
+            enemy.FindProperty("m_IceProjectile").objectReferenceValue = ElementShot("Mage Ice Shard", ProjectileLook.Ice,
+                new Color(0.6f, 0.9f, 1f), 0.7f, 0.25f, 0f, 0.4f);
+            enemy.ApplyModifiedPropertiesWithoutUndo();
+
+            // The hands come together and push forward 1.9 s into the cast; the rest of it holds the pose.
+            // A Mixamo walk covers about 1.4 m/s at this size.
+            SetAnimator(root, animator, "Idle", "Walk", "Cast", "Hit", "Hit", "Death", 1.4f, 1.9f, 2.6f);
+            var sound = new SerializedObject(root.GetComponent<EnemyAnimator>());
+            sound.FindProperty("m_MoveLoop").objectReferenceValue = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/Sfx/Skeleton_Rattle.ogg");
+            sound.ApplyModifiedPropertiesWithoutUndo();
+            SetDeath(root, 3.5f, 2.6f, 0.5f);
+
+            PrefabUtility.SaveAsPrefabAsset(root, path);
+            PrefabUtility.UnloadPrefabContents(root);
+        }
+
+        // From the feet to the top of the head, at the model's own scale: from its head bone if it has one.
+        static float Height(Transform body)
+        {
+            foreach (Transform t in body.GetComponentsInChildren<Transform>(true))
+            {
+                if (t.name.EndsWith("HeadTop_End"))
+                {
+                    float height = t.position.y - body.position.y;
+                    if (height > 0f)
+                        return height;
+                }
+            }
+            return Mathf.Max(body.GetComponentInChildren<Renderer>().bounds.size.y, 1e-4f);
+        }
+
+        // A ranged mage's elemental shot: the plain enemy projectile, looking like the player's spell of that
+        // element (EnemyProjectile dresses it at launch). Its own glowing ball is kept for when the effects
+        // library is missing.
+        static EnemyProjectile ElementShot(string name, ProjectileLook look, Color color, float size, float hitRadius,
+                                           float explosionRadius, float slow)
+        {
+            EnemyProjectile shot = Shot(name, size, color, hitRadius);
+            GameObject root = PrefabUtility.LoadPrefabContents(AssetDatabase.GetAssetPath(shot));
+            var so = new SerializedObject(root.GetComponent<EnemyProjectile>());
+            so.FindProperty("m_Look").enumValueIndex = (int)look;
+            so.FindProperty("m_Color").colorValue = color;
+            so.FindProperty("m_ExplosionRadius").floatValue = explosionRadius;
+            so.FindProperty("m_Slow").floatValue = slow;
+            so.FindProperty("m_SlowTime").floatValue = 2f;
+            so.ApplyModifiedPropertiesWithoutUndo();
+            GameObject prefab = PrefabUtility.SaveAsPrefabAsset(root, AssetDatabase.GetAssetPath(shot));
+            PrefabUtility.UnloadPrefabContents(root);
+            return prefab.GetComponent<EnemyProjectile>();
+        }
+
         // A glowing ball for a magic shot: the plain enemy projectile, with its own look and hit size.
         static EnemyProjectile Shot(string name, float size, Color color, float hitRadius)
         {
@@ -464,7 +574,8 @@ namespace RuneArena.Enemies.Editor
             return SwapBody(root, model, new[] { material }, firstState, scale);
         }
 
-        static Animator SwapBody(GameObject root, string model, Material[] materials, string firstState, float scale = 1f)
+        static Animator SwapBody(GameObject root, string model, Material[] materials, string firstState, float scale = 1f,
+                                 float turn = 180f, string[] clipFiles = null)
         {
             Transform old = root.transform.Find("Body");
             if (old != null)
@@ -474,8 +585,8 @@ namespace RuneArena.Enemies.Editor
             var asset = AssetDatabase.LoadAssetAtPath<GameObject>(modelPath);
             var body = (GameObject)PrefabUtility.InstantiatePrefab(asset, root.transform);
             body.name = "Body";
-            // The exports face -Z.
-            body.transform.localRotation = Quaternion.Euler(0f, 180f, 0f);
+            // The Blender exports face -Z, so they are turned around by default.
+            body.transform.localRotation = Quaternion.Euler(0f, turn, 0f);
             body.transform.localScale = Vector3.one * scale;
             foreach (Transform t in body.GetComponentsInChildren<Transform>(true))
                 t.gameObject.layer = root.layer;
@@ -487,7 +598,7 @@ namespace RuneArena.Enemies.Editor
             var animator = body.GetComponent<Animator>();
             if (animator == null)
                 animator = body.AddComponent<Animator>();
-            animator.runtimeAnimatorController = Controller(model, modelPath, firstState);
+            animator.runtimeAnimatorController = Controller(model, modelPath, firstState, clipFiles);
             animator.applyRootMotion = false;
             animator.cullingMode = AnimatorCullingMode.CullUpdateTransforms;
 
@@ -521,7 +632,8 @@ namespace RuneArena.Enemies.Editor
         // A state per clip of the model, named like the clip, with no transitions: EnemyAnimator picks them.
         // The asset is reused, emptied and refilled, so prefabs that already point at it (the flying enemy
         // and the dragon boss share one) keep working.
-        static AnimatorController Controller(string model, string modelPath, string firstState)
+        // clipFiles are more models to take clips from, like animations downloaded on their own.
+        static AnimatorController Controller(string model, string modelPath, string firstState, string[] clipFiles = null)
         {
             string path = $"{k_ModelFolder}/{model}/{model}.controller";
             var controller = AssetDatabase.LoadAssetAtPath<AnimatorController>(path);
@@ -530,14 +642,20 @@ namespace RuneArena.Enemies.Editor
             AnimatorStateMachine machine = controller.layers[0].stateMachine;
             foreach (ChildAnimatorState child in machine.states)
                 machine.RemoveState(child.state);
-            foreach (Object asset in AssetDatabase.LoadAllAssetsAtPath(modelPath))
+            var sources = new List<string> { modelPath };
+            if (clipFiles != null)
+                sources.AddRange(clipFiles);
+            foreach (string source in sources)
             {
-                if (!(asset is AnimationClip clip) || clip.name.StartsWith("__preview__"))
-                    continue;
-                AnimatorState state = machine.AddState(clip.name);
-                state.motion = clip;
-                if (clip.name == firstState)
-                    machine.defaultState = state;
+                foreach (Object asset in AssetDatabase.LoadAllAssetsAtPath(source))
+                {
+                    if (!(asset is AnimationClip clip) || clip.name.StartsWith("__preview__"))
+                        continue;
+                    AnimatorState state = machine.AddState(clip.name);
+                    state.motion = clip;
+                    if (clip.name == firstState)
+                        machine.defaultState = state;
+                }
             }
             return controller;
         }
@@ -595,11 +713,15 @@ namespace RuneArena.Enemies.Editor
     class EnemyModelImport : AssetPostprocessor
     {
         const string k_Folder = "Assets/Models/Enemies/";
+        // Mixamo models: humanoid, so the clips downloaded on their own fit the body whatever its scale.
+        const string k_HumanoidFolder = k_Folder + "SkeletonMage/";
+        const string k_HumanoidModel = "SkeletonMage";
 
         // Clips that keep going until something else plays. The rest stop on their last pose.
         static readonly string[] k_Loops = { "Idle", "Walk", "Fly", "Run", "Stun" };
 
         bool IsModel => assetPath.StartsWith(k_Folder) && assetPath.EndsWith(".fbx");
+        bool IsHumanoid => assetPath.StartsWith(k_HumanoidFolder);
 
         void OnPreprocessModel()
         {
@@ -610,13 +732,14 @@ namespace RuneArena.Enemies.Editor
             importer.importCameras = false;
             importer.importLights = false;
             importer.bakeAxisConversion = true;
-            importer.animationType = ModelImporterAnimationType.Generic;
+            importer.animationType = IsHumanoid ? ModelImporterAnimationType.Human : ModelImporterAnimationType.Generic;
             importer.avatarSetup = ModelImporterAvatarSetup.CreateFromThisModel;
             importer.importAnimation = true;
             importer.animationCompression = ModelImporterAnimationCompression.Optimal;
         }
 
-        // Blender names the clips "Armature|Clip".
+        // Blender names the clips "Armature|Clip". Mixamo calls every clip "mixamo.com", so those are named
+        // after their file instead, and the one in the model itself is its cast.
         void OnPreprocessAnimation()
         {
             if (!IsModel)
@@ -625,7 +748,22 @@ namespace RuneArena.Enemies.Editor
             ModelImporterClipAnimation[] clips = importer.defaultClipAnimations;
             foreach (ModelImporterClipAnimation clip in clips)
             {
-                clip.name = clip.name.Substring(clip.name.LastIndexOf('|') + 1);
+                if (IsHumanoid)
+                {
+                    string file = Path.GetFileNameWithoutExtension(assetPath);
+                    clip.name = file == k_HumanoidModel ? "Cast" : file;
+                    // Played where it stands, as the source moves it: the enemy's own code moves it around.
+                    clip.lockRootRotation = true;
+                    clip.lockRootHeightY = true;
+                    clip.lockRootPositionXZ = true;
+                    clip.keepOriginalOrientation = true;
+                    clip.keepOriginalPositionY = true;
+                    clip.keepOriginalPositionXZ = true;
+                }
+                else
+                {
+                    clip.name = clip.name.Substring(clip.name.LastIndexOf('|') + 1);
+                }
                 clip.loopTime = System.Array.IndexOf(k_Loops, clip.name) >= 0;
             }
             importer.clipAnimations = clips;

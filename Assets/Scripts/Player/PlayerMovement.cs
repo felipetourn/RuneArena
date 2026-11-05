@@ -20,6 +20,8 @@ namespace RuneArena.Player
         StrokeRecorder m_Recorder;
         float m_Speed;
         float m_SpeedScale = 1f;
+        float m_Slow;
+        float m_SlowUntil;
 
         void Awake()
         {
@@ -43,6 +45,17 @@ namespace RuneArena.Player
             m_SpeedScale += fraction;
         }
 
+        /// <summary>Slows the player down by fraction (0.4 = 40% slower) for some seconds, like an ice hit.
+        /// While one is on, a weaker one doesn't replace it, and the longer of the two lasts.</summary>
+        public void Slow(float fraction, float seconds)
+        {
+            bool active = Time.time < m_SlowUntil;
+            m_Slow = active ? Mathf.Max(m_Slow, fraction) : fraction;
+            m_SlowUntil = Mathf.Max(active ? m_SlowUntil : 0f, Time.time + seconds);
+        }
+
+        public bool IsSlowed => Time.time < m_SlowUntil;
+
         // input is a stick-style vector: y forward, x sideways. Returns the speed to move at this frame.
         public float UpdateSpeed(Vector2 input, float deltaTime)
         {
@@ -58,6 +71,8 @@ namespace RuneArena.Player
                 : Mathf.Lerp(m_SideSpeed, m_BackSpeed, -direction.y);
             if (m_Recorder != null && m_Recorder.IsDrawing)
                 speed *= m_DrawingMultiplier;
+            if (IsSlowed)
+                speed *= 1f - m_Slow;
             return speed * m_SpeedScale;
         }
     }

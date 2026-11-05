@@ -298,6 +298,15 @@ namespace RuneArena.Enemies
         {
         }
 
+        /// <summary>Changes the body's resting color and glow, like a ranged mage showing its element.
+        /// The glow needs a body material with emission on.</summary>
+        protected void SetLook(Color color, Color glow)
+        {
+            m_Color = color;
+            m_Emission = glow;
+            m_Glows = m_Body.sharedMaterial.IsKeywordEnabled("_EMISSION");
+        }
+
         protected void PlayAction(string state, float seconds)
         {
             Acting?.Invoke(this, state, seconds);
