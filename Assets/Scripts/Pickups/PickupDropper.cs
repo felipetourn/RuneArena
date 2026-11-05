@@ -9,8 +9,14 @@ namespace RuneArena.Pickups
     public class PickupDropper : MonoBehaviour
     {
         static readonly int k_BaseColor = Shader.PropertyToID("_BaseColor");
+        static readonly int k_EmissionColor = Shader.PropertyToID("_EmissionColor");
 
         [SerializeField] WaveSpawner m_Spawner;
+        [Tooltip("Material of the orbs. Empty for the Pickup Orb in Resources. A primitive left without one gets " +
+                 "Unity's built-in default in a build, which URP can't draw: pink, and doubled in the headset.")]
+        [SerializeField] Material m_Material;
+        [Tooltip("How bright the orbs glow in their color.")]
+        [SerializeField] float m_Glow = 1.5f;
 
         [Header("Health")]
         [SerializeField, Range(0f, 1f)] float m_HealthChance = 0.15f;
@@ -42,6 +48,8 @@ namespace RuneArena.Pickups
         {
             m_Health = FindAnyObjectByType<PlayerHealth>();
             m_Mana = FindAnyObjectByType<PlayerMana>();
+            if (m_Material == null)
+                m_Material = Resources.Load<Material>("Pickup Orb");
         }
 
         void OnEnable()
@@ -78,8 +86,12 @@ namespace RuneArena.Pickups
             go.transform.position = new Vector3(p.x, floor + m_Height, p.z);
 
             var renderer = go.GetComponent<Renderer>();
+            if (m_Material != null)
+                renderer.sharedMaterial = m_Material;
+            renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             var block = new MaterialPropertyBlock();
             block.SetColor(k_BaseColor, color);
+            block.SetColor(k_EmissionColor, color * m_Glow);
             renderer.SetPropertyBlock(block);
 
             go.AddComponent<Pickup>().Setup(kind, amount, m_Radius, m_Lifetime, m_Health, m_Mana);
