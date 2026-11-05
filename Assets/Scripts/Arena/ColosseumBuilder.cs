@@ -105,7 +105,7 @@ namespace RuneArena.Arena
         [Tooltip("Far part of the tunnels behind the doors (darkened travertine).")]
         [SerializeField] Material m_TunnelMaterial;
         [SerializeField] Material m_BronzeMaterial;
-        [Tooltip("The runes carved on the stele.")]
+        [Tooltip("Glowing parts of the pillars. No style uses it right now.")]
         [SerializeField] Material m_GlowMaterial;
 
         public float Radius => m_Radius;

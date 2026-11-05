@@ -119,7 +119,7 @@ namespace RuneArena.Arena.Editor
             Lathe.Revolve(m, Bronze, steps, k_Sides);
         }
 
-        // Tapering granite stone with a capped point and a glowing rune carved on each side.
+        // Plain tapering granite stone with a capped point.
         static void Stele(MeshBuilder m, float width, float height)
         {
             float y0 = 0.2f, y1 = height - width * 0.5f;
@@ -141,8 +141,6 @@ namespace RuneArena.Arena.Editor
                     cap = -cap;
                 m.Quad(Plinth, p3, p2, apex, apex, cap,
                        new Vector2(-t, 0f), new Vector2(t, 0f), new Vector2(0f, t), new Vector2(0f, t));
-
-                Rune(m, s_Runes[side], a, right, n, b, t, y0, y1, Mathf.Min(1.7f, (y0 + y1) * 0.5f));
             }
         }
 
@@ -160,54 +158,6 @@ namespace RuneArena.Arena.Editor
                 Box(m, Stone, turn[i % turn.Length], size, size * 1.04f, 0.2f + course * i, 0.2f + course * (i + 1));
             }
             Box(m, Trim, -1f, width * 1.15f, width * 1.15f, top, height);
-        }
-
-        // ---- Runes ----
-
-        // Glyph outlines in -1..1, one per side of the stele: the runes the player draws.
-        static readonly Vector2[][] s_Runes =
-        {
-            new[] { new Vector2(-0.55f, 0.9f), new Vector2(0.55f, 0.25f), new Vector2(-0.55f, -0.25f), new Vector2(0.55f, -0.9f) },
-            Circle(0.75f, 20),
-            new[] { new Vector2(0f, 0.85f), new Vector2(0.8f, -0.65f), new Vector2(-0.8f, -0.65f), new Vector2(0f, 0.85f) },
-            new[] { new Vector2(-0.7f, 0.7f), new Vector2(0.7f, 0.7f), new Vector2(0.7f, -0.7f), new Vector2(-0.7f, -0.7f), new Vector2(-0.7f, 0.7f) },
-        };
-
-        static Vector2[] Circle(float radius, int segments)
-        {
-            var points = new Vector2[segments + 1];
-            for (int i = 0; i <= segments; i++)
-            {
-                float a = 2f * Mathf.PI * i / segments;
-                points[i] = new Vector2(Mathf.Sin(a), Mathf.Cos(a)) * radius;
-            }
-            return points;
-        }
-
-        // A thin glowing line along the glyph, just in front of one tapered side of the stele.
-        // center is the height of the middle of the glyph: about eye level, where the player sees it.
-        static void Rune(MeshBuilder m, Vector2[] glyph, Vector3 axis, Vector3 right, Vector3 normal, float bottom, float top, float y0, float y1, float center)
-        {
-            const float size = 0.3f;
-            const float line = 0.05f;
-
-            Vector3 OnFace(Vector2 g)
-            {
-                float y = center + g.y * size;
-                float half = Mathf.Lerp(bottom, top, (y - y0) / (y1 - y0));
-                return axis * half + right * (g.x * size) + Vector3.up * y + normal * 0.012f;
-            }
-
-            for (int i = 0; i < glyph.Length - 1; i++)
-            {
-                Vector2 a = glyph[i], b = glyph[i + 1];
-                Vector2 d = (b - a).normalized;
-                Vector2 across = new Vector2(-d.y, d.x) * (line * 0.5f / size);
-                // Stretched a little along the line so corners don't leave gaps.
-                Vector2 a2 = a - d * (line * 0.5f / size), b2 = b + d * (line * 0.5f / size);
-                m.Quad(Glow, OnFace(a2 - across), OnFace(b2 - across), OnFace(b2 + across), OnFace(a2 + across), normal,
-                       Vector2.zero, Vector2.right, Vector2.one, Vector2.up);
-            }
         }
 
         // ---- Shapes ----

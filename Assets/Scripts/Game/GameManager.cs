@@ -28,6 +28,8 @@ namespace RuneArena.Game
 
         [SerializeField] WaveSpawner m_Spawner;
         [SerializeField] GameMenu m_Menu;
+        [Tooltip("Background music. Starts with the first wave and keeps looping.")]
+        [SerializeField] AudioSource m_Music;
         [Tooltip("Menu button on the left controller, Escape or P on the keyboard.")]
         [SerializeField] InputActionProperty m_PauseAction = CreatePauseAction();
 
@@ -210,6 +212,8 @@ namespace RuneArena.Game
         void OnWaveStarted(int wave)
         {
             m_WaveStartedAt = Time.time;
+            if (m_Music != null && !m_Music.isPlaying)
+                m_Music.Play();
         }
 
         void OnWaveCleared(int wave)

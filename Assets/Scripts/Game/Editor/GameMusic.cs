@@ -5,13 +5,13 @@ using UnityEngine.SceneManagement;
 
 namespace RuneArena.Game.Editor
 {
-    // Puts the background music in the active scene: a "Music" object whose AudioSource plays the track in a loop
-    // from the start. The track is streamed instead of decompressed into memory, since it is minutes long.
+    // Puts the background music in the active scene: a "Music" object whose AudioSource loops the track once the
+    // GameManager starts it. The track is streamed instead of decompressed into memory, since it is minutes long.
     static class GameMusic
     {
         const string k_Clip = "Assets/Music/Blackmoor Colossus Loop.wav";
         const string k_Object = "Music";
-        const float k_Volume = 0.5f;
+        const float k_Volume = 0.09f;
 
         [MenuItem("RuneArena/Set Up Music")]
         static void SetUp()
@@ -59,11 +59,22 @@ namespace RuneArena.Game.Editor
             Undo.RecordObject(source, "Set Up Music");
             source.clip = clip;
             source.loop = true;
-            source.playOnAwake = true;
+            // The GameManager starts it with the first wave.
+            source.playOnAwake = false;
             source.spatialBlend = 0f;
             source.volume = k_Volume;
             // Never cut off when many sounds play at once.
             source.priority = 0;
+
+            GameManager game = Object.FindAnyObjectByType<GameManager>(FindObjectsInactive.Include);
+            if (game != null)
+            {
+                var so = new SerializedObject(game);
+                so.FindProperty("m_Music").objectReferenceValue = source;
+                so.ApplyModifiedProperties();
+            }
+            else
+                Debug.LogWarning("Set Up Music: no GameManager in the scene, so nothing will start the music.");
 
             EditorSceneManager.MarkSceneDirty(scene);
             Debug.Log($"Set Up Music: {clip.name} loops in {scene.name}. Save the scene to keep it.");
