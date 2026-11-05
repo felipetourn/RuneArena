@@ -63,6 +63,9 @@ namespace RuneArena.Waves
         [Header("Announcement")]
         [Tooltip("Text in the middle of the view. Created if left empty.")]
         [SerializeField] TMP_Text m_Label;
+        [Tooltip("Font of the label created in code. Empty uses TextMeshPro's default.")]
+        [SerializeField] TMP_FontAsset m_LabelFont;
+        [SerializeField] Color m_LabelColor = Color.black;
         [SerializeField] float m_AnnounceTime = 2.5f;
 
         public event Action<int> WaveStarted;
@@ -97,7 +100,6 @@ namespace RuneArena.Waves
         readonly List<Enemy> m_Queue = new List<Enemy>();
         readonly List<Enemy> m_Bosses = new List<Enemy>();
         readonly List<ArmorType> m_ArmorTypes = new List<ArmorType>();
-        readonly HashSet<ArmorType> m_SeenArmor = new HashSet<ArmorType>();
 
         ColosseumBuilder m_Arena;
         ArenaGate[] m_Gates;
@@ -356,10 +358,6 @@ namespace RuneArena.Waves
 
             ArmorType type = m_ArmorTypes[UnityEngine.Random.Range(0, m_ArmorTypes.Count)];
             enemy.SetArmor(type, m_ArmorAmount);
-
-            // The first time each type shows up, say what breaks it.
-            if (m_SeenArmor.Add(type))
-                Announce($"Armadura de {Armor.Name(type)}: rompela con {Armor.BreakerName(type)}", 3.5f);
         }
 
         void OnEnemyDied(Enemy enemy)
@@ -384,6 +382,9 @@ namespace RuneArena.Waves
             go.transform.localPosition = new Vector3(0f, 0.12f, 0.6f);
 
             var text = go.AddComponent<TextMeshPro>();
+            if (m_LabelFont != null)
+                text.font = m_LabelFont;
+            text.color = m_LabelColor;
             text.fontSize = 0.35f;
             text.alignment = TextAlignmentOptions.Center;
             text.rectTransform.sizeDelta = new Vector2(0.6f, 0.08f);

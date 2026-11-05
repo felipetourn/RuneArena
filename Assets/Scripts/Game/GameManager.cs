@@ -179,7 +179,10 @@ namespace RuneArena.Game
         {
             State = state;
             Time.timeScale = state == GameState.Paused ? 0f : 1f;
-            SetCasting(state == GameState.Playing);
+            // The start menu doubles as practice: runes work there, for free.
+            SetCasting(state == GameState.Playing || state == GameState.Menu);
+            if (m_Caster != null)
+                m_Caster.FreeCasting = state == GameState.Menu;
 
             if (m_Menu != null)
             {
@@ -195,7 +198,7 @@ namespace RuneArena.Game
             StateChanged?.Invoke(state);
         }
 
-        // Runes can only be drawn while playing, so the trigger and the mouse are free for the menus.
+        // Off in the other menus, so the trigger and the mouse are free for them.
         void SetCasting(bool enabled)
         {
             if (m_Recorder != null)

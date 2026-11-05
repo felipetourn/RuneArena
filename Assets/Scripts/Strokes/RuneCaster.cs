@@ -37,6 +37,9 @@ namespace RuneArena.Strokes
 
         public bool HasChargedRune => m_Charged != null && !m_Recorder.IsDrawing;
 
+        /// <summary>Practice: every rune casts, locked or not, and costs no mana.</summary>
+        public bool FreeCasting { get; set; }
+
         StrokeRecorder m_Recorder;
         RuneRecognizer m_Recognizer;
         RuneSpell[] m_Spells;
@@ -112,7 +115,7 @@ namespace RuneArena.Strokes
 
             RuneSpell spell = SpellFor(label);
             bool locked = m_Book != null && !m_Book.IsUnlocked(label);
-            if (spell != null && (locked || (m_Mana != null && !m_Mana.CanCast(CostOf(spell)))))
+            if (spell != null && !FreeCasting && (locked || (m_Mana != null && !m_Mana.CanCast(CostOf(spell)))))
             {
                 Discard(m_NoManaColor);
                 return;
@@ -155,7 +158,7 @@ namespace RuneArena.Strokes
             RuneSpell spell = SpellFor(label);
             if (spell != null)
             {
-                if (m_Mana != null)
+                if (m_Mana != null && !FreeCasting)
                     m_Mana.Spend(CostOf(spell));
                 float power = m_Book != null ? m_Book.Power(label) : 1f;
                 spell.Cast(new SpellCast(center, aim, m_Player, m_Recorder.LineMaterial, power));

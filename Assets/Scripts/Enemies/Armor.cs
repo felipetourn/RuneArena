@@ -37,27 +37,5 @@ namespace RuneArena.Enemies
                 default: return Color.white;
             }
         }
-
-        public static string Name(ArmorType type)
-        {
-            switch (type)
-            {
-                case ArmorType.Ice: return "hielo";
-                case ArmorType.Magma: return "magma";
-                case ArmorType.Metal: return "metal";
-                default: return "";
-            }
-        }
-
-        public static string BreakerName(ArmorType type)
-        {
-            switch (type)
-            {
-                case ArmorType.Ice: return "fuego";
-                case ArmorType.Magma: return "la ola";
-                case ArmorType.Metal: return "el rayo";
-                default: return "";
-            }
-        }
     }
 }
