@@ -13,13 +13,13 @@ namespace RuneArena.Spells
         [Tooltip("Radius of the ball. Bigger is easier to hit with.")]
         [SerializeField] float m_Radius = 0.35f;
         [SerializeField] float m_Range = 40f;
-        [SerializeField] float m_Damage = 35f;
+        [SerializeField] float m_Damage = 25f;
         [Tooltip("Damage multiplier against wet, frozen or entangled enemies. Keep the loss smaller than the lightning's gain.")]
         [SerializeField, Range(0f, 1f)] float m_WetMultiplier = 0.75f;
 
         [Header("Explosion")]
         [SerializeField] float m_ExplosionRadius = 1f;
-        [SerializeField] float m_ExplosionDamage = 10f;
+        [SerializeField] float m_ExplosionDamage = 7.5f;
         [Tooltip("Push speed (m/s) away from the explosion.")]
         [SerializeField] float m_ExplosionPush = 6f;
 

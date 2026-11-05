@@ -25,8 +25,8 @@ namespace RuneArena.Spells
         [SerializeField] float m_Damage = 10f;
         [SerializeField, Range(0f, 1f)] float m_CloseSlow = 0.5f;
         [SerializeField, Range(0f, 1f)] float m_FarSlow = 0.15f;
-        [SerializeField] float m_ClosePush = 10f;
-        [SerializeField] float m_FarPush = 4f;
+        [SerializeField] float m_ClosePush = 12f;
+        [SerializeField] float m_FarPush = 6f;
         [Tooltip("Seconds the slow and the wet status last.")]
         [SerializeField] float m_Duration = 5f;
 
