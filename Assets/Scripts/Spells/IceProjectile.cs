@@ -52,7 +52,9 @@ namespace RuneArena.Spells
             if (enemy != null && !enemy.IsDead)
             {
                 float freeze = m_Spell.FreezeTime;
-                var kind = DamageKind.Normal;
+                float element = enemy is RangedEnemy mage ? mage.ElementMultiplier(m_Spell.Label) : 1f;
+                // A wet enemy freezes for longer, which reads as a combo whatever the damage.
+                DamageKind kind = ElementalDamage.KindFor(element);
                 if (enemy.HasStatus(EnemyStatus.Wet))
                 {
                     freeze *= m_Spell.WetMultiplier;
@@ -60,7 +62,7 @@ namespace RuneArena.Spells
                     kind = DamageKind.Combo;
                 }
                 enemy.ApplyStatus(EnemyStatus.Frozen, freeze);
-                enemy.Damage(m_Spell.Damage * m_Power, kind, m_Spell.Label);
+                enemy.Damage(m_Spell.Damage * m_Power * element, kind, m_Spell.Label);
             }
 
             if (Fx.Library != null)

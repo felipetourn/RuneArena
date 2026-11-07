@@ -12,12 +12,10 @@ namespace RuneArena.Spells
     }
 
     // Goes on the right controller with the RuneCaster and the spells. Keeps which spells the player has
-    // unlocked and how upgraded each one is. The spells themselves keep their base tuning.
+    // unlocked and how upgraded each one is. The spells themselves keep their base tuning. Which spells
+    // start locked depends on the difficulty, and the game sets it when a run starts.
     public class SpellBook : MonoBehaviour
     {
-        [Tooltip("Labels of spells that start locked and have to be unlocked during the run.")]
-        [SerializeField] List<string> m_LockedAtStart = new List<string>();
-
         readonly HashSet<string> m_Locked = new HashSet<string>();
         readonly Dictionary<string, float> m_Power = new Dictionary<string, float>();
         readonly Dictionary<string, float> m_Cost = new Dictionary<string, float>();
@@ -30,13 +28,6 @@ namespace RuneArena.Spells
         void Awake()
         {
             m_Spells = GetComponents<RuneSpell>();
-            foreach (string label in m_LockedAtStart)
-                m_Locked.Add(label);
-            foreach (RuneSpell spell in m_Spells)
-            {
-                if (spell.StartsLocked)
-                    m_Locked.Add(spell.Label);
-            }
         }
 
         public RuneSpell Find(string label)
@@ -51,6 +42,13 @@ namespace RuneArena.Spells
 
         public bool IsUnlocked(string label) => !m_Locked.Contains(label);
         public void Unlock(string label) => m_Locked.Remove(label);
+
+        /// <summary>Locks exactly these spells, unlocking any other.</summary>
+        public void SetLocked(IEnumerable<string> labels)
+        {
+            m_Locked.Clear();
+            m_Locked.UnionWith(labels);
+        }
 
         public float Power(string label) => m_Power.TryGetValue(label, out float v) ? v : 1f;
         public float CostMultiplier(string label) => m_Cost.TryGetValue(label, out float v) ? v : 1f;

@@ -26,7 +26,12 @@ CLIPS = {
     "Attack_Base_01": "Strike1",
     "Attack_Base_02": "Strike2",
     "Attack_Base_05": "Strike3",
+    # The end of its charged stab: it rears back with the pitchfork raised and drives it forward. Only that
+    # first part is kept, as its throw (cut below).
+    "Attack_Base_10_End": "ChargedStab",
 }
+# Seconds of ChargedStab kept as the throw: the wind-up and the drive forward, which lets go at 0.65.
+THROW = (0.0, 0.75)
 HEIGHT = 3.6
 
 args = sys.argv[sys.argv.index("--")+1:]
@@ -34,6 +39,8 @@ src, textures, out = args
 arm = common.load_fbx(src)
 meshes = [o for o in bpy.data.objects if o.type == 'MESH']
 common.rename_clips(CLIPS)
+common.cut(bpy.data.actions["ChargedStab"], *THROW, "Throw")
+bpy.data.actions.remove(bpy.data.actions["ChargedStab"])
 height = common.top(arm, meshes, bpy.data.actions["Idle"])
 common.flatten(arm, meshes, HEIGHT / height, "Tillagemon")
 

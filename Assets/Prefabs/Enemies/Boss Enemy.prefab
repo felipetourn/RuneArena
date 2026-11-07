@@ -52,7 +52,7 @@ GameObject:
   - component: {fileID: 5542720102147784193}
   - component: {fileID: 2918408663322647425}
   - component: {fileID: 1705323821864058233}
-  - component: {fileID: 5441169901240259598}
+  - component: {fileID: 3292437045725411419}
   m_Layer: 8
   m_Name: Boss Enemy
   m_TagString: Untagged
@@ -74,7 +74,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1919398054712731513}
-  - {fileID: 7001622610625088564}
+  - {fileID: 7437307445726531801}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!136 &5542720102147784193
@@ -135,7 +135,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RuneArena.Enemies.BossEnemy
   m_MaxHealth: 600
-  m_Body: {fileID: 8070948290468607629}
+  m_Body: {fileID: 8511127826016922208}
   m_KnockbackDrag: 6
   m_StunImmunity: 1
   m_StunResistance: 0.5
@@ -146,7 +146,7 @@ MonoBehaviour:
   m_DisplayName: 
   m_Boss: 0
   m_EntranceTime: 7.6
-  m_FurySeconds: 4
+  m_FurySeconds: 10
   m_FuryBlows: 5
   m_FuryHealth: 0.1
   m_TelegraphColor: {r: 1, g: 0.9, b: 0.3, a: 1}
@@ -203,7 +203,7 @@ MonoBehaviour:
   m_SummonWindUp: 1
   m_EmergeTime: 1.5
   m_SummonColor: {r: 0.55, g: 0.25, b: 1, a: 1}
---- !u!114 &5441169901240259598
+--- !u!114 &3292437045725411419
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -215,7 +215,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a94ca29ed4ada8e4bae943f6f4e6a9c7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RuneArena.Enemies.EnemyAnimator
-  m_Animator: {fileID: 4020287848905905742}
+  m_Animator: {fileID: 3591254991305181859}
   m_Controller: {fileID: 9100000, guid: 038ab48f4b6a47a42be6ebe6da267ace, type: 2}
   m_Fade: 0.15
   m_Idle: Idle
@@ -241,6 +241,10 @@ MonoBehaviour:
     State: Volley
     Impact: 0.6
     Length: 1.67
+  - Name: Throw
+    State: Throw
+    Impact: 0.65
+    Length: 0.75
   - Name: Summon
     State: Summon
     Impact: 1.4
@@ -274,7 +278,7 @@ MonoBehaviour:
   m_MoveLoop: {fileID: 0}
   m_StillVolume: 0.15
   m_MovingVolume: 0.6
---- !u!1001 &7395046749126765535
+--- !u!1001 &6970488976001513266
 PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
@@ -627,18 +631,18 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 375046701bc972449b1348856450422a, type: 3}
---- !u!95 &4020287848905905742 stripped
+--- !u!95 &3591254991305181859 stripped
 Animator:
   m_CorrespondingSourceObject: {fileID: 5866666021909216657, guid: 375046701bc972449b1348856450422a, type: 3}
-  m_PrefabInstance: {fileID: 7395046749126765535}
+  m_PrefabInstance: {fileID: 6970488976001513266}
   m_PrefabAsset: {fileID: 0}
---- !u!4 &7001622610625088564 stripped
+--- !u!4 &7437307445726531801 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 375046701bc972449b1348856450422a, type: 3}
-  m_PrefabInstance: {fileID: 7395046749126765535}
+  m_PrefabInstance: {fileID: 6970488976001513266}
   m_PrefabAsset: {fileID: 0}
---- !u!137 &8070948290468607629 stripped
+--- !u!137 &8511127826016922208 stripped
 SkinnedMeshRenderer:
   m_CorrespondingSourceObject: {fileID: 1630794972795428178, guid: 375046701bc972449b1348856450422a, type: 3}
-  m_PrefabInstance: {fileID: 7395046749126765535}
+  m_PrefabInstance: {fileID: 6970488976001513266}
   m_PrefabAsset: {fileID: 0}

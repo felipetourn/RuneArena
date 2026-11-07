@@ -86,3 +86,6 @@ possible-3dmodels/
 /.claude/settings.local.json
 /production/session-state/
 /production/session-logs/
+
+# Superpowers design docs and plans (local only)
+/docs/superpowers/

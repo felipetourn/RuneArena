@@ -70,6 +70,7 @@ namespace RuneArena.Game
             new Color(0.5f, 0.33f, 0.2f),
             new Color(0.5f, 0.53f, 0.58f),
             new Color(0.72f, 0.57f, 0.12f),
+            new Color(0.16f, 0.62f, 0.38f),
             new Color(0.25f, 0.68f, 0.8f),
         };
 

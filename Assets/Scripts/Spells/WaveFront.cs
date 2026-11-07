@@ -49,7 +49,8 @@ namespace RuneArena.Spells
                     continue;
 
                 // Damage first: it breaks magma armor, so the push and slow then land.
-                enemy.Damage(m_Spell.Damage * m_Power, DamageKind.Normal, m_Spell.Label);
+                float element = enemy is RangedEnemy mage ? mage.ElementMultiplier(m_Spell.Label) : 1f;
+                enemy.Damage(m_Spell.Damage * m_Power * element, ElementalDamage.KindFor(element), m_Spell.Label);
                 enemy.ApplyStatus(EnemyStatus.Wet, m_Spell.Duration);
                 enemy.ApplySlow(m_Spell.Slow(t), m_Spell.Duration);
                 enemy.Push(m_Direction * m_Spell.Push(t));

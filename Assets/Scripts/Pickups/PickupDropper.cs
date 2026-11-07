@@ -51,6 +51,8 @@ namespace RuneArena.Pickups
         [Tooltip("How close the player has to walk to pick it up.")]
         [SerializeField] float m_Radius = 1.2f;
         [SerializeField] float m_Lifetime = 15f;
+        [Tooltip("Seconds before a stone expires during which it shakes and its rune glows brighter, before it shatters.")]
+        [SerializeField] float m_Warning = 3f;
         [SerializeField] float m_Height = 1f;
         [SerializeField] float m_Size = 0.4f;
 
@@ -132,7 +134,7 @@ namespace RuneArena.Pickups
                 }, 5f, 0f);
             }
 
-            go.AddComponent<Pickup>().Setup(kind, amount, m_Radius, m_Lifetime, m_Health, m_Mana);
+            go.AddComponent<Pickup>().Setup(kind, amount, m_Radius, m_Lifetime, m_Warning, m_Health, m_Mana);
         }
 
         static Mesh Stone(PickupKind kind)

@@ -33,7 +33,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 4924126204284027600}
+  - {fileID: 2847860250991377741}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!136 &7689572043502786811
@@ -94,7 +94,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RuneArena.Enemies.MeleeEnemy
   m_MaxHealth: 550
-  m_Body: {fileID: 6160085018262730857}
+  m_Body: {fileID: 3940271240454866932}
   m_KnockbackDrag: 6
   m_StunImmunity: 1
   m_StunResistance: 0.5
@@ -159,7 +159,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a94ca29ed4ada8e4bae943f6f4e6a9c7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RuneArena.Enemies.EnemyAnimator
-  m_Animator: {fileID: 1348316150155909290}
+  m_Animator: {fileID: 8171092249312388919}
   m_Controller: {fileID: 9100000, guid: a0ea9eeb24a3bf7488331d90bcbca7f4, type: 2}
   m_Fade: 0.15
   m_Idle: Idle
@@ -210,7 +210,7 @@ MonoBehaviour:
   m_MoveLoop: {fileID: 0}
   m_StillVolume: 0.15
   m_MovingVolume: 0.6
---- !u!1001 &4889989784245085499
+--- !u!1001 &2310092287603301030
 PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
@@ -639,18 +639,18 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 453ca5cbe9116c447a3e8f8cf439eba5, type: 3}
---- !u!95 &1348316150155909290 stripped
-Animator:
-  m_CorrespondingSourceObject: {fileID: 5866666021909216657, guid: 453ca5cbe9116c447a3e8f8cf439eba5, type: 3}
-  m_PrefabInstance: {fileID: 4889989784245085499}
-  m_PrefabAsset: {fileID: 0}
---- !u!4 &4924126204284027600 stripped
+--- !u!4 &2847860250991377741 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 453ca5cbe9116c447a3e8f8cf439eba5, type: 3}
-  m_PrefabInstance: {fileID: 4889989784245085499}
+  m_PrefabInstance: {fileID: 2310092287603301030}
   m_PrefabAsset: {fileID: 0}
---- !u!137 &6160085018262730857 stripped
+--- !u!137 &3940271240454866932 stripped
 SkinnedMeshRenderer:
   m_CorrespondingSourceObject: {fileID: 1630794972795428178, guid: 453ca5cbe9116c447a3e8f8cf439eba5, type: 3}
-  m_PrefabInstance: {fileID: 4889989784245085499}
+  m_PrefabInstance: {fileID: 2310092287603301030}
+  m_PrefabAsset: {fileID: 0}
+--- !u!95 &8171092249312388919 stripped
+Animator:
+  m_CorrespondingSourceObject: {fileID: 5866666021909216657, guid: 453ca5cbe9116c447a3e8f8cf439eba5, type: 3}
+  m_PrefabInstance: {fileID: 2310092287603301030}
   m_PrefabAsset: {fileID: 0}
