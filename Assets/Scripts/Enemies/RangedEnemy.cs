@@ -44,7 +44,7 @@ namespace RuneArena.Enemies
         [SerializeField] Color m_FireGlow = new Color(0.35f, 0.1f, 0.02f);
         [SerializeField] Color m_IceTint = new Color(0.8f, 0.9f, 1f);
         [SerializeField] Color m_IceGlow = new Color(0.05f, 0.18f, 0.35f);
-        [Tooltip("Damage multiplier of the spell that beats its element: fireball on an ice mage, ice on a fire mage.")]
+        [Tooltip("Damage multiplier of the spell that beats its element: fireball on an ice mage, ice or the wave on a fire mage.")]
         [SerializeField] float m_StrongMultiplier = 1.5f;
         [Tooltip("Damage multiplier of the spell of its own element.")]
         [SerializeField] float m_WeakMultiplier = 0.75f;

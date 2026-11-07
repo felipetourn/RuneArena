@@ -33,6 +33,19 @@ namespace RuneArena.Tests
             Assert.AreEqual(k_Strong, ElementalDamage.Multiplier(Element.Fire, "v", k_Strong, k_Weak));
         }
 
+        // Water puts fire out and does little to ice.
+        [Test]
+        public void Multiplier_WaveVsFireMage_IsStrong()
+        {
+            Assert.AreEqual(k_Strong, ElementalDamage.Multiplier(Element.Fire, "triangle", k_Strong, k_Weak));
+        }
+
+        [Test]
+        public void Multiplier_WaveVsIceMage_IsWeak()
+        {
+            Assert.AreEqual(k_Weak, ElementalDamage.Multiplier(Element.Ice, "triangle", k_Strong, k_Weak));
+        }
+
         [Test]
         public void Multiplier_OtherSpellOrPlainMage_IsOne()
         {
