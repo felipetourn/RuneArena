@@ -104,22 +104,22 @@ namespace RuneArena.Spells
         }
 
         // Water, ice and ivy all take the edge off fire: wet, frozen or entangled enemies take less,
-        // and lose the status. Once, even if several apply.
+        // and lose the status. Once, even if several apply. A mage's element multiplies on top, and the
+        // hit reads by the result.
         float Burn(Enemy enemy, float damage, out DamageKind kind)
         {
-            kind = DamageKind.Normal;
-            bool weakened = false;
+            float multiplier = 1f;
             foreach (EnemyStatus status in k_Quenching)
             {
                 if (!enemy.HasStatus(status))
                     continue;
                 enemy.ClearStatus(status);
-                weakened = true;
+                multiplier = m_Spell.WetMultiplier;
             }
-            if (!weakened)
-                return damage;
-            kind = DamageKind.Weakened;
-            return damage * m_Spell.WetMultiplier;
+            if (enemy is RangedEnemy mage)
+                multiplier *= mage.ElementMultiplier(m_Spell.Label);
+            kind = ElementalDamage.KindFor(multiplier);
+            return damage * multiplier;
         }
 
         static readonly EnemyStatus[] k_Quenching = { EnemyStatus.Wet, EnemyStatus.Frozen, EnemyStatus.Entangled };

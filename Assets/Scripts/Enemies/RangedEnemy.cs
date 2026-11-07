@@ -44,6 +44,10 @@ namespace RuneArena.Enemies
         [SerializeField] Color m_FireGlow = new Color(0.35f, 0.1f, 0.02f);
         [SerializeField] Color m_IceTint = new Color(0.8f, 0.9f, 1f);
         [SerializeField] Color m_IceGlow = new Color(0.05f, 0.18f, 0.35f);
+        [Tooltip("Damage multiplier of the spell that beats its element: fireball on an ice mage, ice on a fire mage.")]
+        [SerializeField] float m_StrongMultiplier = 1.5f;
+        [Tooltip("Damage multiplier of the spell of its own element.")]
+        [SerializeField] float m_WeakMultiplier = 0.75f;
 
         float m_FireAt = -1f;
         float m_ReadyAt;
@@ -70,6 +74,10 @@ namespace RuneArena.Enemies
                 SetLook(m_IceTint, m_IceGlow);
             Dress(element);
         }
+
+        /// <summary>How much a spell's damage is multiplied by on this mage, from its element.</summary>
+        public float ElementMultiplier(string spellLabel) =>
+            ElementalDamage.Multiplier(Kind, spellLabel, m_StrongMultiplier, m_WeakMultiplier);
 
         EnemyProjectile Shot => Kind == Element.Fire ? m_FireProjectile : Kind == Element.Ice ? m_IceProjectile : m_Projectile;
         float ShotDamage => Kind == Element.Ice ? m_IceDamage : m_Damage;
