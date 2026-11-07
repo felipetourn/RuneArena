@@ -806,10 +806,12 @@ namespace RuneArena.Enemies.Editor
                 {
                     string file = Path.GetFileNameWithoutExtension(assetPath);
                     clip.name = file == k_HumanoidModel ? "Cast" : file;
-                    // Played where it stands, as the source moves it: the enemy's own code moves it around.
+                    // Played where it stands: the enemy's own code moves it around. Turning and height stay in
+                    // the pose; the travel (the walk's) goes to root motion, which the animator drops. Baked
+                    // into the pose, the body would walk ahead of the enemy and snap back every loop.
                     clip.lockRootRotation = true;
                     clip.lockRootHeightY = true;
-                    clip.lockRootPositionXZ = true;
+                    clip.lockRootPositionXZ = false;
                     clip.keepOriginalOrientation = true;
                     clip.keepOriginalPositionY = true;
                     clip.keepOriginalPositionXZ = true;
