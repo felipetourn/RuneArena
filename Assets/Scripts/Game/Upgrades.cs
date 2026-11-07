@@ -93,10 +93,7 @@ namespace RuneArena.Game
             m_Offer.Clear();
             for (int i = 0; i < m_Choices; i++)
             {
-                Upgrade upgrade = null;
-                // A tier with nothing left (all diamonds taken, say) falls back to the one below.
-                for (int tier = (int)m_Odds.Roll(minimum, UnityEngine.Random.value); tier >= 0 && upgrade == null; tier--)
-                    upgrade = Pick((UpgradeTier)tier);
+                Upgrade upgrade = UpgradeOdds.PickFrom(m_Odds.Roll(minimum, UnityEngine.Random.value), Pick);
                 if (upgrade != null)
                     m_Offer.Add(upgrade);
             }

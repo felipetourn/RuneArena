@@ -54,6 +54,28 @@ namespace RuneArena.Tests
             Assert.AreEqual(100f, total, 1e-3f);
         }
 
+        // Easy has nothing to unlock, so a rolled emerald has no card and falls to gold.
+        [Test]
+        public void PickFrom_EmptyEmerald_FallsBackToGold()
+        {
+            string card = UpgradeOdds.PickFrom(UpgradeTier.Emerald, tier => tier == UpgradeTier.Emerald ? null : tier.ToString());
+            Assert.AreEqual("Gold", card);
+        }
+
+        // Every special taken: a rolled diamond falls to an unlock first.
+        [Test]
+        public void PickFrom_EmptyDiamond_FallsBackToEmerald()
+        {
+            string card = UpgradeOdds.PickFrom(UpgradeTier.Diamond, tier => tier == UpgradeTier.Diamond ? null : tier.ToString());
+            Assert.AreEqual("Emerald", card);
+        }
+
+        [Test]
+        public void PickFrom_NothingAnywhere_IsNull()
+        {
+            Assert.IsNull(UpgradeOdds.PickFrom<string>(UpgradeTier.Diamond, tier => null));
+        }
+
         [Test]
         public void Reset_RestoresBaseOdds()
         {

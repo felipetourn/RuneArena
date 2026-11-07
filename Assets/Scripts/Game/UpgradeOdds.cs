@@ -53,5 +53,20 @@ namespace RuneArena.Game
         }
 
         public void Reset() => Array.Copy(m_Base, m_Odds, m_Odds.Length);
+
+        /// <summary>
+        /// A card of the rolled tier, or of the first tier below it that has one: a tier with nothing left
+        /// (no spells to unlock on easy, every special taken) falls back. Null if no tier has a card.
+        /// </summary>
+        public static T PickFrom<T>(UpgradeTier rolled, Func<UpgradeTier, T> pick) where T : class
+        {
+            for (int tier = (int)rolled; tier >= 0; tier--)
+            {
+                T card = pick((UpgradeTier)tier);
+                if (card != null)
+                    return card;
+            }
+            return null;
+        }
     }
 }
