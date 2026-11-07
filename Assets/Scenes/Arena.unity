@@ -4949,6 +4949,7 @@ MonoBehaviour:
   m_ManaColor: {r: 0.25, g: 0.5, b: 1, a: 1}
   m_Radius: 1.2
   m_Lifetime: 15
+  m_Warning: 3
   m_Height: 1
   m_Size: 0.4
 --- !u!114 &496516584
@@ -5012,6 +5013,12 @@ MonoBehaviour:
   m_EasyUpgradeWaves: 01000000020000000300000004000000
   m_NormalUpgradeWaves: 0200000004000000
   m_HardUpgradeWaves: 03000000
+  m_EasyLocked: []
+  m_NormalLocked:
+  - spiral
+  m_HardLocked:
+  - spiral
+  - v
 --- !u!114 &496516585
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7713,7 +7720,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 31f87b9f17ef0f24aab841ab959e8f12, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RuneArena.Spells.SpellBook
-  m_LockedAtStart: []
 --- !u!114 &729441632
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7728,7 +7734,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::RuneArena.Spells.IceSpell
   m_Color: {r: 0.6, g: 0.9, b: 1, a: 1}
   m_ManaCost: 20
-  m_StartsLocked: 0
   m_Speed: 16
   m_Radius: 0.25
   m_Range: 40
@@ -7749,7 +7754,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::RuneArena.Spells.IvySpell
   m_Color: {r: 0.25, g: 0.7, b: 0.25, a: 1}
   m_ManaCost: 25
-  m_StartsLocked: 0
   m_Range: 30
   m_Radius: 3
   m_Duration: 6
