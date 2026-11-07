@@ -347,9 +347,12 @@ namespace RuneArena.Arena.Editor
                 importer.alphaSource = TextureImporterAlphaSource.FromInput;
             }
 
-            if (name.StartsWith("Gate") || name.StartsWith("Banner") || name.StartsWith("Ivy_"))
+            // Cutouts: their mips keep the alpha coverage. Gates and banners are one picture each and clamp;
+            // the ivy is tiled by its material, so it keeps repeating.
+            bool ivy = name.StartsWith("Ivy_");
+            if (name.StartsWith("Gate") || name.StartsWith("Banner") || ivy)
             {
-                importer.wrapMode = TextureWrapMode.Clamp;
+                importer.wrapMode = ivy ? TextureWrapMode.Repeat : TextureWrapMode.Clamp;
                 importer.mipMapsPreserveCoverage = true;
                 importer.alphaTestReferenceValue = 0.5f;
             }
