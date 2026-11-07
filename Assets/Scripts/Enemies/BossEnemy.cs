@@ -174,7 +174,7 @@ namespace RuneArena.Enemies
                     if (!close && m_Projectile != null && Time.time >= m_ThrowReadyAt)
                     {
                         m_Move = Move.Throw;
-                        Telegraph(m_ThrowWindUp, "Volley");
+                        Telegraph(m_ThrowWindUp, "Throw");
                         return;
                     }
                     MoveTo(feet);

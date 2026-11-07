@@ -217,7 +217,7 @@ namespace RuneArena.Enemies.Editor
             animation.FindProperty("m_RunAbove").floatValue = 4f;
             animation.FindProperty("m_RunSpeed").floatValue = 9f;
             SetAttacks(animation, ("Charge", "ChargeReady", 0.87f, 0.87f), ("Slam", "Slam", 0.8f, 2.7f),
-                       ("Volley", "Volley", 0.6f, 1.67f), ("Summon", "Summon", 1.4f, 4.27f),
+                       ("Volley", "Volley", 0.6f, 1.67f), ("Throw", "Throw", 0.65f, 0.75f), ("Summon", "Summon", 1.4f, 4.27f),
                        ("Strike1", "Strike1", 0.55f, 1.67f), ("Strike2", "Strike2", 0.47f, 1.67f), ("Strike3", "Strike3", 0.77f, 2f));
             animation.FindProperty("m_Entrance").stringValue = "Slam";
             animation.FindProperty("m_EmergeDepth").floatValue = 3.8f;
