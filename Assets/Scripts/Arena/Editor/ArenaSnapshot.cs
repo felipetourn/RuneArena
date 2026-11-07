@@ -7,7 +7,8 @@ using UnityEngine;
 namespace RuneArena.Arena.Editor
 {
     // Screenshots of the arena from where the player stands, for QA evidence: the stands all around, and a
-    // close look at the nearest ones. Runs in batch mode too:
+    // close look at the nearest ones. It opens the arena scene, asking to save the open one first, and opens
+    // it again at the end so the crowd built for the shots is never saved into it. Runs in batch mode too:
     //   Unity -batchmode -projectPath . -executeMethod RuneArena.Arena.Editor.ArenaSnapshot.Take -quit
     static class ArenaSnapshot
     {
@@ -17,11 +18,16 @@ namespace RuneArena.Arena.Editor
         [MenuItem("RuneArena/QA/Arena Snapshots")]
         public static void Take()
         {
+            if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
+                return;
             EditorSceneManager.OpenScene(k_Scene);
             // The crowd is built when the game starts; here it is built by hand, facing the camera's spot.
             var crowd = Object.FindAnyObjectByType<Spectators>();
-            if (crowd != null)
-                typeof(Spectators).GetMethod("Build", BindingFlags.NonPublic | BindingFlags.Instance).Invoke(crowd, null);
+            MethodInfo build = typeof(Spectators).GetMethod("Build", BindingFlags.NonPublic | BindingFlags.Instance);
+            if (build == null)
+                Debug.LogError("ArenaSnapshot: Spectators.Build not found, the shots go without the crowd");
+            else if (crowd != null)
+                build.Invoke(crowd, null);
             Shader.SetGlobalVector("_CrowdViewer", new Vector3(0f, 1.7f, 0f));
             Shader.SetGlobalVector("_CrowdKill", new Vector4(0f, -100f, 0f, 0f));
             Shader.SetGlobalVector("_CrowdOla", new Vector4(-100f, 0f, 0f, 0f));
@@ -43,6 +49,8 @@ namespace RuneArena.Arena.Editor
             camera.targetTexture = null;
             Object.DestroyImmediate(target);
             Object.DestroyImmediate(go);
+            // Back to the scene as saved, without the crowd built for the shots.
+            EditorSceneManager.OpenScene(k_Scene);
             Debug.Log($"Arena snapshots saved to {k_Folder}");
         }
 
