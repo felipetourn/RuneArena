@@ -437,12 +437,13 @@ namespace RuneArena.Enemies.Editor
 
             // Emission on with no color, so the element and the wind-up can light it up.
             Material material = Lit("Enemy Skeleton Mage", model, 0.25f, Color.black, false);
+            Mesh reduced = Reduce(modelPath, $"{folder}/{model} Reduced.asset", k_RangedMageTriangles);
             string path = $"{k_PrefabFolder}/Ranged Enemy.prefab";
             GameObject root = PrefabUtility.LoadPrefabContents(path);
-            // Mixamo exports face +Z, like the prefab: no turn.
-            Animator animator = SwapBody(root, model, new[] { material }, "Idle", 1f, 0f, clipFiles);
+            // This model faces -Z like the Blender exports, so it gets the same half turn.
+            Animator animator = SwapBody(root, model, new[] { material }, "Idle", 1f, 180f, clipFiles);
             Transform body = animator.transform;
-            Reduce(body.GetComponentInChildren<SkinnedMeshRenderer>(), $"{folder}/{model} Reduced.asset", k_RangedMageTriangles);
+            body.GetComponentInChildren<SkinnedMeshRenderer>().sharedMesh = reduced;
             body.localScale = Vector3.one * (k_RangedMageHeight / Height(body));
 
             // The shot comes out from between its hands, where they meet at the end of the cast.
@@ -475,20 +476,21 @@ namespace RuneArena.Enemies.Editor
             PrefabUtility.UnloadPrefabContents(root);
         }
 
-        // Swaps the renderer's mesh for a copy with about this many triangles, saved at path; the model itself is
-        // left as it came. Bones and weights carry over, so it animates the same.
-        static void Reduce(SkinnedMeshRenderer renderer, string path, int triangles)
+        // A copy of the model's skinned mesh with about this many triangles, saved at path; the model itself is
+        // left as it came. Bones and weights carry over, so it animates the same. Called before the model is
+        // put in a prefab: turning Read/Write on and off reimports the model, which drops the overrides
+        // (name, controller) of any instance of it that is already in place.
+        static Mesh Reduce(string modelPath, string path, int triangles)
         {
-            Mesh source = renderer.sharedMesh;
-            var importer = AssetImporter.GetAtPath(AssetDatabase.GetAssetPath(source)) as ModelImporter;
+            var importer = (ModelImporter)AssetImporter.GetAtPath(modelPath);
             // Its data can only be read with Read/Write on, for as long as this takes.
-            bool readable = importer == null || importer.isReadable;
+            bool readable = importer.isReadable;
             if (!readable)
             {
                 importer.isReadable = true;
                 importer.SaveAndReimport();
-                source = renderer.sharedMesh;
             }
+            Mesh source = AssetDatabase.LoadAssetAtPath<GameObject>(modelPath).GetComponentInChildren<SkinnedMeshRenderer>().sharedMesh;
 
             int before = source.triangles.Length / 3;
             var simplifier = new UnityMeshSimplifier.MeshSimplifier();
@@ -516,8 +518,8 @@ namespace RuneArena.Enemies.Editor
             {
                 AssetDatabase.CreateAsset(reduced, path);
             }
-            renderer.sharedMesh = reduced;
-            Debug.Log($"{renderer.name}: {before} triangles reduced to {reduced.triangles.Length / 3}");
+            Debug.Log($"{modelPath}: {before} triangles reduced to {reduced.triangles.Length / 3}");
+            return reduced;
         }
 
         // From the feet to the top of the head, at the model's own scale: from its head bone if it has one.
@@ -625,12 +627,16 @@ namespace RuneArena.Enemies.Editor
         static Animator SwapBody(GameObject root, string model, Material[] materials, string firstState, float scale = 1f,
                                  float turn = 180f, string[] clipFiles = null)
         {
-            Transform old = root.transform.Find("Body");
-            if (old != null)
-                Object.DestroyImmediate(old.gameObject);
-
             string modelPath = $"{k_ModelFolder}/{model}/{model}.fbx";
             var asset = AssetDatabase.LoadAssetAtPath<GameObject>(modelPath);
+
+            // The old body, and any other copy of the model left by an earlier build that lost its name.
+            for (int i = root.transform.childCount - 1; i >= 0; i--)
+            {
+                GameObject child = root.transform.GetChild(i).gameObject;
+                if (child.name == "Body" || PrefabUtility.GetCorrespondingObjectFromSource(child) == asset)
+                    Object.DestroyImmediate(child);
+            }
             var body = (GameObject)PrefabUtility.InstantiatePrefab(asset, root.transform);
             body.name = "Body";
             // The Blender exports face -Z, so they are turned around by default.
