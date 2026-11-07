@@ -1,7 +1,7 @@
 """Seated spectators for the stands, as billboard sprites: one column per person, sitting still in the bottom
 row and cheering with their arms up in the top one. The colors are left to the shader, so each sprite is masks:
 R is the shading, G says what each part is (1 clothes, 0.5 hair or hat, 0 skin), B what covers it (1 metal,
-0.5 the light cloth of a toga or a veil, 0 nothing) and A is the cutout. The last two columns are the
+0.5 the light cloth of a toga, 0 nothing) and A is the cutout. The last two columns are the
 legionaries (Spectators.m_Soldiers), in crested helmets. The channels are data, so the texture is imported as
 linear."""
 import numpy as np
@@ -132,9 +132,10 @@ def _hair(a, m, c, kind, cx, y, r, shoulder_y):
     if kind == "short":
         short()
     elif kind == "palla":
-        # A veil over the head, falling to the shoulders, with the face in front of it.
-        fill([cx - r * 1.3, y - r * 1.35, cx + r * 1.3, y + r * 0.9], kind_value=CLOTHES, cover=TOGA)
-        fill([cx - r * 1.3, y - r * 0.1, cx + r * 1.3, shoulder_y + r * 0.5], ellipse=False, kind_value=CLOTHES, cover=TOGA)
+        # A veil over the head, falling to the shoulders, with the face in front of it. In the color of her
+        # clothes: in the toga's light cloth a whole row of them read as ghosts.
+        fill([cx - r * 1.2, y - r * 1.25, cx + r * 1.2, y + r * 0.9], kind_value=CLOTHES)
+        fill([cx - r * 1.2, y - r * 0.1, cx + r * 1.2, shoulder_y + r * 0.2], ellipse=False, kind_value=CLOTHES)
         face([cx - r * 0.75, y - r * 0.6, cx + r * 0.75, y + r * 1.05])
     elif kind == "hood":
         fill([cx - r * 1.35, y - r * 1.45, cx + r * 1.35, y + r * 1.0], kind_value=CLOTHES)
