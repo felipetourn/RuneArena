@@ -37,9 +37,9 @@ namespace RuneArena.Tests
         public void Skip_MovesFromBronzeProportionally()
         {
             m_Odds.Skip();
-            Assert.AreEqual(32.5f, m_Odds[UpgradeTier.Bronze], 1e-4f);
-            Assert.AreEqual(35f + k_SkipShift * 35f / k_Better, m_Odds[UpgradeTier.Silver], 1e-4f);
-            Assert.AreEqual(7.5f + k_SkipShift * 7.5f / k_Better, m_Odds[UpgradeTier.Emerald], 1e-4f);
+            Assert.AreEqual(32.5f, m_Odds.Of(UpgradeTier.Bronze), 1e-4f);
+            Assert.AreEqual(35f + k_SkipShift * 35f / k_Better, m_Odds.Of(UpgradeTier.Silver), 1e-4f);
+            Assert.AreEqual(7.5f + k_SkipShift * 7.5f / k_Better, m_Odds.Of(UpgradeTier.Emerald), 1e-4f);
         }
 
         [Test]
@@ -49,8 +49,8 @@ namespace RuneArena.Tests
                 m_Odds.Skip();
             float total = 0f;
             for (int t = 0; t < k_Base.Length; t++)
-                total += m_Odds[(UpgradeTier)t];
-            Assert.AreEqual(k_MinBronze, m_Odds[UpgradeTier.Bronze], 1e-4f);
+                total += m_Odds.Of((UpgradeTier)t);
+            Assert.AreEqual(k_MinBronze, m_Odds.Of(UpgradeTier.Bronze), 1e-4f);
             Assert.AreEqual(100f, total, 1e-3f);
         }
 
@@ -82,7 +82,7 @@ namespace RuneArena.Tests
             m_Odds.Skip();
             m_Odds.Reset();
             for (int t = 0; t < k_Base.Length; t++)
-                Assert.AreEqual(k_Base[t], m_Odds[(UpgradeTier)t], 1e-4f);
+                Assert.AreEqual(k_Base[t], m_Odds.Of((UpgradeTier)t), 1e-4f);
         }
     }
 }

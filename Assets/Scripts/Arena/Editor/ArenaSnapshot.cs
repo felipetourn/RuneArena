@@ -1,5 +1,4 @@
 using System.IO;
-using System.Reflection;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -15,7 +14,7 @@ namespace RuneArena.Arena.Editor
         const string k_Scene = "Assets/Scenes/Arena.unity";
         const string k_Folder = "production/qa/evidence";
 
-        [MenuItem("RuneArena/QA/Arena Snapshots")]
+        [MenuItem("RuneArena/Take Arena Snapshots")]
         public static void Take()
         {
             if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
@@ -23,11 +22,8 @@ namespace RuneArena.Arena.Editor
             EditorSceneManager.OpenScene(k_Scene);
             // The crowd is built when the game starts; here it is built by hand, facing the camera's spot.
             var crowd = Object.FindAnyObjectByType<Spectators>();
-            MethodInfo build = typeof(Spectators).GetMethod("Build", BindingFlags.NonPublic | BindingFlags.Instance);
-            if (build == null)
-                Debug.LogError("ArenaSnapshot: Spectators.Build not found, the shots go without the crowd");
-            else if (crowd != null)
-                build.Invoke(crowd, null);
+            if (crowd != null)
+                crowd.Build();
             Shader.SetGlobalVector("_CrowdViewer", new Vector3(0f, 1.7f, 0f));
             Shader.SetGlobalVector("_CrowdKill", new Vector4(0f, -100f, 0f, 0f));
             Shader.SetGlobalVector("_CrowdOla", new Vector4(-100f, 0f, 0f, 0f));

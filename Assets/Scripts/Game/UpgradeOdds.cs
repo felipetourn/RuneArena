@@ -2,10 +2,8 @@ using System;
 
 namespace RuneArena.Game
 {
-    /// <summary>
-    /// Odds of each upgrade tier, in points. Skipping moves points from bronze to the better tiers,
-    /// each in proportion to its base odds (like the rare card offset in Slay the Spire).
-    /// </summary>
+    // Odds of each upgrade tier, in points. Skipping moves points from bronze to the better tiers,
+    // each in proportion to its base odds (like the rare card offset in Slay the Spire).
     public class UpgradeOdds
     {
         readonly float[] m_Base;
@@ -21,7 +19,8 @@ namespace RuneArena.Game
             m_MinBronze = minBronze;
         }
 
-        public float this[UpgradeTier tier] => m_Odds[(int)tier];
+        /// <summary>Points of that tier now.</summary>
+        public float Of(UpgradeTier tier) => m_Odds[(int)tier];
 
         /// <summary>A tier at or above minimum. Tiers below it are left out, so the rest keep their odds relative to each other.</summary>
         public UpgradeTier Roll(UpgradeTier minimum, float random01)
@@ -54,10 +53,8 @@ namespace RuneArena.Game
 
         public void Reset() => Array.Copy(m_Base, m_Odds, m_Odds.Length);
 
-        /// <summary>
-        /// A card of the rolled tier, or of the first tier below it that has one: a tier with nothing left
-        /// (no spells to unlock on easy, every special taken) falls back. Null if no tier has a card.
-        /// </summary>
+        /// <summary>A card of the rolled tier, or of the first tier below it that has one: a tier with nothing left
+        /// (no spells to unlock on easy, every special taken) falls back. Null if no tier has a card.</summary>
         public static T PickFrom<T>(UpgradeTier rolled, Func<UpgradeTier, T> pick) where T : class
         {
             for (int tier = (int)rolled; tier >= 0; tier--)

@@ -7,20 +7,16 @@ namespace RuneArena.Enemies
     // out, and does little to ice.
     public static class ElementalDamage
     {
-        const string k_Fireball = "circle";
-        const string k_Ice = "v";
-        const string k_Wave = "triangle";
-
         /// <summary>Damage multiplier of a spell on a mage of that element: strong, weak or 1.</summary>
         public static float Multiplier(RangedEnemy.Element mage, string spellLabel, float strong, float weak)
         {
-            if (spellLabel == k_Fireball)
-                return mage == RangedEnemy.Element.Ice ? strong : mage == RangedEnemy.Element.Fire ? weak : 1f;
-            if (spellLabel == k_Wave)
-                return mage == RangedEnemy.Element.Fire ? strong : mage == RangedEnemy.Element.Ice ? weak : 1f;
-            if (spellLabel == k_Ice)
-                return mage == RangedEnemy.Element.Fire ? strong : mage == RangedEnemy.Element.Ice ? weak : 1f;
-            return 1f;
+            switch (spellLabel)
+            {
+                case "circle": return mage == RangedEnemy.Element.Ice ? strong : mage == RangedEnemy.Element.Fire ? weak : 1f;
+                case "triangle":
+                case "v": return mage == RangedEnemy.Element.Fire ? strong : mage == RangedEnemy.Element.Ice ? weak : 1f;
+                default: return 1f;
+            }
         }
 
         /// <summary>How a hit reads, from everything that multiplied its damage.</summary>

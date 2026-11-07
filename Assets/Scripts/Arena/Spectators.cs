@@ -100,7 +100,8 @@ namespace RuneArena.Arena
             return angle < 0f ? angle + 2f * Mathf.PI : angle;
         }
 
-        void Build()
+        // Called on Start; public so the editor's arena snapshots can show the crowd without playing.
+        public void Build()
         {
             if (m_Colosseum == null || m_Material == null)
                 return;

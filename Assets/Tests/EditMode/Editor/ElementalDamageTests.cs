@@ -56,7 +56,7 @@ namespace RuneArena.Tests
 
         // A quenched fireball (x0.75) on a mage it beats (x1.5) still nets out above 1.
         [Test]
-        public void Kind_FromNetMultiplier()
+        public void KindFor_FollowsNetMultiplier()
         {
             Assert.AreEqual(DamageKind.Combo, ElementalDamage.KindFor(0.75f * 1.5f));
             Assert.AreEqual(DamageKind.Weakened, ElementalDamage.KindFor(0.75f * 0.75f));

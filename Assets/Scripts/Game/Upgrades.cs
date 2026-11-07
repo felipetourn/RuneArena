@@ -85,7 +85,7 @@ namespace RuneArena.Game
 
         ThreatIndicators Threats => m_Threats != null ? m_Threats : m_Threats = FindAnyObjectByType<ThreatIndicators>();
 
-        public float Odds(UpgradeTier tier) => m_Odds[tier];
+        public float Odds(UpgradeTier tier) => m_Odds.Of(tier);
 
         // minimum raises the floor for every card, as for the reward after a stage's boss.
         public IReadOnlyList<Upgrade> Roll(UpgradeTier minimum = UpgradeTier.Bronze)

@@ -62,10 +62,8 @@ namespace RuneArena.Pickups
             m_RuneGlow = m_Rune.GetColor(k_EmissionColor);
         }
 
-        /// <summary>
-        /// 0 until the warning starts, rising to 1 when it expires. A stone that lives less than the warning
-        /// starts it at once instead of halfway through.
-        /// </summary>
+        /// <summary>0 until the warning starts, rising to 1 when it expires. A stone that lives less than the warning
+        /// starts it at once instead of halfway through.</summary>
         public static float WarningProgress(float left, float warning, float lifetime)
         {
             float span = Mathf.Min(warning, lifetime);
