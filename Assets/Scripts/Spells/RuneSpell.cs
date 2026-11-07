@@ -36,8 +36,6 @@ namespace RuneArena.Spells
         public abstract string Label { get; }
         public abstract Color Color { get; }
         public abstract float ManaCost { get; }
-        // Spells that have to be unlocked with an upgrade during the run.
-        public virtual bool StartsLocked => false;
 
         public abstract void Cast(in SpellCast cast);
 

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using RuneArena.Enemies;
 using RuneArena.Player;
+using RuneArena.Spells;
 using RuneArena.Strokes;
 using RuneArena.Waves;
 using UnityEngine;
@@ -50,6 +51,12 @@ namespace RuneArena.Game
         [SerializeField] int[] m_EasyUpgradeWaves = { 1, 2, 3, 4 };
         [SerializeField] int[] m_NormalUpgradeWaves = { 2, 4 };
         [SerializeField] int[] m_HardUpgradeWaves = { 3 };
+
+        [Header("Spells")]
+        [Tooltip("Rune labels of the spells a run starts without, per difficulty. They come back as emerald upgrades.")]
+        [SerializeField] string[] m_EasyLocked = { };
+        [SerializeField] string[] m_NormalLocked = { "spiral" };
+        [SerializeField] string[] m_HardLocked = { "spiral", "v" };
 
         public event Action<GameState> StateChanged;
 
@@ -140,6 +147,9 @@ namespace RuneArena.Game
                 m_Spawner.Difficulty = difficulty;
             if (m_Mana != null)
                 m_Mana.SetDifficulty(difficulty);
+            var book = FindAnyObjectByType<SpellBook>(FindObjectsInactive.Include);
+            if (book != null)
+                book.SetLocked(LockedSpells(difficulty));
             // Easy shows the enemies the player isn't looking at from the start; normal has to earn it.
             var threats = FindAnyObjectByType<ThreatIndicators>();
             if (threats != null)
@@ -255,6 +265,16 @@ namespace RuneArena.Game
             m_Spawner.HoldBeforeNextWave = true;
             Enter(GameState.Choosing);
             m_Menu.ShowUpgrades(offer, m_Upgrades, stageEnd, ChooseUpgrade);
+        }
+
+        string[] LockedSpells(Difficulty difficulty)
+        {
+            switch (difficulty)
+            {
+                case Difficulty.Easy: return m_EasyLocked;
+                case Difficulty.Hard: return m_HardLocked;
+                default: return m_NormalLocked;
+            }
         }
 
         int[] UpgradeWaves()

@@ -9,7 +9,6 @@ namespace RuneArena.Spells
     {
         [SerializeField] Color m_Color = new Color(0.6f, 0.9f, 1f);
         [SerializeField] float m_ManaCost = 20f;
-        [SerializeField] bool m_StartsLocked = true;
         [SerializeField] float m_Speed = 16f;
         [SerializeField] float m_Radius = 0.25f;
         [SerializeField] float m_Range = 40f;
@@ -21,7 +20,6 @@ namespace RuneArena.Spells
         public override string Label => "v";
         public override Color Color => m_Color;
         public override float ManaCost => m_ManaCost;
-        public override bool StartsLocked => m_StartsLocked;
 
         public float Speed => m_Speed;
         public float Radius => m_Radius;

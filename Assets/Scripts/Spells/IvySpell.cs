@@ -14,7 +14,6 @@ namespace RuneArena.Spells
 
         [SerializeField] Color m_Color = new Color(0.25f, 0.7f, 0.25f);
         [SerializeField] float m_ManaCost = 25f;
-        [SerializeField] bool m_StartsLocked = true;
         [SerializeField] float m_Range = 30f;
 
         [Header("Patch")]
@@ -33,7 +32,6 @@ namespace RuneArena.Spells
         public override string Label => "spiral";
         public override Color Color => m_Color;
         public override float ManaCost => m_ManaCost;
-        public override bool StartsLocked => m_StartsLocked;
 
         public float Radius => m_Radius;
         public float Duration => m_Duration;
