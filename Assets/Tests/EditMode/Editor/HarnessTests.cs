@@ -9,7 +9,7 @@ namespace RuneArena.Tests
         [Test]
         public void Harness_SeesGameCode()
         {
-            Assert.AreEqual(4, System.Enum.GetValues(typeof(UpgradeTier)).Length);
+            Assert.AreEqual(5, System.Enum.GetValues(typeof(UpgradeTier)).Length);
         }
     }
 }

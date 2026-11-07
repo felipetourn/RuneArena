@@ -278,7 +278,6 @@ namespace RuneArena.Game
             else
             {
                 m_Upgrades.Skip();
-                m_Spawner.Announce("Próxima oferta: mejores chances", 2.5f);
             }
             m_Spawner.HoldBeforeNextWave = false;
             Enter(GameState.Playing);
