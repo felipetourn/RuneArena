@@ -65,13 +65,14 @@ namespace RuneArena.Game
         [SerializeField] float m_FrameCorners = 100f;
         [SerializeField] float m_FrameRuneSpacing = 26f;
 
+        // Tints over the light gray card (about 0.6 to 1), so they come out a shade darker than written here.
         static readonly Color[] k_TierColors =
         {
-            new Color(0.5f, 0.33f, 0.2f),
-            new Color(0.5f, 0.53f, 0.58f),
-            new Color(0.72f, 0.57f, 0.12f),
-            new Color(0.16f, 0.62f, 0.38f),
-            new Color(0.25f, 0.68f, 0.8f),
+            new Color(0.95f, 0.62f, 0.36f),
+            new Color(0.88f, 0.91f, 0.96f),
+            new Color(1f, 0.84f, 0.3f),
+            new Color(0.4f, 0.95f, 0.6f),
+            new Color(0.6f, 0.93f, 1f),
         };
 
         GameManager m_Game;
@@ -173,7 +174,7 @@ namespace RuneArena.Game
 
         public void ShowPause()
         {
-            m_PauseInfo.text = $"Oleada {m_Game.Wave}   ·   {m_Game.Score} puntos";
+            m_PauseInfo.text = $"Oleada {m_Game.Wave}\n{m_Game.Score} puntos";
             Show(m_PausePanel);
         }
 

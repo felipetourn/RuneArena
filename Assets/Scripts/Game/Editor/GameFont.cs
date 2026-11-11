@@ -69,7 +69,8 @@ namespace RuneArena.Game.Editor
             Debug.Log($"Apply Game Font: {main.name} is the default now and {label.name} is on the wave label; {changed} objects in the open scenes changed.");
         }
 
-        static TMP_FontAsset GetOrCreate(string fontPath, string assetPath, string name, TMP_FontAsset fallback)
+        // Also used by the menu builder for the buttons' font.
+        internal static TMP_FontAsset GetOrCreate(string fontPath, string assetPath, string name, TMP_FontAsset fallback)
         {
             var asset = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(assetPath);
             if (asset == null)

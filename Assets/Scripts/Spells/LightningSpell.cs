@@ -40,6 +40,10 @@ namespace RuneArena.Spells
         public override Color Color => m_Color;
         public override float ManaCost => m_ManaCost;
 
+        public float DirectDamage => m_DirectDamage;
+        public float FloorDamage => m_FloorDamage;
+        public float WetMultiplier => m_WetMultiplier;
+
         public override void Cast(in SpellCast cast)
         {
             Sfx.Play(Sfx.Library != null ? Sfx.Library.LightningLaunch : null, cast.Origin);

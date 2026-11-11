@@ -465,8 +465,8 @@ namespace RuneArena.Enemies.Editor
             enemy.ApplyModifiedPropertiesWithoutUndo();
 
             // The hands come together and push forward 1.9 s into the cast; the rest of it holds the pose.
-            // A Mixamo walk covers about 1.4 m/s at this size.
-            SetAnimator(root, animator, "Idle", "Walk", "Cast", "Hit", "Hit", "Death", 1.4f, 1.9f, 2.6f);
+            // The walk plays at its own pace at the speed its stride covers, measured at this size.
+            SetAnimator(root, animator, "Idle", "Walk", "Cast", "Hit", "Hit", "Death", StrideSpeed(animator, "Walk"), 1.9f, 2.6f);
             var sound = new SerializedObject(root.GetComponent<EnemyAnimator>());
             sound.FindProperty("m_MoveLoop").objectReferenceValue = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/Sfx/Skeleton_Rattle.ogg");
             sound.ApplyModifiedPropertiesWithoutUndo();
@@ -660,6 +660,36 @@ namespace RuneArena.Enemies.Editor
             enemy.FindProperty("m_Body").objectReferenceValue = renderer;
             enemy.ApplyModifiedPropertiesWithoutUndo();
             return animator;
+        }
+
+        // How fast, in m/s, a state's clip carries the body at its own pace: one loop of it played with the
+        // animator moving the body by its root motion. The body goes back where it was afterwards.
+        internal static float StrideSpeed(Animator animator, string state)
+        {
+            Transform body = animator.transform;
+            body.GetLocalPositionAndRotation(out Vector3 position, out Quaternion rotation);
+            bool applied = animator.applyRootMotion;
+            AnimatorCullingMode culling = animator.cullingMode;
+            // Nothing sees it here, so it has to animate anyway.
+            animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
+            animator.applyRootMotion = true;
+            animator.Rebind();
+            animator.Play(state, 0, 0f);
+            animator.Update(0f);
+
+            float length = animator.GetCurrentAnimatorStateInfo(0).length;
+            Vector3 start = body.position;
+            const int steps = 30;
+            for (int i = 0; i < steps; i++)
+                animator.Update(length / steps);
+            Vector3 moved = body.position - start;
+            moved.y = 0f;
+
+            animator.applyRootMotion = applied;
+            animator.cullingMode = culling;
+            body.SetLocalPositionAndRotation(position, rotation);
+            animator.Rebind();
+            return moved.magnitude / length;
         }
 
         static void SetAnimator(GameObject root, Animator animator, string idle, string move, string attack, string hit,

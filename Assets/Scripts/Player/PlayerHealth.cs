@@ -11,7 +11,7 @@ namespace RuneArena.Player
         [SerializeField] float m_MaxHealth = 100f;
         [Tooltip("Seconds without taking damage after a hit.")]
         [SerializeField] float m_InvulnerableTime = 0.4f;
-        [Tooltip("Optional text showing the health. The WristDisplay already shows it.")]
+        [Tooltip("Optional text showing the health. The WristBars already show it.")]
         [SerializeField] TMP_Text m_Label;
 
         public event Action<float> Damaged;

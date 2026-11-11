@@ -137,3 +137,23 @@ def smoke_sheet(size, rng, frames=16, columns=4):
         color = np.repeat(light[..., None], 3, axis=2)
         out.append((color, np.clip(density * 1.3, 0, 1)))
     return _sheet(out, size, columns)
+
+
+def rune(size, lines, radius):
+    """A rune for the grimoire: the polylines (y up, any scale) centered and scaled so their longer side
+    spans the middle 78% of the sprite, drawn radius texels each side of the line, round at the ends and
+    corners."""
+    xx, yy = _grid(size)
+    px, py = xx * size / 2, -yy * size / 2
+    points = np.concatenate([np.asarray(line, float) for line in lines])
+    lo, hi = points.min(0), points.max(0)
+    center = (lo + hi) / 2
+    scale = 0.78 * size / (hi - lo).max()
+    d = np.full(xx.shape, np.inf)
+    for line in lines:
+        pts = (np.asarray(line, float) - center) * scale
+        for (x0, y0), (x1, y1) in zip(pts[:-1], pts[1:]):
+            dx, dy = x1 - x0, y1 - y0
+            t = np.clip(((px - x0) * dx + (py - y0) * dy) / max(dx * dx + dy * dy, 1e-9), 0, 1)
+            d = np.minimum(d, np.hypot(px - (x0 + t * dx), py - (y0 + t * dy)))
+    return _white(np.clip(radius + 0.5 - d, 0, 1))
