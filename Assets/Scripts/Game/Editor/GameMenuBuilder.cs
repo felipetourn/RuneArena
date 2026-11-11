@@ -12,14 +12,31 @@ namespace RuneArena.Game.Editor
     static class GameMenuBuilder
     {
         const float k_Scale = 0.001f;
-        const string k_FramePath = "Assets/Textures/UI/runico_base.png";
-        const string k_GlowPath = "Assets/Textures/UI/runico_brillo.png";
-        // In sprite pixels: the corners are 100 px and the glow runes along the edges repeat every 52 px.
-        const float k_FrameBorder = 100f;
-        const float k_RuneSpacing = 52f;
+        const string k_FramePath = "Assets/Textures/UI/obsidiana_marco.png";
+        const string k_ButtonPath = "Assets/Textures/UI/obsidiana_boton.png";
+        const string k_ButtonHoverPath = "Assets/Textures/UI/obsidiana_boton_hover.png";
+        const string k_ButtonPressedPath = "Assets/Textures/UI/obsidiana_boton_pressed.png";
+        const string k_ButtonDisabledPath = "Assets/Textures/UI/obsidiana_boton_disabled.png";
+        // The same button in light gray, for the upgrade cards to tint with their tier (tools/textures, Cards).
+        const string k_CardPath = "Assets/Textures/UI/obsidiana_carta.png";
+        const string k_CardHoverPath = "Assets/Textures/UI/obsidiana_carta_hover.png";
+        const string k_CardPressedPath = "Assets/Textures/UI/obsidiana_carta_pressed.png";
+        const string k_CardDisabledPath = "Assets/Textures/UI/obsidiana_carta_disabled.png";
+        const string k_TitleFontPath = "Assets/Fonts/Cinzel Decorative SDF.asset";
+        const string k_FontPath = "Assets/Fonts/cinzel.regular.ttf";
+        const string k_FontAssetPath = "Assets/Fonts/Cinzel SDF.asset";
+        // The sprites are drawn at twice the size they show at, so a 144 px button is 72 units tall.
         const float k_FrameScale = 2f;
-        static readonly Vector2 k_PanelSize = FrameSize(new Vector2(700f, 680f));
-        static readonly Color k_ButtonColor = new Color(0.25f, 0.27f, 0.32f);
+        static readonly Vector2 k_PanelSize = new Vector2(700f, 680f);
+        static readonly Color k_TextColor = new Color(0.9f, 0.93f, 0.97f);
+        // On the light upgrade cards.
+        static readonly Color k_CardTextColor = new Color(0.1f, 0.08f, 0.07f);
+        static readonly Color k_SliderBack = new Color(0.13f, 0.16f, 0.22f);
+        static readonly Color k_SliderFill = new Color(0.53f, 0.88f, 0.97f);
+
+        // Cinzel Decorative stays on the titles only; everything else uses the plain Cinzel, which holds up
+        // better at small sizes in the headset.
+        static TMP_FontAsset s_Font;
 
         [MenuItem("RuneArena/Create Game UI")]
         static void Create()
@@ -30,11 +47,12 @@ namespace RuneArena.Game.Editor
                 Debug.LogError("Create Game UI: add the WaveSpawner first (on a 'Game' object).");
                 return;
             }
-            if (AssetDatabase.LoadAssetAtPath<Sprite>(k_FramePath) == null || AssetDatabase.LoadAssetAtPath<Sprite>(k_GlowPath) == null)
+            if (AssetDatabase.LoadAssetAtPath<Sprite>(k_FramePath) == null || AssetDatabase.LoadAssetAtPath<Sprite>(k_ButtonPath) == null)
             {
-                Debug.LogError("Create Game UI: the frame sprites are missing from Assets/Textures/UI (import them as Sprite).");
+                Debug.LogError("Create Game UI: the frame and button sprites are missing from Assets/Textures/UI (import them as Sprite).");
                 return;
             }
+            s_Font = GameFont.GetOrCreate(k_FontPath, k_FontAssetPath, "Cinzel", AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(k_TitleFontPath));
 
             GameObject existing = GameObject.Find("Game UI");
             if (existing != null)
@@ -88,13 +106,14 @@ namespace RuneArena.Game.Editor
             // Taller than the other panels: three cards plus the skip button.
             var upgradesRect = (RectTransform)upgrades.transform;
             upgradesRect.anchorMin = upgradesRect.anchorMax = new Vector2(0.5f, 0.5f);
-            upgradesRect.sizeDelta = FrameSize(new Vector2(k_PanelSize.x + 60f, 780f));
+            upgradesRect.sizeDelta = new Vector2(k_PanelSize.x + 60f, 780f);
             SerializedProperty buttons = so.FindProperty("m_UpgradeButtons");
             buttons.arraySize = 3;
             for (int i = 0; i < 3; i++)
             {
                 Button button = ButtonIn(upgrades, $"Mejora {i + 1}");
                 button.GetComponent<LayoutElement>().preferredHeight = 100f;
+                Card(button);
                 buttons.GetArrayElementAtIndex(i).objectReferenceValue = button;
             }
             Button skip = ButtonIn(upgrades, "Saltear");
@@ -128,8 +147,9 @@ namespace RuneArena.Game.Editor
             for (int i = 0; i < volumes.Length; i++)
                 sliders.GetArrayElementAtIndex(i).objectReferenceValue = SliderIn(sound, volumes[i]);
             so.FindProperty("m_SoundBackButton").objectReferenceValue = ButtonIn(sound, "Volver");
-            so.FindProperty("m_FrameCorners").floatValue = 2f * k_FrameBorder / k_FrameScale;
-            so.FindProperty("m_FrameRuneSpacing").floatValue = k_RuneSpacing / k_FrameScale;
+            // The obsidian frame stretches to any size, so panels fit their content with no rounding.
+            so.FindProperty("m_FrameCorners").floatValue = 0f;
+            so.FindProperty("m_FrameRuneSpacing").floatValue = 1f;
             so.ApplyModifiedPropertiesWithoutUndo();
 
             pause.SetActive(false);
@@ -164,15 +184,6 @@ namespace RuneArena.Game.Editor
             Stretch((RectTransform)panel.transform);
             Frame(panel.GetComponent<Image>(), k_FramePath);
 
-            var glow = new GameObject("Glow", typeof(RectTransform), typeof(Image), typeof(LayoutElement));
-            glow.layer = panel.layer;
-            glow.transform.SetParent(panel.transform, false);
-            Stretch((RectTransform)glow.transform);
-            glow.GetComponent<LayoutElement>().ignoreLayout = true;
-            Image glowImage = glow.GetComponent<Image>();
-            Frame(glowImage, k_GlowPath);
-            glowImage.raycastTarget = false;
-
             var layout = panel.GetComponent<VerticalLayoutGroup>();
             layout.padding = new RectOffset(64, 64, 56, 56);
             layout.spacing = 16f;
@@ -184,6 +195,8 @@ namespace RuneArena.Game.Editor
 
             OneLine(Text(panel.transform, "Title", title, 64f, 80f, FontStyles.Bold));
             infoText = Text(panel.transform, "Info", info, 30f, 120f, FontStyles.Normal);
+            if (s_Font != null)
+                infoText.font = s_Font;
             return panel;
         }
 
@@ -199,7 +212,7 @@ namespace RuneArena.Game.Editor
             text.fontSize = size;
             text.fontStyle = style;
             text.alignment = TextAlignmentOptions.Center;
-            text.color = Color.white;
+            text.color = k_TextColor;
             return text;
         }
 
@@ -211,21 +224,45 @@ namespace RuneArena.Game.Editor
             foreach (Transform child in go.transform)
                 child.gameObject.layer = panel.layer;
             go.transform.SetParent(panel.transform, false);
-            go.AddComponent<LayoutElement>().preferredHeight = 64f;
+            go.AddComponent<LayoutElement>().preferredHeight = 72f;
 
-            go.GetComponent<Image>().color = k_ButtonColor;
+            Frame(go.GetComponent<Image>(), k_ButtonPath);
             var text = go.GetComponentInChildren<TMP_Text>();
             text.text = label;
             text.fontSize = 32f;
-            text.color = Color.white;
+            text.color = k_TextColor;
+            if (s_Font != null)
+                text.font = s_Font;
+            // Clear of the pointed ends.
+            text.margin = new Vector4(48f, 0f, 48f, 0f);
             OneLine(text);
 
+            // Each state has its own sprite: the rim lights up on hover and the face goes dark when pressed.
+            // The Image color is left white, so the upgrade cards can still tint it with their tier.
             var button = go.GetComponent<Button>();
-            ColorBlock colors = button.colors;
-            colors.highlightedColor = new Color(0.55f, 0.6f, 0.75f);
-            colors.pressedColor = new Color(0.8f, 0.7f, 0.3f);
-            button.colors = colors;
+            button.transition = Selectable.Transition.SpriteSwap;
+            button.spriteState = new SpriteState
+            {
+                highlightedSprite = AssetDatabase.LoadAssetAtPath<Sprite>(k_ButtonHoverPath),
+                pressedSprite = AssetDatabase.LoadAssetAtPath<Sprite>(k_ButtonPressedPath),
+                selectedSprite = AssetDatabase.LoadAssetAtPath<Sprite>(k_ButtonPath),
+                disabledSprite = AssetDatabase.LoadAssetAtPath<Sprite>(k_ButtonDisabledPath),
+            };
             return button;
+        }
+
+        // An upgrade card: the light gray button, which its tier's color tints, with dark writing.
+        static void Card(Button button)
+        {
+            Frame(button.GetComponent<Image>(), k_CardPath);
+            button.GetComponentInChildren<TMP_Text>().color = k_CardTextColor;
+            button.spriteState = new SpriteState
+            {
+                highlightedSprite = AssetDatabase.LoadAssetAtPath<Sprite>(k_CardHoverPath),
+                pressedSprite = AssetDatabase.LoadAssetAtPath<Sprite>(k_CardPressedPath),
+                selectedSprite = AssetDatabase.LoadAssetAtPath<Sprite>(k_CardPath),
+                disabledSprite = AssetDatabase.LoadAssetAtPath<Sprite>(k_CardDisabledPath),
+            };
         }
 
         // A row with the name on the left and a slider from 0 to 1 filling the rest.
@@ -245,6 +282,8 @@ namespace RuneArena.Game.Editor
 
             TMP_Text text = Text(row.transform, "Label", label, 30f, 64f, FontStyles.Normal);
             text.alignment = TextAlignmentOptions.Left;
+            if (s_Font != null)
+                text.font = s_Font;
             text.GetComponent<LayoutElement>().preferredWidth = 200f;
 
             GameObject go = DefaultControls.CreateSlider(new DefaultControls.Resources());
@@ -260,13 +299,13 @@ namespace RuneArena.Game.Editor
             slider.minValue = 0f;
             slider.maxValue = 1f;
             slider.value = 1f;
-            slider.transform.Find("Background").GetComponent<Image>().color = k_ButtonColor;
-            slider.fillRect.GetComponent<Image>().color = new Color(0.35f, 0.75f, 0.85f);
+            slider.transform.Find("Background").GetComponent<Image>().color = k_SliderBack;
+            slider.fillRect.GetComponent<Image>().color = k_SliderFill;
             slider.handleRect.GetComponent<Image>().color = Color.white;
             slider.handleRect.sizeDelta = new Vector2(32f, 16f);
             ColorBlock colors = slider.colors;
             colors.highlightedColor = new Color(0.8f, 0.9f, 1f);
-            colors.pressedColor = new Color(0.8f, 0.7f, 0.3f);
+            colors.pressedColor = k_SliderFill;
             slider.colors = colors;
             return slider;
         }
@@ -283,18 +322,9 @@ namespace RuneArena.Game.Editor
         static void Frame(Image image, string spritePath)
         {
             image.sprite = AssetDatabase.LoadAssetAtPath<Sprite>(spritePath);
-            image.type = Image.Type.Tiled;
+            image.type = Image.Type.Sliced;
             image.pixelsPerUnitMultiplier = k_FrameScale;
-        }
-
-        // Rounds the size up so the tiled edges end between two runes instead of cutting one in half.
-        static Vector2 FrameSize(Vector2 size)
-        {
-            float corners = 2f * k_FrameBorder / k_FrameScale;
-            float spacing = k_RuneSpacing / k_FrameScale;
-            return new Vector2(
-                corners + Mathf.Ceil((size.x - corners) / spacing) * spacing,
-                corners + Mathf.Ceil((size.y - corners) / spacing) * spacing);
+            image.color = Color.white;
         }
 
         static void Stretch(RectTransform rect)

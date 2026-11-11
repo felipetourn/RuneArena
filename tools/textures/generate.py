@@ -48,6 +48,10 @@ def main():
         ("Earth", lambda: stone_set("Earth", stone.earth(1024, rng), 0.5)),
         ("Ivy", lambda: ivy(out.parent / "Fx", rng)),
         ("Fx", lambda: effects(out.parent / "Fx", rng)),
+        ("Parchment", lambda: parchment(out, rng)),
+        ("Runes", lambda: runes(out.parent.parent / "Resources" / "Runes")),
+        ("Ring", lambda: ring(out.parent.parent / "Resources" / "Runes")),
+        ("Cards", lambda: cards(out.parent / "UI")),
         # Its own generator, so it comes out the same whatever else is made.
         ("Spectators", lambda: crowd(out.parent / "Crowd", np.random.default_rng(args.seed))),
     ]
@@ -99,6 +103,55 @@ def banner(out, rng):
         color, alpha, height = props.banner(512, 1536, rng, rgb(*cloth), rgb(*emblem), glyph)
         save_albedo(out / f"Banner_{label}_Albedo.png", color, alpha=alpha)
         save_normal(out / f"Banner_{label}_Normal.png", normal_from_height(height, 0.4))
+
+
+# One page of the grimoire the player holds; HandPropsBuilder's pages are 10 x 13 cm, the same shape.
+def parchment(out, rng):
+    color, smoothness = props.parchment(512, 666, rng)
+    save_albedo(out / "Parchment_Albedo.png", color, smoothness=smoothness)
+
+
+# The runes on the grimoire's pages, the same shapes as on the banners: a white stroke the game tints with
+# the spell's color, and a wider one it puts under it so it reads apart from the ring.
+def runes(out):
+    for label, (_, _, glyph) in BANNERS.items():
+        for suffix, radius in (("", 10), ("_Outline", 17)):
+            color, alpha = fx.rune(256, glyph, radius)
+            save_albedo(out / f"Rune_{label}{suffix}.png", color, alpha=alpha)
+
+
+# What the grimoire draws around a spread's rune: a thin circle with short ticks around it, like a dial.
+# White, for the game to tint.
+def ring(out, ticks=48):
+    lines = [circle(96)]
+    for a in np.linspace(0, 2 * np.pi, ticks, endpoint=False):
+        lines.append([(1.07 * np.cos(a), 1.07 * np.sin(a)), (1.12 * np.cos(a), 1.12 * np.sin(a))])
+    color, alpha = fx.rune(256, lines, 1.2)
+    save_albedo(out / "Rune_Ring.png", color, alpha=alpha)
+
+
+# The upgrade cards: the obsidian button and its states in light gray, keeping their shading, so the
+# tier's color tinted over them comes out clear. The dark originals would turn any tint almost black.
+CARD_STATES = ("", "_hover", "_pressed", "_disabled")
+
+
+def cards(out):
+    from PIL import Image
+
+    def load(state):
+        source = np.asarray(Image.open(out / f"obsidiana_boton{state}.png").convert("RGBA")).astype(np.float32) / 255
+        return source[..., :3] @ np.array([0.299, 0.587, 0.114], dtype=np.float32), source[..., 3]
+
+    # Stretched between the plain button's darkest and brightest, so the rim keeps standing out, and the same
+    # for every state, so the pressed one still goes darker and the hover one lighter.
+    light, alpha = load("")
+    seen = light[alpha > 0.5]
+    low, high = np.percentile(seen, 2), np.percentile(seen, 98)
+    for state in CARD_STATES:
+        light, alpha = load(state)
+        gray = 0.6 + 0.4 * np.clip((light - low) / max(high - low, 1e-3), 0, 1)
+        card = np.dstack([gray, gray, gray, alpha])
+        Image.fromarray((card * 255 + 0.5).astype(np.uint8), "RGBA").save(out / f"obsidiana_carta{state}.png")
 
 
 def ivy(out, rng):
