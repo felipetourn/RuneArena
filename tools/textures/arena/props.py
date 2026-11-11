@@ -1,5 +1,5 @@
-"""Textures that aren't stone: the iron gates and the banners. Same return shape as stone.py,
-except that these use alpha as a cutout instead of smoothness."""
+"""Textures that aren't stone: the iron gates, the banners, the ivy and the grimoire's pages. Same return
+shape as stone.py, except that most use alpha as a cutout instead of smoothness."""
 import numpy as np
 
 from .image import lerp, rgb
@@ -145,3 +145,35 @@ def ivy(size, rng, count=260):
         alpha[block] = sub_a
 
     return np.clip(color, 0, 1), alpha, height * 3.0
+
+
+def parchment(width, height, rng):
+    """One page of the grimoire, not tiling: night-blue paper, darker toward the edges, ruled in gold with
+    a thin line and a bracket in each corner. The line is 5% of the width in from the edges and the writing
+    keeps well inside it. Returns (color, smoothness)."""
+    shape = (height, width)
+    yy, xx = np.mgrid[0:height, 0:width] + 0.5
+    u = xx / width
+    v = yy / height
+
+    stains = spectral(shape, rng, beta=2.5, low=1, high=12)
+    fibers = spectral(shape, rng, beta=1.0, low=30, stretch=(1.0, 6.0))
+    edge = np.minimum(np.minimum(u, 1 - u), np.minimum(v, 1 - v) * height / width)
+    aged = 1 - smoothstep(edge, 0.0, 0.1)
+    tone = 1 + 0.07 * stains + 0.035 * fibers - 0.3 * aged
+    color = rgb(19, 26, 48) * tone[..., None]
+
+    dx = np.minimum(xx, width - xx)
+    dy = np.minimum(yy, height - yy)
+    line = np.abs(np.minimum(dx, dy) - 0.05 * width) < 0.002 * width
+    # An L in each corner, outside the line.
+    arm = 0.004 * width
+    reach = (0.024 * width, 0.095 * width)
+    brackets = (np.abs(dx - 0.028 * width) < arm) & (dy > reach[0]) & (dy < reach[1])
+    brackets |= (np.abs(dy - 0.028 * width) < arm) & (dx > reach[0]) & (dx < reach[1])
+    # Gold leaf wears unevenly.
+    strength = np.clip(0.85 + 0.15 * spectral(shape, rng, beta=2.0, low=4, high=40), 0, 1)
+    color = lerp(color, rgb(143, 122, 66), (line * strength)[..., None])
+    color = lerp(color, rgb(227, 199, 122), (brackets * strength)[..., None])
+    smoothness = np.full(shape, 0.08)
+    return np.clip(color, 0, 1), smoothness

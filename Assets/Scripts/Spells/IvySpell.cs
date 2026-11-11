@@ -37,6 +37,7 @@ namespace RuneArena.Spells
         public float Duration => m_Duration;
         public float DamagePerSecond => m_DamagePerSecond;
         public float Slow => m_Slow;
+        public float RootDamage => m_RootDamage;
 
         public override void Cast(in SpellCast cast)
         {

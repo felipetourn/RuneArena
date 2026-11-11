@@ -152,7 +152,7 @@ namespace RuneArena.Game
                 foreach (RuneSpell spell in m_Book.Spells)
                 {
                     string label = spell.Label;
-                    string name = SpellName(label);
+                    string name = RuneLore.Name(label);
                     if (!m_Book.IsUnlocked(label))
                         continue;
 
@@ -191,7 +191,7 @@ namespace RuneArena.Game
                 foreach (RuneSpell spell in m_Book.Spells)
                 {
                     string label = spell.Label;
-                    string name = SpellName(label);
+                    string name = RuneLore.Name(label);
                     if (!m_Book.IsUnlocked(label))
                         Add($"unlock-{label}", UpgradeTier.Emerald, $"Nuevo: {name}", $"Desbloquea la runa de {name.ToLower()}.", () => m_Book.Unlock(label));
                 }
@@ -230,19 +230,5 @@ namespace RuneArena.Game
         }
 
         static string Pct(float fraction) => $"{Mathf.RoundToInt(fraction * 100f)}%";
-
-        static string SpellName(string label)
-        {
-            switch (label)
-            {
-                case "circle": return "Bola de fuego";
-                case "lightning": return "Rayo";
-                case "triangle": return "Ola";
-                case "square": return "Pared";
-                case "spiral": return "Hiedra";
-                case "v": return "Hielo";
-                default: return label;
-            }
-        }
     }
 }

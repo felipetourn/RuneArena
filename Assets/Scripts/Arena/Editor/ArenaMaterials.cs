@@ -160,6 +160,27 @@ namespace RuneArena.Arena.Editor
             AssetDatabase.SaveAssets();
         }
 
+        // The grimoire's pages: one page of the Parchment texture over each, not tiled. The paper also lights
+        // itself a little, so the writing can still be read with the book in shade.
+        public static Material Parchment()
+        {
+            Material material = FindOrCreate(null, "Arena Parchment");
+            if (material.GetTexture("_BaseMap") != null && material.IsKeywordEnabled("_EMISSION"))
+                return material;
+
+            var albedo = Load("Parchment_Albedo");
+            material.SetTexture("_BaseMap", albedo);
+            material.SetColor("_BaseColor", albedo != null ? Color.white : new Color(0.86f, 0.78f, 0.62f));
+            material.SetFloat("_Smoothness", 0.1f);
+            material.SetTexture("_EmissionMap", albedo);
+            material.SetColor("_EmissionColor", new Color(0.45f, 0.45f, 0.45f));
+            material.EnableKeyword("_EMISSION");
+            material.globalIlluminationFlags = MaterialGlobalIlluminationFlags.None;
+            EditorUtility.SetDirty(material);
+            AssetDatabase.SaveAssets();
+            return material;
+        }
+
         static bool Exists(string name)
         {
             return AssetDatabase.LoadAssetAtPath<Material>($"{k_MaterialFolder}/{name}.mat") != null;
