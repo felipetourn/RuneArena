@@ -65,7 +65,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 7149145529333441542}
-  - {fileID: 2137619108355539260}
+  - {fileID: 8884192674924647378}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!136 &5803164565185608820
@@ -126,7 +126,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RuneArena.Enemies.RangedEnemy
   m_MaxHealth: 100
-  m_Body: {fileID: 1749801884186040542}
+  m_Body: {fileID: 9126593988901177904}
   m_KnockbackDrag: 6
   m_StunImmunity: 1
   m_StunResistance: 0
@@ -184,7 +184,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a94ca29ed4ada8e4bae943f6f4e6a9c7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RuneArena.Enemies.EnemyAnimator
-  m_Animator: {fileID: 5425277981379746630}
+  m_Animator: {fileID: 3290674467662924200}
   m_Controller: {fileID: 9100000, guid: b6eea842ac5265051ac72a7354a69836, type: 2}
   m_Fade: 0.15
   m_Idle: Idle
@@ -198,7 +198,7 @@ MonoBehaviour:
   m_RunAbove: 4
   m_RunSpeed: 6
   m_Attacks: []
-  m_MoveSpeed: 1.4
+  m_MoveSpeed: 2.227869
   m_MaxPace: 2
   m_AttackImpact: 1.9
   m_AttackLength: 2.6
@@ -215,7 +215,7 @@ MonoBehaviour:
   m_MoveLoop: {fileID: 8300000, guid: bf6a74356af96fc43b80030780accf97, type: 3}
   m_StillVolume: 0.15
   m_MovingVolume: 0.6
---- !u!1001 &1882751199458092759
+--- !u!1001 &8989263298033595449
 PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
@@ -572,18 +572,18 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 190a02a03f7884b9caccf3f9e1cca7f6, type: 3}
---- !u!137 &1749801884186040542 stripped
-SkinnedMeshRenderer:
-  m_CorrespondingSourceObject: {fileID: -9049865015698113015, guid: 190a02a03f7884b9caccf3f9e1cca7f6, type: 3}
-  m_PrefabInstance: {fileID: 1882751199458092759}
-  m_PrefabAsset: {fileID: 0}
---- !u!4 &2137619108355539260 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 190a02a03f7884b9caccf3f9e1cca7f6, type: 3}
-  m_PrefabInstance: {fileID: 1882751199458092759}
-  m_PrefabAsset: {fileID: 0}
---- !u!95 &5425277981379746630 stripped
+--- !u!95 &3290674467662924200 stripped
 Animator:
   m_CorrespondingSourceObject: {fileID: 5866666021909216657, guid: 190a02a03f7884b9caccf3f9e1cca7f6, type: 3}
-  m_PrefabInstance: {fileID: 1882751199458092759}
+  m_PrefabInstance: {fileID: 8989263298033595449}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &8884192674924647378 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 190a02a03f7884b9caccf3f9e1cca7f6, type: 3}
+  m_PrefabInstance: {fileID: 8989263298033595449}
+  m_PrefabAsset: {fileID: 0}
+--- !u!137 &9126593988901177904 stripped
+SkinnedMeshRenderer:
+  m_CorrespondingSourceObject: {fileID: -9049865015698113015, guid: 190a02a03f7884b9caccf3f9e1cca7f6, type: 3}
+  m_PrefabInstance: {fileID: 8989263298033595449}
   m_PrefabAsset: {fileID: 0}

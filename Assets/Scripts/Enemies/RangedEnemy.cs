@@ -10,7 +10,8 @@ namespace RuneArena.Enemies
     // projectiles set, each one is born a fire or an ice mage, half and half, and looks it so the player
     // knows what is coming: fire explodes, ice does less but slows them down. A fire mage's hands and skull
     // burn; an ice mage grows crystals on its head and shoulders and frost falls from its hands. While it
-    // winds up a shot, its element gathers between its hands.
+    // winds up a shot, its element gathers between its hands. Between shots it walks to another spot around
+    // the player instead of standing there: its idle clip barely moves, and from afar it looked frozen.
     public class RangedEnemy : GroundEnemy
     {
         /// <summary>What a ranged mage throws.</summary>
@@ -35,6 +36,12 @@ namespace RuneArena.Enemies
         [Tooltip("What blocks its line of sight.")]
         [SerializeField] LayerMask m_SightMask;
 
+        [Header("Between Shots")]
+        [Tooltip("Degrees around the player it walks between shots, to one side or the other, keeping its distance. 0 to stand still.")]
+        [SerializeField] float m_RepositionAngle = 30f;
+        [Tooltip("Seconds it stays put after a shot, so the cast plays out before it walks.")]
+        [SerializeField] float m_AfterShot = 0.8f;
+
         [Header("Elements")]
         [SerializeField] EnemyProjectile m_FireProjectile;
         [SerializeField] EnemyProjectile m_IceProjectile;
@@ -51,6 +58,11 @@ namespace RuneArena.Enemies
 
         float m_FireAt = -1f;
         float m_ReadyAt;
+        // Where it walks between shots: picked once per cooldown, from m_RepositionAt on.
+        float m_RepositionAt;
+        bool m_Repositioned;
+        bool m_Walking;
+        Vector3 m_Spot;
         readonly List<ParticleSystem> m_Aura = new List<ParticleSystem>();
         ParticleSystem m_Charge;
 
@@ -99,6 +111,7 @@ namespace RuneArena.Enemies
                     m_FireAt = -1f;
                     m_ReadyAt = Time.time + m_Cooldown;
                     Telegraphing = false;
+                    WalkAfter(m_AfterShot);
                 }
                 return;
             }
@@ -122,6 +135,9 @@ namespace RuneArena.Enemies
             if (distance < m_MinDistance && TryRetreat(feet, distance))
                 return;
 
+            if (Time.time < m_ReadyAt && Reposition(feet))
+                return;
+
             Stop();
             FaceTowards(feet, 360f, deltaTime);
             if (Time.time >= m_ReadyAt)
@@ -131,6 +147,46 @@ namespace RuneArena.Enemies
                 BeginAttack(m_WindUp);
                 m_Charge = Fx.Attach(m_Muzzle, Charge(Kind), 40f, 0f);
             }
+        }
+
+        // Once per cooldown, to a spot that many degrees around the player, at the same distance, then it waits
+        // there facing them. If the next shot is ready first, it stops where it is to cast.
+        bool Reposition(Vector3 feet)
+        {
+            if (m_RepositionAngle <= 0f || Time.time < m_RepositionAt)
+                return false;
+            if (!m_Repositioned)
+            {
+                m_Repositioned = true;
+                float angle = Random.value < 0.5f ? -m_RepositionAngle : m_RepositionAngle;
+                Vector3 target = KeepInside(SpotAround(transform.position, feet, angle));
+                m_Walking = NavMesh.SamplePosition(target, out NavMeshHit hit, 2f, NavMesh.AllAreas);
+                m_Spot = hit.position;
+            }
+            if (m_Walking && FlatDistance(transform.position, m_Spot) < 0.4f)
+                m_Walking = false;
+            if (!m_Walking)
+                return false;
+            MoveTo(m_Spot);
+            return true;
+        }
+
+        /// <summary>The point that many degrees around the player from where it stands, at the same distance
+        /// from them on the floor.</summary>
+        public static Vector3 SpotAround(Vector3 position, Vector3 player, float degrees)
+        {
+            Vector3 from = position - player;
+            from.y = 0f;
+            Vector3 spot = player + Quaternion.AngleAxis(degrees, Vector3.up) * from;
+            spot.y = position.y;
+            return spot;
+        }
+
+        void WalkAfter(float seconds)
+        {
+            m_RepositionAt = Time.time + seconds;
+            m_Repositioned = false;
+            m_Walking = false;
         }
 
         bool TryRetreat(Vector3 feet, float distance)
@@ -161,6 +217,7 @@ namespace RuneArena.Enemies
             EndCharge();
             m_FireAt = -1f;
             m_ReadyAt = Time.time + m_Cooldown * 0.5f;
+            WalkAfter(0f);
         }
 
         protected override void OnDied()
