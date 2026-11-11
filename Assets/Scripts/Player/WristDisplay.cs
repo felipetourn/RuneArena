@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using RuneArena.Effects;
 using RuneArena.Spells;
 using TMPro;
 using UnityEngine;
@@ -16,7 +17,8 @@ namespace RuneArena.Player
     // hand is rarely in sight.
     public class WristDisplay : MonoBehaviour
     {
-        const float k_BadgeHeight = 1.12f;
+        // How far each sorting order steps toward the reader.
+        const float k_Step = 0.0001f;
 
         // The book made by Create Hand Props, in its own space: the spine along Z, each page this wide and
         // tall past the gap at the gutter, their top this high. Keep them the same as HandPropsBuilder's.
@@ -36,11 +38,11 @@ namespace RuneArena.Player
         [SerializeField] Material m_Parchment;
         [Tooltip("Plain Cinzel for the writing. TextMeshPro's default font if empty.")]
         [SerializeField] TMP_FontAsset m_Font;
+        [Tooltip("Seconds a page takes to turn.")]
         [SerializeField] float m_TurnTime = 0.4f;
         [Tooltip("Seconds the book takes to come out of the hand, or to go back.")]
         [SerializeField] float m_ShowTime = 0.15f;
 
-        // Not the names the ink colors had on parchment, so a scene saved with those doesn't keep them.
         [Header("Colors")]
         [SerializeField] Color m_TextColor = new Color(0.94f, 0.91f, 0.84f);
         [Tooltip("Headings, rules and the ring around the rune.")]
@@ -54,8 +56,6 @@ namespace RuneArena.Player
         [Tooltip("Under each rune, a little wider, so it reads apart from the ring.")]
         [SerializeField] Color m_ShadeColor = new Color(0.055f, 0.08f, 0.15f);
 
-        static Sprite s_BadgeSprite;
-        static Sprite s_White;
         static readonly Dictionary<string, Sprite> s_RuneSprites = new Dictionary<string, Sprite>();
 
         SpellBook m_Book;
@@ -101,8 +101,6 @@ namespace RuneArena.Player
         void Start()
         {
             m_Book = FindAnyObjectByType<SpellBook>(FindObjectsInactive.Include);
-            if (s_BadgeSprite == null)
-                s_BadgeSprite = Resources.Load<Sprite>("Bars/bar_badge");
             if (m_Grimoire == null)
             {
                 Debug.LogError("WristDisplay: there's no grimoire to write on; run RuneArena > Create Hand Props.");
@@ -276,7 +274,7 @@ namespace RuneArena.Player
                 }
                 else
                 {
-                    SpriteRenderer badge = Part(page, "Enemy Mark", s_BadgeSprite, 0.0088f / k_BadgeHeight, mark, 1);
+                    SpriteRenderer badge = Part(page, "Enemy Mark", BarSprites.Badge, 0.0088f / BarSprites.BadgeHeight, mark, 1);
                     badge.transform.localPosition = Page2D(at);
                 }
                 TMP_Text text = Text(page, "Combo", combo.Text, new Vector2(0.007f, y), new Vector2(width - 0.014f, 0.01f), 0.062f, TextAlignmentOptions.Left);
@@ -300,11 +298,10 @@ namespace RuneArena.Player
         // A hairline across the page, centered there.
         void Rule(Transform page, Vector2 center, float width, Color color)
         {
-            SpriteRenderer rule = Part(page, "Rule", WhiteSprite(), 1f, color, 0);
+            SpriteRenderer rule = Part(page, "Rule", BarSprites.White, 1f, color, 0);
             rule.transform.localScale = new Vector3(width, 0.0006f, 1f);
             rule.transform.localPosition = Page2D(center);
         }
-
 
         // Enough for the book's spreads.
         static string Roman(int number)
@@ -338,14 +335,6 @@ namespace RuneArena.Player
                 s_RuneSprites[name] = sprite;
             }
             return sprite;
-        }
-
-        // A plain white square a unit across, for the rules.
-        static Sprite WhiteSprite()
-        {
-            if (s_White == null)
-                s_White = Sprite.Create(Texture2D.whiteTexture, new Rect(0f, 0f, 4f, 4f), new Vector2(0.5f, 0.5f), 4f, 0, SpriteMeshType.FullRect);
-            return s_White;
         }
 
         // Lying on the paper, with the top of the writing toward the far end of the book.
@@ -387,27 +376,27 @@ namespace RuneArena.Player
         static Vector3 Page2D(Vector2 p) => new Vector3(p.x, p.y, -0.0003f);
 
         // Bold: the regular Cinzel is too thin to read at this size in the headset.
-        // Written k_TextScale times larger on an object that much smaller: auto-size steps by at least 0.05
+        // Written textScale times larger on an object that much smaller: auto-size steps by at least 0.05
         // and rounds to it, which at the page's sizes (0.05 to 0.115) would jump straight to its smallest.
         // Past even that, it is cut off rather than running off its box (Cinzel has no "…" to end it with).
         TMP_Text Text(Transform parent, string name, string value, Vector2 position, Vector2 size, float fontSize, TextAlignmentOptions alignment)
         {
-            const float k_TextScale = 100f;
+            const float textScale = 100f;
             var go = new GameObject(name);
             go.transform.SetParent(parent, false);
             go.transform.localPosition = Page2D(position);
-            go.transform.localScale = Vector3.one / k_TextScale;
+            go.transform.localScale = Vector3.one / textScale;
             var text = go.AddComponent<TextMeshPro>();
             if (m_Font != null)
                 text.font = m_Font;
             text.text = value;
-            text.fontSize = fontSize * k_TextScale;
+            text.fontSize = fontSize * textScale;
             text.fontStyle = FontStyles.Bold;
             text.color = m_TextColor;
             text.alignment = alignment;
             text.textWrappingMode = TextWrappingModes.NoWrap;
             text.overflowMode = TextOverflowModes.Truncate;
-            text.rectTransform.sizeDelta = size * k_TextScale;
+            text.rectTransform.sizeDelta = size * textScale;
             return text;
         }
 
@@ -419,19 +408,7 @@ namespace RuneArena.Player
             text.fontSizeMin = text.fontSize * smallest;
         }
 
-        // Sorting order decides what draws on top; the small step toward the reader only backs it up.
-        static SpriteRenderer Part(Transform parent, string name, Sprite sprite, float scale, Color color, int order)
-        {
-            var go = new GameObject(name);
-            go.transform.SetParent(parent, false);
-            go.transform.localPosition = Vector3.back * (0.0001f * order);
-            go.transform.localScale = new Vector3(scale, scale, 1f);
-
-            var renderer = go.AddComponent<SpriteRenderer>();
-            renderer.sprite = sprite;
-            renderer.color = color;
-            renderer.sortingOrder = order;
-            return renderer;
-        }
+        static SpriteRenderer Part(Transform parent, string name, Sprite sprite, float scale, Color color, int order) =>
+            BarSprites.Part(parent, name, sprite, scale, color, order, k_Step);
     }
 }

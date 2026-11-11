@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using RuneArena.Effects;
 using RuneArena.Player;
 using RuneArena.Strokes;
 using TMPro;
@@ -15,10 +16,6 @@ namespace RuneArena.Enemies
     {
         static readonly int k_BaseColor = Shader.PropertyToID("_BaseColor");
         static Material s_Material;
-        static Sprite s_FrameSprite;
-        static Sprite s_FillSprite;
-        static Sprite s_PlateSprite;
-        static Sprite s_BadgeSprite;
 
         const float k_BaseWidth = 0.8f;
         const float k_BaseHeight = 0.07f;
@@ -26,16 +23,8 @@ namespace RuneArena.Enemies
         const float k_TrailHold = 0.35f;
         const float k_TrailSpeed = 1.2f;
         const int k_ArmorPlates = 4;
-
-        // The sprites in Resources/Bars at 100 px per unit: the frame is 64 px tall and its trough
-        // starts 12 px in from the tips, the fill is 48 px tall and can't get narrower than its two tips.
-        const float k_FrameHeight = 0.64f;
-        const float k_FillInset = 0.12f;
-        const float k_FillHeight = 0.48f;
-        const float k_FillTips = 0.52f;
-        const float k_PlateHeight = 0.4f;
-        const float k_BadgeWidth = 1.28f;
-        const float k_BadgeHeight = 1.12f;
+        // How far each sorting order steps toward the viewer.
+        const float k_Step = 0.0005f;
 
         static readonly Color k_Frame = new Color(0.8f, 0.86f, 1f);
         static readonly Color k_FrameFury = new Color(1f, 0.62f, 0.3f);
@@ -135,16 +124,6 @@ namespace RuneArena.Enemies
                 var recorder = FindAnyObjectByType<StrokeRecorder>(FindObjectsInactive.Include);
                 s_Material = recorder != null ? recorder.LineMaterial : null;
             }
-            if (s_FrameSprite == null)
-            {
-                s_FrameSprite = Resources.Load<Sprite>("Bars/bar_frame");
-                s_FillSprite = Resources.Load<Sprite>("Bars/bar_fill");
-                s_PlateSprite = Resources.Load<Sprite>("Bars/bar_plate");
-                s_BadgeSprite = Resources.Load<Sprite>("Bars/bar_badge");
-                if (s_FrameSprite == null)
-                    Debug.LogError("EnemyHealthBar: the bar sprites are missing from Assets/Resources/Bars.");
-            }
-
             float top = 0f;
             foreach (Renderer r in GetComponentsInChildren<Renderer>())
                 top = Mathf.Max(top, r.bounds.max.y - transform.position.y);
@@ -163,10 +142,9 @@ namespace RuneArena.Enemies
             m_Fill = AddFill(m_Health, "Fill", k_Fill, 2);
 
             // The level goes in a badge left of the bar, with some room between them.
-            float badgeScale = m_Height * 2.2f / k_BadgeHeight;
-            float badgeX = -m_Width * 0.5f - k_BadgeWidth * badgeScale * 0.5f - m_Height * 0.4f;
-            SpriteRenderer levelBadge = Part(m_Root, "Level Badge", s_BadgeSprite, badgeScale, k_Frame, 3);
-            levelBadge.drawMode = SpriteDrawMode.Simple;
+            float badgeScale = m_Height * 2.2f / BarSprites.BadgeHeight;
+            float badgeX = -m_Width * 0.5f - BarSprites.BadgeWidth * badgeScale * 0.5f - m_Height * 0.4f;
+            SpriteRenderer levelBadge = BarSprites.Part(m_Root, "Level Badge", BarSprites.Badge, badgeScale, k_Frame, 3, k_Step);
             levelBadge.transform.localPosition += Vector3.right * badgeX;
 
             var level = new GameObject("Level");
@@ -178,7 +156,7 @@ namespace RuneArena.Enemies
             text.fontStyle = FontStyles.Bold;
             text.alignment = TextAlignmentOptions.Center;
             text.sortingOrder = 4;
-            text.rectTransform.sizeDelta = new Vector2(k_BadgeWidth, k_BadgeHeight) * badgeScale;
+            text.rectTransform.sizeDelta = new Vector2(BarSprites.BadgeWidth, BarSprites.BadgeHeight) * badgeScale;
 
             if (!string.IsNullOrEmpty(m_Enemy.DisplayName))
             {
@@ -269,20 +247,19 @@ namespace RuneArena.Enemies
             float gap = m_Height * 0.12f;
             float height = m_Height * 0.55f;
             float width = (m_Width - gap * (k_ArmorPlates - 1)) / k_ArmorPlates;
-            float scale = height / k_PlateHeight;
+            float scale = height / BarSprites.PlateHeight;
             float y = m_Height * 0.5f + gap + height * 0.5f;
             m_Plates = new SpriteRenderer[k_ArmorPlates];
             for (int i = 0; i < k_ArmorPlates; i++)
             {
-                m_Plates[i] = Part(m_ArmorRoot, $"Plate {i + 1}", s_PlateSprite, scale, m_PlateColor, 0);
-                m_Plates[i].size = new Vector2(width / scale, k_PlateHeight);
+                m_Plates[i] = BarSprites.Part(m_ArmorRoot, $"Plate {i + 1}", BarSprites.Plate, scale, m_PlateColor, 0, k_Step, SpriteDrawMode.Sliced);
+                m_Plates[i].size = new Vector2(width / scale, BarSprites.PlateHeight);
                 m_Plates[i].transform.localPosition = new Vector3(-m_Width * 0.5f + width * 0.5f + i * (width + gap), y, 0f);
             }
 
-            float badgeScale = m_Height * 2.2f / k_BadgeHeight;
-            var badgeAt = new Vector3(m_Width * 0.5f + k_BadgeWidth * badgeScale * 0.5f + m_Height * 0.3f, m_Height * 0.4f, 0f);
-            SpriteRenderer badge = Part(m_ArmorRoot, "Badge", s_BadgeSprite, badgeScale, m_PlateColor, 3);
-            badge.drawMode = SpriteDrawMode.Simple;
+            float badgeScale = m_Height * 2.2f / BarSprites.BadgeHeight;
+            var badgeAt = new Vector3(m_Width * 0.5f + BarSprites.BadgeWidth * badgeScale * 0.5f + m_Height * 0.3f, m_Height * 0.4f, 0f);
+            SpriteRenderer badge = BarSprites.Part(m_ArmorRoot, "Badge", BarSprites.Badge, badgeScale, m_PlateColor, 3, k_Step);
             badge.transform.localPosition = badgeAt + badge.transform.localPosition;
 
             string label = Armor.Breaker(m_Enemy.Armor);
@@ -334,49 +311,19 @@ namespace RuneArena.Enemies
             root.SetParent(parent, false);
             root.localPosition = position;
 
-            var bar = new Bar { Root = root, Width = width, Scale = height / k_FrameHeight };
-            bar.Frame = Part(root, "Frame", s_FrameSprite, bar.Scale, k_Frame, 0);
-            bar.Frame.size = new Vector2(width / bar.Scale, k_FrameHeight);
+            var bar = new Bar { Root = root, Width = width, Scale = height / BarSprites.FrameHeight };
+            bar.Frame = BarSprites.Part(root, "Frame", BarSprites.Frame, bar.Scale, k_Frame, 0, k_Step, SpriteDrawMode.Sliced);
+            bar.Frame.size = new Vector2(width / bar.Scale, BarSprites.FrameHeight);
             return bar;
         }
 
         static SpriteRenderer AddFill(Bar bar, string name, Color color, int order)
         {
-            SpriteRenderer fill = Part(bar.Root, name, s_FillSprite, bar.Scale, color, order);
-            fill.size = new Vector2(k_FillTips, k_FillHeight);
+            SpriteRenderer fill = BarSprites.Part(bar.Root, name, BarSprites.Fill, bar.Scale, color, order, k_Step, SpriteDrawMode.Sliced);
+            fill.size = new Vector2(BarSprites.FillTips, BarSprites.FillHeight);
             return fill;
         }
 
-        // Grows from the left of the trough. Sliced sprites can't get narrower than their tips,
-        // so below that the fill is squeezed instead.
-        static void SetFill(Bar bar, SpriteRenderer fill, float fraction)
-        {
-            fraction = Mathf.Clamp01(fraction);
-            fill.enabled = fraction > 0f;
-            float full = bar.Width / bar.Scale - k_FillInset * 2f;
-            float width = full * fraction;
-            float drawn = Mathf.Max(width, k_FillTips);
-            fill.size = new Vector2(drawn, k_FillHeight);
-
-            Transform t = fill.transform;
-            t.localScale = new Vector3(bar.Scale * width / drawn, bar.Scale, 1f);
-            t.localPosition = new Vector3((-full + width) * 0.5f * bar.Scale, t.localPosition.y, t.localPosition.z);
-        }
-
-        // Sorting order decides what draws on top; the small step toward the viewer only backs it up.
-        static SpriteRenderer Part(Transform parent, string name, Sprite sprite, float scale, Color color, int order)
-        {
-            var go = new GameObject(name);
-            go.transform.SetParent(parent, false);
-            go.transform.localPosition = Vector3.back * (0.0005f * order);
-            go.transform.localScale = new Vector3(scale, scale, 1f);
-
-            var renderer = go.AddComponent<SpriteRenderer>();
-            renderer.sprite = sprite;
-            renderer.drawMode = SpriteDrawMode.Sliced;
-            renderer.color = color;
-            renderer.sortingOrder = order;
-            return renderer;
-        }
+        static void SetFill(Bar bar, SpriteRenderer fill, float fraction) => BarSprites.SetFill(fill, bar.Width, bar.Scale, fraction);
     }
 }

@@ -11,7 +11,7 @@ namespace RuneArena.Enemies
     // knows what is coming: fire explodes, ice does less but slows them down. A fire mage's hands and skull
     // burn; an ice mage grows crystals on its head and shoulders and frost falls from its hands. While it
     // winds up a shot, its element gathers between its hands. Between shots it walks to another spot around
-    // the player instead of standing there: its idle clip barely moves, and from afar it looked frozen.
+    // the player instead of standing there, since its idle clip barely moves and from afar it would look frozen.
     public class RangedEnemy : GroundEnemy
     {
         /// <summary>What a ranged mage throws.</summary>

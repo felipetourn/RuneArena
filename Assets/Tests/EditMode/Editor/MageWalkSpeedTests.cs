@@ -15,13 +15,13 @@ namespace RuneArena.Tests
         GameObject m_Mage;
 
         [SetUp]
-        public void SetUp() => m_Mage = Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(k_Path));
+        public void SetUp() => m_Mage = (GameObject)PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath<GameObject>(k_Path));
 
         [TearDown]
         public void TearDown() => Object.DestroyImmediate(m_Mage);
 
         [Test]
-        public void MoveSpeed_MatchesTheWalksStride()
+        public void MoveSpeed_MatchesWalkStride()
         {
             var animator = m_Mage.GetComponentInChildren<Animator>();
             float stride = EnemyModels.StrideSpeed(animator, "Walk");

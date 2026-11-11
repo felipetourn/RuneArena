@@ -12,7 +12,7 @@ namespace RuneArena.Tests
 
         [TestCase(30f)]
         [TestCase(-30f)]
-        public void SpotAround_KeepsTheDistanceToThePlayer(float degrees)
+        public void SpotAround_KeepsDistanceToPlayer(float degrees)
         {
             Vector3 spot = RangedEnemy.SpotAround(k_Mage, k_Player, degrees);
 
@@ -22,7 +22,7 @@ namespace RuneArena.Tests
 
         [TestCase(30f)]
         [TestCase(-30f)]
-        public void SpotAround_MovesThatManyDegreesAroundThePlayer(float degrees)
+        public void SpotAround_RotatesByDegrees(float degrees)
         {
             Vector3 spot = RangedEnemy.SpotAround(k_Mage, k_Player, degrees);
 
