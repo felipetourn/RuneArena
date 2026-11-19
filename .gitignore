@@ -56,6 +56,8 @@ venv/
 .ipynb_checkpoints/
 ml/data/synthetic/
 ml/checkpoints/
+ml/data/synthetic_preview.png
+ml/data/real_test_split.txt
 *.pt
 *.pth
 
