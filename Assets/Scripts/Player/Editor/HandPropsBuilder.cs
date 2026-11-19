@@ -40,9 +40,9 @@ namespace RuneArena.Player.Editor
         // in the scene, which keeps until the props are made again.
         static readonly Vector3 k_GrimoirePosition = new Vector3(0f, 0.03f, 0.02f);
         const float k_GrimoireTilt = -35f;
-        // The book and the bracer, with the bars on it, are built life-size and shown smaller than that, so
-        // they take less of the view. The bracer shrinks toward the controller, so it stays behind the hand.
-        const float k_PropScale = 0.75f;
+        // The book and the bracer, with the bars on it, are built life-size and shown at this scale. At 0.75
+        // they read too small in the headset. The bracer scales toward the controller, so it stays behind the hand.
+        const float k_PropScale = 1f;
 
         [MenuItem("RuneArena/Create Hand Props")]
         static void Create()
