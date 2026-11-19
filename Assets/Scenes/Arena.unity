@@ -3990,15 +3990,15 @@ MonoBehaviour:
   m_Waves: {fileID: 11400000, guid: 860480f1f04b31b45832e058e6f8151f, type: 2}
   m_Difficulty: 0
   m_Easy:
-    speed: 0.7
+    speed: 0.5
     damage: 1
     health: 1
   m_Normal:
-    speed: 0.85
+    speed: 0.7
     damage: 1.25
     health: 1
   m_Hard:
-    speed: 1
+    speed: 0.9
     damage: 1.5
     health: 1.4
   m_PerLevel: 0.3
