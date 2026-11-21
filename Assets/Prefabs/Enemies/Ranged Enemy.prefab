@@ -152,6 +152,7 @@ MonoBehaviour:
   m_FlashBrightness: 2.5
   m_TelegraphGlow: 0.6
   m_RepathInterval: 0.25
+  m_FootDepth: 0
   m_MinDistance: 6
   m_MaxDistance: 14
   m_Projectile: {fileID: 4781129896438912589, guid: ccb8977195fe6a04eb92684f2fc6c8e3, type: 3}
@@ -163,6 +164,8 @@ MonoBehaviour:
   m_SightMask:
     serializedVersion: 2
     m_Bits: 128
+  m_RepositionAngle: 30
+  m_AfterShot: 0.8
   m_FireProjectile: {fileID: 364239246801393198, guid: bbdc714c0c51cf0398428a537f24788f, type: 3}
   m_IceProjectile: {fileID: 6054136336486808492, guid: 2a1be49a8c2b2c1aa9fb24573ee4ba5b, type: 3}
   m_IceDamage: 7

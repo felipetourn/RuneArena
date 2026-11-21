@@ -120,6 +120,7 @@ MonoBehaviour:
   m_FlashBrightness: 2.5
   m_TelegraphGlow: 0.6
   m_RepathInterval: 0.25
+  m_FootDepth: 0.04
   m_AttackRange: 1.6
   m_Damage: 15
   m_WindUp: 1

@@ -477,6 +477,35 @@ namespace RuneArena.Enemies.Editor
             PrefabUtility.UnloadPrefabContents(root);
         }
 
+        // How far each model's soles go below its origin in Idle, measured on its foot bones. The ranged mage's
+        // clips come apart from its body, so it starts at 0.
+        static readonly (string prefab, float depth)[] k_FootDepths =
+        {
+            ("Melee Enemy", 0.04f),
+            ("Ranged Enemy", 0f),
+            ("Healer Enemy", 0.01f),
+            ("Boss Enemy", 0.05f),
+            ("Mage Boss", 0f),
+            ("Demon Boss", 0.02f),
+        };
+
+        [MenuItem("RuneArena/Set Enemy Foot Depths")]
+        static void SetFootDepths()
+        {
+            foreach ((string prefab, float depth) in k_FootDepths)
+            {
+                string path = $"{k_PrefabFolder}/{prefab}.prefab";
+                GameObject root = PrefabUtility.LoadPrefabContents(path);
+                var enemy = new SerializedObject(root.GetComponent<GroundEnemy>());
+                enemy.FindProperty("m_FootDepth").floatValue = depth;
+                enemy.ApplyModifiedPropertiesWithoutUndo();
+                PrefabUtility.SaveAsPrefabAsset(root, path);
+                PrefabUtility.UnloadPrefabContents(root);
+            }
+            AssetDatabase.SaveAssets();
+            Debug.Log("Foot depths set on the ground enemies");
+        }
+
         [MenuItem("RuneArena/Create Healer Model")]
         static void CreateHealer()
         {

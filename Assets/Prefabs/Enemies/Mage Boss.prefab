@@ -120,6 +120,7 @@ MonoBehaviour:
   m_FlashBrightness: 2.5
   m_TelegraphGlow: 1.5
   m_RepathInterval: 0.25
+  m_FootDepth: 0
   m_Distance: 9
   m_TooClose: 5
   m_BlinkCooldown: 6

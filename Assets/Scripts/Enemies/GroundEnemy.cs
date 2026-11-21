@@ -8,6 +8,8 @@ namespace RuneArena.Enemies
     public abstract class GroundEnemy : Enemy
     {
         [SerializeField] float m_RepathInterval = 0.25f;
+        [Tooltip("How far the soles of the model go below its origin, so they rest on the floor.")]
+        [SerializeField] float m_FootDepth;
 
         protected NavMeshAgent Agent { get; private set; }
 
@@ -19,6 +21,24 @@ namespace RuneArena.Enemies
             base.Awake();
             Agent = GetComponent<NavMeshAgent>();
             m_BaseSpeed = Agent.speed;
+        }
+
+        protected override void Start()
+        {
+            base.Start();
+            SettleOnFloor();
+        }
+
+        // A baked NavMesh sits a little above the floor it was made from, and the agent stands on it.
+        // Measured in the middle of the arena, which is flat and always has both.
+        void SettleOnFloor()
+        {
+            Vector3 probe = ArenaRadius > 0f ? ArenaCenter : transform.position;
+            if (!NavMesh.SamplePosition(probe, out NavMeshHit nav, 2f, NavMesh.AllAreas))
+                return;
+            if (!Physics.Raycast(nav.position + Vector3.up, Vector3.down, out RaycastHit floor, 3f, LayerMask.GetMask("Floor"), QueryTriggerInteraction.Ignore))
+                return;
+            Agent.baseOffset = m_FootDepth - (nav.position.y - floor.point.y);
         }
 
         protected sealed override void Tick(float deltaTime)
