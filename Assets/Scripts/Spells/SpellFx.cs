@@ -405,6 +405,77 @@ namespace RuneArena.Spells
             });
         }
 
+        // ---- Healer ----
+
+        // Gathers on a hand while it winds up. Stop it with Fx.Release.
+        public static ParticleSystem HandGlow(Transform hand, Color color)
+        {
+            if (Lib == null)
+                return null;
+            return Fx.Attach(hand, new FxBurst
+            {
+                Material = Lib.Glow,
+                Color = color,
+                Count = 16,
+                Size = 0.16f,
+                Speed = 0.15f,
+                Lifetime = 0.4f,
+                Radius = 0.06f,
+                Growth = FxGrowth.Shrink,
+            }, 26f, 0f);
+        }
+
+        // A faint ring under whoever is about to be healed, moving with it. Stop it with Fx.Release.
+        public static ParticleSystem HealMark(Transform patient, Color color)
+        {
+            if (Lib == null)
+                return null;
+            color.a = 0.55f;
+            ParticleSystem mark = Fx.Attach(patient, new FxBurst
+            {
+                Material = Lib.Ring,
+                Color = color,
+                Count = 4,
+                Size = 1.9f,
+                Lifetime = 0.7f,
+                Flat = true,
+                Growth = FxGrowth.Expand,
+            }, 2.5f, 0f);
+            if (mark != null)
+                mark.transform.localPosition = Vector3.up * 0.05f;
+            return mark;
+        }
+
+        // The heal landing: a ring on the floor, a soft light, and motes rising around the body for a second.
+        public static void HealAura(Transform patient, Bounds body, Color color)
+        {
+            GroundRing(patient.position, Mathf.Max(body.size.x, body.size.z) + 1.4f, color, 0.7f);
+            FxLight.Flash(body.center, color, 3.5f, 1.5f, 0.7f);
+            if (Lib == null)
+                return;
+            float radius = Mathf.Clamp(Mathf.Max(body.extents.x, body.extents.z), 0.4f, 1.5f);
+            color.a = 0.85f;
+            ParticleSystem motes = Fx.Attach(patient, new FxBurst
+            {
+                Material = Lib.Glow,
+                Color = color,
+                Count = 24,
+                Size = 0.2f,
+                Speed = 0.8f,
+                Lifetime = 0.9f,
+                Gravity = -0.12f,
+                Radius = radius,
+                Growth = FxGrowth.Shrink,
+            }, 32f, 0f);
+            if (motes == null)
+                return;
+            motes.transform.position = body.center;
+            // Its one-second run, and then it cleans itself up.
+            ParticleSystem.MainModule main = motes.main;
+            main.loop = false;
+            main.stopAction = ParticleSystemStopAction.Destroy;
+        }
+
         // ---- Shared ----
 
         static void Sound(AudioClip clip, Vector3 position, float volume = 1f)

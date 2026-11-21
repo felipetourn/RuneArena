@@ -1,5 +1,7 @@
+using System.Collections.Generic;
+using RuneArena.Effects;
 using RuneArena.Spells;
-using RuneArena.Strokes;
+using RuneArena.Waves;
 using UnityEngine;
 using UnityEngine.AI;
 
@@ -15,12 +17,17 @@ namespace RuneArena.Enemies
         Smart,
     }
 
-    // Comes into the arena and heals hurt allies one after another, after a visible wind-up. It sticks to
-    // one patient until it is full, so the player can read who is being healed. Never heals itself.
-    // With nobody to heal it escorts the ally closest to the player, or zaps the player if it is alone.
+    // Comes into the arena, keeps one summoned skeleton on its feet and heals hurt allies one after another,
+    // after a visible wind-up. It sticks to one patient until it is full, so the player can read who is being
+    // healed. Never heals itself. There is no limit to the skeletons: the way to stop them is to kill it first.
     public class HealerEnemy : GroundEnemy
     {
-        static Material s_BeamMaterial;
+        enum Action
+        {
+            None,
+            Heal,
+            Summon,
+        }
 
         [Header("Healing")]
         [SerializeField] HealPriority m_Priority = HealPriority.Smart;
@@ -30,29 +37,54 @@ namespace RuneArena.Enemies
         [SerializeField] float m_WindUp = 1f;
         [SerializeField] float m_Cooldown = 4f;
         [SerializeField] Color m_HealColor = new Color(0.3f, 1f, 0.4f);
+        [Tooltip("Seconds the patient's body stays lit after being healed.")]
+        [SerializeField] float m_HealGlowTime = 0.9f;
+
+        [Header("Summon")]
+        [Tooltip("The enemy it keeps alive at its side, one at a time.")]
+        [SerializeField] Enemy m_Minion;
+        [Tooltip("Seconds after its skeleton dies before it raises another.")]
+        [SerializeField] float m_SummonCooldown = 8f;
+        [SerializeField] float m_SummonWindUp = 1f;
+        [Tooltip("Seconds the skeleton takes to climb out of the floor, during which it can't move or attack.")]
+        [SerializeField] float m_EmergeTime = 1.5f;
+        [Tooltip("How far ahead of the healer, toward the player, it comes up.")]
+        [SerializeField] float m_SummonDistance = 2f;
+        [Tooltip("Seconds before trying again when the summon is interrupted or there's no room for it.")]
+        [SerializeField] float m_SummonRetry = 2f;
+        [SerializeField] Color m_SummonColor = new Color(0.55f, 0.25f, 1f);
 
         [Header("With nobody to heal")]
         [Tooltip("Distance kept behind the escorted ally, on the side away from the player.")]
         [SerializeField] float m_EscortDistance = 3f;
-        [SerializeField] float m_AttackDamage = 6f;
-        [SerializeField] float m_AttackRange = 12f;
-        [SerializeField] float m_AttackCooldown = 3f;
-        [SerializeField] Color m_AttackColor = new Color(1f, 0.3f, 0.3f);
 
         [Header("Safety")]
         [Tooltip("Gets away when the player comes closer than this.")]
         [SerializeField] float m_SafeDistance = 7f;
         [SerializeField] LayerMask m_SightMask;
 
+        readonly List<ParticleSystem> m_HandGlows = new List<ParticleSystem>();
+        readonly List<Transform> m_Hands = new List<Transform>();
+
+        WaveSpawner m_Spawner;
         Enemy m_Target;
-        bool m_Attacking;
+        Enemy m_Summoned;
+        ParticleSystem m_PatientMark;
+        Action m_Action;
         float m_ActAt = -1f;
         float m_ReadyAt;
+        float m_SummonAt;
 
         protected override void Start()
         {
             base.Start();
+            m_Spawner = FindAnyObjectByType<WaveSpawner>();
             m_ReadyAt = Time.time + m_Cooldown * 0.5f;
+            foreach (Transform t in GetComponentsInChildren<Transform>())
+            {
+                if (t.name.Contains("L Hand") || t.name.Contains("R Hand"))
+                    m_Hands.Add(t);
+            }
         }
 
         protected override void Think(float deltaTime)
@@ -72,6 +104,12 @@ namespace RuneArena.Enemies
                 return;
             }
 
+            if (m_Minion != null && m_Summoned == null && Time.time >= m_SummonAt)
+            {
+                Begin(Action.Summon, m_SummonWindUp);
+                return;
+            }
+
             float toPlayer = FlatDistance(transform.position, feet);
             if (toPlayer < m_SafeDistance && TryRetreat(feet, toPlayer))
                 return;
@@ -88,7 +126,7 @@ namespace RuneArena.Enemies
                 }
                 else if (Time.time >= m_ReadyAt)
                 {
-                    Begin(false, m_WindUp);
+                    Begin(Action.Heal, m_WindUp);
                 }
                 else
                 {
@@ -107,59 +145,96 @@ namespace RuneArena.Enemies
                 return;
             }
 
-            // Alone: a weak zap so it doesn't just stand there.
-            if (toPlayer <= m_AttackRange && CanSee(feet))
-            {
-                if (Time.time >= m_ReadyAt)
-                    Begin(true, m_WindUp);
-                else
-                {
-                    Stop();
-                    FaceTowards(feet, 360f, deltaTime);
-                }
-            }
-            else
-            {
-                MoveTo(feet);
-            }
+            // Alone, waiting to raise the next skeleton.
+            Stop();
+            FaceTowards(feet, 360f, deltaTime);
         }
 
-        void Begin(bool attack, float windUp)
+        void Begin(Action action, float windUp)
         {
             Stop();
-            m_Attacking = attack;
+            m_Action = action;
             m_ActAt = Time.time + windUp;
-            BeginAttack(windUp, attack ? "Zap" : "Heal");
+            BeginAttack(windUp, action == Action.Heal ? "Heal" : "Summon");
+
+            Color color = action == Action.Heal ? m_HealColor : m_SummonColor;
+            foreach (Transform hand in m_Hands)
+            {
+                ParticleSystem glow = SpellFx.HandGlow(hand, color);
+                if (glow != null)
+                    m_HandGlows.Add(glow);
+            }
+            if (action == Action.Heal)
+                m_PatientMark = SpellFx.HealMark(m_Target.transform, m_HealColor);
         }
 
         void WindingUp(Vector3 feet, float deltaTime)
         {
             Stop();
-            if (!m_Attacking && !NeedsHealing(m_Target))
+            if (m_Action == Action.Heal && !NeedsHealing(m_Target))
             {
                 Interrupt();
                 return;
             }
 
-            FaceTowards(m_Attacking ? feet : m_Target.transform.position, 360f, deltaTime);
+            FaceTowards(m_Action == Action.Heal ? m_Target.transform.position : feet, 360f, deltaTime);
             if (Time.time < m_ActAt)
                 return;
 
-            if (m_Attacking)
+            if (m_Action == Action.Heal)
             {
-                Player.Damage(m_AttackDamage * DamageMultiplier);
-                Beam(Player.Head.position + Vector3.down * 0.3f, m_AttackColor);
-                m_ReadyAt = Time.time + m_AttackCooldown;
+                m_Target.Heal(m_HealAmount);
+                m_Target.ShowGlow(m_HealColor, m_HealGlowTime);
+                SpellFx.HealAura(m_Target.transform, m_Target.BodyBounds, m_HealColor);
+                m_ReadyAt = Time.time + m_Cooldown;
             }
             else
             {
-                m_Target.Heal(m_HealAmount);
-                Beam(m_Target.transform.position + Vector3.up * 0.9f, m_HealColor);
-                m_ReadyAt = Time.time + m_Cooldown;
+                Summon(feet);
             }
 
-            m_ActAt = -1f;
+            EndAction();
             Telegraphing = false;
+        }
+
+        void EndAction()
+        {
+            m_Action = Action.None;
+            m_ActAt = -1f;
+            foreach (ParticleSystem glow in m_HandGlows)
+                Fx.Release(glow);
+            m_HandGlows.Clear();
+            Fx.Release(m_PatientMark);
+            m_PatientMark = null;
+        }
+
+        // Comes up between the healer and the player, so it has to be gone through.
+        void Summon(Vector3 feet)
+        {
+            Vector3 ahead = feet - transform.position;
+            ahead.y = 0f;
+            ahead = ahead.sqrMagnitude > 1e-4f ? ahead.normalized : transform.forward;
+            Vector3 spot = KeepInside(transform.position + ahead * m_SummonDistance);
+            if (!NavMesh.SamplePosition(spot, out NavMeshHit hit, 2f, NavMesh.AllAreas))
+            {
+                m_SummonAt = Time.time + m_SummonRetry;
+                return;
+            }
+
+            Quaternion facing = Quaternion.LookRotation(ahead);
+            m_Summoned = m_Spawner != null
+                ? m_Spawner.SpawnExtra(m_Minion, hit.position, facing)
+                : Instantiate(m_Minion, hit.position, facing);
+            m_Summoned.Died += OnSummonedDied;
+            m_Summoned.Emerge(m_EmergeTime);
+            SpellFx.Summoning(hit.position, m_SummonColor, m_EmergeTime);
+        }
+
+        void OnSummonedDied(Enemy enemy)
+        {
+            enemy.Died -= OnSummonedDied;
+            m_Summoned = null;
+            m_SummonAt = Time.time + m_SummonCooldown;
         }
 
         bool NeedsHealing(Enemy enemy)
@@ -239,29 +314,12 @@ namespace RuneArena.Enemies
             return true;
         }
 
-        void Beam(Vector3 to, Color color)
-        {
-            if (s_BeamMaterial == null)
-            {
-                var recorder = FindAnyObjectByType<StrokeRecorder>(FindObjectsInactive.Include);
-                s_BeamMaterial = recorder != null ? recorder.LineMaterial : null;
-            }
-
-            var go = new GameObject("Healer Beam");
-            var line = go.AddComponent<LineRenderer>();
-            line.positionCount = 2;
-            line.SetPosition(0, transform.position + Vector3.up * 1.6f);
-            line.SetPosition(1, to);
-            line.widthMultiplier = 0.06f;
-            if (s_BeamMaterial != null)
-                RuneSpell.Tint(line, s_BeamMaterial, color);
-            Destroy(go, 0.3f);
-        }
-
         protected override void Interrupt()
         {
             base.Interrupt();
-            m_ActAt = -1f;
+            if (m_Action == Action.Summon)
+                m_SummonAt = Time.time + m_SummonRetry;
+            EndAction();
             m_ReadyAt = Time.time + m_Cooldown * 0.5f;
         }
     }

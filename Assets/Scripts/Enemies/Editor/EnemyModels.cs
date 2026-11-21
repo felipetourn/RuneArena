@@ -37,6 +37,7 @@ namespace RuneArena.Enemies.Editor
             Demon();
             Mage();
             RangedMage();
+            Healer();
             AssetDatabase.SaveAssets();
             Debug.Log("Enemy models set up in the melee, flying and dragon boss prefabs");
         }
@@ -471,6 +472,58 @@ namespace RuneArena.Enemies.Editor
             sound.FindProperty("m_MoveLoop").objectReferenceValue = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/Sfx/Skeleton_Rattle.ogg");
             sound.ApplyModifiedPropertiesWithoutUndo();
             SetDeath(root, 3.5f, 2.6f, 0.5f);
+
+            PrefabUtility.SaveAsPrefabAsset(root, path);
+            PrefabUtility.UnloadPrefabContents(root);
+        }
+
+        [MenuItem("RuneArena/Create Healer Model")]
+        static void CreateHealer()
+        {
+            Healer();
+            AssetDatabase.SaveAssets();
+            Debug.Log("DeSaad set up in the healer prefab");
+        }
+
+        // The healer: DeSaad (by CAPTAAINR, CC-BY-4.0), made by tools/models/desaad.py. Its capsule and orb go.
+        static void Healer()
+        {
+            const string model = "Desaad";
+            if (AssetDatabase.LoadAssetAtPath<GameObject>($"{k_ModelFolder}/{model}/{model}.fbx") == null)
+            {
+                Debug.LogWarning($"No {model}.fbx: the healer keeps its placeholder body.");
+                return;
+            }
+
+            // Emission on with no color, so the wind-up can light it up.
+            Material material = Lit("Enemy Desaad", model, 0.2f, Color.black, false);
+            string path = $"{k_PrefabFolder}/Healer Enemy.prefab";
+            GameObject root = PrefabUtility.LoadPrefabContents(path);
+            Animator animator = SwapBody(root, model, material, "Idle");
+            Transform orb = root.transform.Find("Orb");
+            if (orb != null)
+                Object.DestroyImmediate(orb.gameObject);
+
+            // 2 m tall.
+            var collider = root.GetComponent<CapsuleCollider>();
+            collider.center = new Vector3(0f, 1f, 0f);
+            collider.height = 2f;
+            root.GetComponent<NavMeshAgent>().height = 2f;
+
+            var enemy = new SerializedObject(root.GetComponent<Enemy>());
+            enemy.FindProperty("m_FlashBrightness").floatValue = 2.5f;
+            enemy.FindProperty("m_TelegraphGlow").floatValue = 0.6f;
+            var minion = AssetDatabase.LoadAssetAtPath<GameObject>($"{k_PrefabFolder}/Melee Enemy.prefab");
+            enemy.FindProperty("m_Minion").objectReferenceValue = minion != null ? minion.GetComponent<Enemy>() : null;
+            enemy.ApplyModifiedPropertiesWithoutUndo();
+
+            // The heal lands with the hands at their highest, the summon as they come down.
+            SetAnimator(root, animator, "Idle", "Walk", "Zap", "Hit", "Stun", "Death", 1f, 1f, 1.6f);
+            var animation = new SerializedObject(root.GetComponent<EnemyAnimator>());
+            animation.FindProperty("m_HitLength").floatValue = 0.5f;
+            SetAttacks(animation, ("Heal", "Heal", 1.9f, 2.9f), ("Summon", "Zap", 1f, 1.6f));
+            animation.ApplyModifiedPropertiesWithoutUndo();
+            SetDeath(root, 3f, 1.8f, 1f);
 
             PrefabUtility.SaveAsPrefabAsset(root, path);
             PrefabUtility.UnloadPrefabContents(root);

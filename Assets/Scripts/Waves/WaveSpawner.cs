@@ -255,11 +255,19 @@ namespace RuneArena.Waves
         // anything else in front of the player, kept off the wall.
         void Appear(Enemy prefab)
         {
-            Vector3 feet = m_Player.Feet;
-            Vector3 ahead = m_Player.Head.forward;
-            ahead.y = 0f;
-            ahead = ahead.sqrMagnitude > 1e-4f ? ahead.normalized : Vector3.forward;
-            Vector3 spot = feet + ahead * m_EntranceDistance;
+            Vector3 spot = SpotAhead(prefab, 0f);
+            Enemy enemy = Track(Instantiate(prefab, spot, FacingPlayer(spot)));
+            enemy.Emerge(prefab.EntranceTime);
+            SpellFx.Summoning(spot, m_EntranceColor, prefab.EntranceTime, 3f);
+
+        }
+
+        // In front of the player and kept off the wall, or the middle of the arena for a boss. sideways moves
+        // it to the player's right.
+        Vector3 SpotAhead(Enemy prefab, float sideways)
+        {
+            Vector3 ahead = FlatForward();
+            Vector3 spot = m_Player.Feet + ahead * m_EntranceDistance + Vector3.Cross(Vector3.up, ahead) * sideways;
             if (prefab.IsBoss && m_Arena != null)
                 spot = m_Arena.transform.position;
             if (m_Arena != null)
@@ -272,15 +280,88 @@ namespace RuneArena.Waves
                     spot = center + flat.normalized * limit;
                 spot.y = center.y;
             }
-            if (NavMesh.SamplePosition(spot, out NavMeshHit hit, 4f, NavMesh.AllAreas))
-                spot = hit.position;
+            return NavMesh.SamplePosition(spot, out NavMeshHit hit, 4f, NavMesh.AllAreas) ? hit.position : spot;
+        }
 
-            Vector3 facing = feet - spot;
+        Vector3 FlatForward()
+        {
+            Vector3 ahead = m_Player.Head.forward;
+            ahead.y = 0f;
+            return ahead.sqrMagnitude > 1e-4f ? ahead.normalized : Vector3.forward;
+        }
+
+        Quaternion FacingPlayer(Vector3 spot)
+        {
+            Vector3 facing = m_Player.Feet - spot;
             facing.y = 0f;
-            Enemy enemy = Track(Instantiate(prefab, spot, Quaternion.LookRotation(facing.sqrMagnitude > 1e-4f ? facing : -ahead)));
-            enemy.Emerge(prefab.EntranceTime);
-            SpellFx.Summoning(spot, m_EntranceColor, prefab.EntranceTime, 3f);
+            return Quaternion.LookRotation(facing.sqrMagnitude > 1e-4f ? facing : -FlatForward());
+        }
 
+        // In Play: clears the arena and brings a healer with a hurt skeleton to heal, right in front of the
+        // player. Once they are down the waves go on.
+        [ContextMenu("Test/Healer")]
+        void TestHealer()
+        {
+            if (!Application.isPlaying || m_Waves == null || m_Player == null)
+                return;
+            Enemy healer = FindInWaves<HealerEnemy>();
+            Enemy melee = FindInWaves<MeleeEnemy>();
+            if (healer == null || melee == null)
+            {
+                Debug.LogWarning("WaveSpawner: the Wave Set needs a healer and a melee enemy for this test.", this);
+                return;
+            }
+
+            StopAllCoroutines();
+            for (int i = Enemy.All.Count - 1; i >= 0; i--)
+                Enemy.All[i].Despawn();
+            Alive = 0;
+            CurrentWave = Mathf.Max(CurrentWave, 1);
+            CurrentStage = Mathf.Max(CurrentStage, 1);
+
+            Vector3 spot = SpotAhead(healer, 0f);
+            Track(Instantiate(healer, spot, FacingPlayer(spot)));
+            spot = SpotAhead(melee, 2.5f);
+            Enemy hurt = Track(Instantiate(melee, spot, FacingPlayer(spot)));
+            hurt.Damage(hurt.MaxHealth * 0.5f);
+            StartCoroutine(AfterTest());
+        }
+
+        // In Play: takes half the health of every enemy, to watch the healer work again.
+        [ContextMenu("Test/Hurt all enemies")]
+        void TestHurtAll()
+        {
+            if (!Application.isPlaying)
+                return;
+            for (int i = Enemy.All.Count - 1; i >= 0; i--)
+            {
+                if (!(Enemy.All[i] is HealerEnemy))
+                    Enemy.All[i].Damage(Enemy.All[i].MaxHealth * 0.5f);
+            }
+        }
+
+        IEnumerator AfterTest()
+        {
+            while (Alive > 0)
+            {
+                if (PlayerDead)
+                    yield break;
+                yield return null;
+            }
+            yield return Run(CurrentWave);
+        }
+
+        T FindInWaves<T>() where T : Enemy
+        {
+            for (int i = 0; i < m_Waves.Count; i++)
+            {
+                foreach (WaveSet.Group group in m_Waves.Get(i, out _).groups)
+                {
+                    if (group.prefab is T found)
+                        return found;
+                }
+            }
+            return null;
         }
 
         [ContextMenu("Test/Boss of stage 1")]

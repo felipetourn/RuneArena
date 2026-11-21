@@ -134,6 +134,8 @@ namespace RuneArena.Enemies
         // Can't be hurt, like the stage 3 boss while it is a heap of bones.
         protected bool Invulnerable { get; set; }
         protected Renderer BodyRenderer => m_Body;
+        /// <summary>Where the body is in the world right now.</summary>
+        public Bounds BodyBounds => m_Body.bounds;
 
         // 1 normally, lower while slowed. Movement code multiplies its speed by this.
         public float SpeedMultiplier => HasStatus(EnemyStatus.Rooted) ? 0f : (HasStatus(EnemyStatus.Slowed) ? 1f - m_Slow : 1f) * m_SpeedScale;
@@ -168,6 +170,9 @@ namespace RuneArena.Enemies
         float m_FlashUntil;
         float m_DiedAt;
         float m_EmergeUntil;
+        Color m_GlowColor;
+        float m_GlowTime = 1f;
+        float m_GlowUntil;
 
         protected virtual void Awake()
         {
@@ -387,6 +392,14 @@ namespace RuneArena.Enemies
             Healed?.Invoke(this, healed);
         }
 
+        /// <summary>Lights the body in that color, fading out over that many seconds, like when it is healed.</summary>
+        public void ShowGlow(Color color, float seconds)
+        {
+            m_GlowColor = color;
+            m_GlowTime = Mathf.Max(seconds, 0.01f);
+            m_GlowUntil = Time.time + m_GlowTime;
+        }
+
         // Velocity in m/s, applied horizontally and fading out.
         public void Push(Vector3 velocity)
         {
@@ -533,6 +546,9 @@ namespace RuneArena.Enemies
                 color = Color.Lerp(color, m_StunImmuneTint, 0.4f);
             if (Telegraphing)
                 color = Color.Lerp(color, m_TelegraphColor, 0.5f + 0.5f * Mathf.Sin(Time.time * 25f));
+            float shown = Mathf.Clamp01((m_GlowUntil - Time.time) / m_GlowTime);
+            if (shown > 0f)
+                color = Color.Lerp(color, m_GlowColor, 0.6f * shown);
             if (Time.time < m_FlashUntil)
                 color = Color.white * m_FlashBrightness;
 
@@ -541,7 +557,7 @@ namespace RuneArena.Enemies
             if (m_Glows)
             {
                 float glow = Telegraphing ? m_TelegraphGlow * (0.5f + 0.5f * Mathf.Sin(Time.time * 25f)) : 0f;
-                m_Block.SetColor(k_EmissionColor, m_Emission + m_TelegraphColor * glow);
+                m_Block.SetColor(k_EmissionColor, m_Emission + m_TelegraphColor * glow + m_GlowColor * (1.2f * shown));
             }
             m_Body.SetPropertyBlock(m_Block);
         }
