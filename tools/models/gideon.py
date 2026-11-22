@@ -4,7 +4,7 @@ their own files.
 
     blender -b -P gideon.py -- Gideon_Undertow.FBX <textures folder> <animations folder> <output folder> 2048
 
-Epic released the Paragon characters for Unreal Engine projects; see Assets/Models/Enemies/CREDITS.md.
+Epic released the Paragon characters for Unreal Engine projects.
 """
 import bpy, sys, os
 import numpy as np

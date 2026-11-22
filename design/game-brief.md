@@ -32,7 +32,7 @@
 2. Hechizos, maná y enemigos con oleadas (ya construido).
 3. Etapas, jefes y mejoras (construido).
 4. **En el casco — rendimiento:** build al Quest y medir FPS (OVR Metrics Tool u overlay) contra el jefe más pesado y con muchos enemigos. Si baja de 72, anotar en qué momento, y con eso decidir qué recortar.
-5. **En el casco — trazos reales:** grabar 30–50 por runa con el StrokeRecorder, incluida la clase "noise" y ojalá de otras personas. Bajarlos con `adb pull`, reentrenar con `python ml/train.py --real <carpeta>` y comparar contra Protractor con `python ml/evaluate.py`.
+5. **En el casco — trazos reales:** grabar 30–50 por runa con el StrokeRecorder, incluida la clase "noise" y ojalá de otras personas. Bajarlos con `adb pull`, reentrenar desde `ml/` con `python synth.py` y `python train.py --real <carpeta>`, y comparar contra Protractor con `python evaluate.py --data <carpeta>`.
 6. **En el casco — sensación:** ajustar lo que el simulador no muestra: escala de los jefes (Gideon mide 3,2 m), hitboxes y velocidad de los jefes.
 7. Tabla de puntajes guardada y visible en el juego (pospuesta, no es parte del MVP).
 
