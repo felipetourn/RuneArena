@@ -81,13 +81,3 @@ tools/audio/source/
 
 # Candidate models before they go through tools/models
 possible-3dmodels/
-
-# === Claude Code Game Studios: per-machine and per-session files only ===
-/CLAUDE.local.md
-/project.local.yaml
-/.claude/settings.local.json
-/production/session-state/
-/production/session-logs/
-
-# Superpowers design docs and plans (local only)
-/docs/superpowers/
